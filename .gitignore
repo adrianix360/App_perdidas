@@ -7,3 +7,5 @@ obj/
 tests/build/
 __pycache__/
 *.rom
+tests/cemu/*/bin/
+h0/bin/*.obj

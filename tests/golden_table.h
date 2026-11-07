@@ -1,0 +1,248 @@
+/*
+ * golden_table.h - Casos dorados de la seccion 9 de la memoria tecnica.
+ *
+ * Cada fila: caso, magnitud, valor esperado (en las unidades indicadas en
+ * el nombre), decimales con que lo imprime la fuente, tolerancia relativa
+ * y tolerancia absoluta.
+ *
+ * Regla de aprobacion (ver INFORME_PRUEBAS.md):
+ *   |obtenido - esperado| <= max(tol_rel*|esperado|, tol_abs)   -> PASA
+ *   si no, pero <= 0,5 * 10^-dec (redondeo del valor impreso)  -> PASA (r)
+ *   si no                                                       -> FALLA
+ * Tolerancias por defecto: 0,1 % (memoria, sec. 9); f: 0,0001 absoluto.
+ */
+#ifndef GOLDEN_TABLE_H
+#define GOLDEN_TABLE_H
+
+typedef struct {
+    const char *id;
+    const char *name;
+    double expected;
+    signed char dec;
+    double tol_rel;
+    double tol_abs;
+} golden_t;
+
+#define G(id, n, e, d)      { id, n, e, d, 1e-3, 0 }
+#define GF(id, n, e, d)     { id, n, e, d, 0, 1e-4 }
+#define GT(id, n, e, d, t)  { id, n, e, d, t, 0 }
+#define GX(id, n, e)        { id, n, e, 0, 0, 0 }   /* exacto (codigos) */
+
+static const golden_t golden[] = {
+    /* 9.1 Tipo A */
+    G ("P-01", "v [m/s]",            2.29,      2),
+    G ("P-01", "Re",                 455180,    0),
+    GF("P-01", "f SJ",               0.01343,   5),
+    GF("P-01", "f CW",               0.01349,   5),
+    G ("P-01", "hf SJ [m]",          17.97,     2),
+    G ("P-01", "hf CW [m]",          18.05,     2),
+    G ("P-01", "hf HW [m]",          19.32,     2),
+    G ("P-01", "error HW vs SJ [%]", 7.5,       1),
+    G ("P-02", "hm [m]",             1.79,      2),
+    G ("P-02", "hT SJ [m]",          19.76,     2),
+    G ("P-02", "p/gamma [m]",        32.97,     2),
+    G ("P-02", "p/gamma sin hm [m]", 34.76,     2),
+
+    /* 9.2 Tipo B */
+    G ("P-03", "Q [l/s]",            318.8,     1),
+    G ("P-03", "v [m/s]",            4.73,      2),
+    GF("P-03", "f",                  0.01117,   5),
+    G ("P-03", "hf [m]",             30.40,     2),
+    G ("P-03", "hm [m]",             13.10,     2),
+    GX("P-03", "metodo (1 curso)",   1),
+    G ("P-04", "Q [l/s]",            531.3,     1),
+    G ("P-04", "v [m/s]",            4.42,      2),
+    GF("P-04", "f",                  0.01079,   5),
+    G ("P-04", "hf [m]",             117.0,     1),
+    G ("P-04", "hm [m]",             7.98,      2),
+    G ("P-05", "Q [l/s]",            2104,      0),
+    G ("P-05", "v [m/s]",            2.43,      2),
+    GF("P-05", "f",                  0.01143,   5),
+    G ("P-05", "hf [m]",             77.89,     2),
+    G ("P-05", "hm [m]",             2.11,      2),
+    G ("P-06", "Q [l/s]",            15.9,      1),
+    G ("P-06", "v [m/s]",            8.09,      2),
+    G ("P-07", "Q [l/s]",            5.69,      2),
+    G ("P-07", "v [m/s]",            2.90,      2),
+    GX("P-07", "metodo (2 biseccion)", 2),
+    GT("P-08", "Q [l/s]",            131.0,     1, 1e-2),
+    G ("P-09", "Q [l/s]",            211.97,    2),
+    G ("P-09", "v [m/s]",            3.00,      2),
+    G ("P-09", "hf [m]",             97.71,     2),
+    G ("P-09", "hm [m]",             2.29,      2),
+    G ("P-10", "Q HW [l/s]",         195.46,    2),
+    G ("P-10", "diferencia [%]",     -7.8,      1),
+
+    /* 9.3 Tipo C */
+    /* P-11: valores de la hoja (diapositiva 25), con gamma = 999,1 x 9,81 */
+    G ("P-11", "v [m/s]",            2.376714,  6),
+    G ("P-11", "Re",                 312725.5,  1),
+    GF("P-11", "f",                  0.0144580, 7),
+    G ("P-11", "hf [m]",             26.9180,   4),
+    G ("P-11", "hm [m]",             2.7063417, 7),
+    G ("P-11", "H [m]",              45.6243,   4),
+    G ("P-11", "P [kW]",             28.8942,   4),
+    G ("P-11", "P [Hp]",             38.7413,   4),
+    G ("P-12", "v [m/s]",            2.387,     3),
+    G ("P-12", "hf [m]",             20.33,     2),
+    G ("P-12", "HB [m]",             122.33,    2),
+    G ("P-12", "Pn [kW]",            90.0,      1),
+    G ("P-12", "Pb [kW]",            105.9,     1),
+    G ("P-13", "v [m/s]",            7.958,     3),
+    G ("P-13", "Re",                 316097,    0),
+    GF("P-13", "f CW",               0.02106,   5),
+    G ("P-13", "hf [m]",             1360,      0),
+    G ("P-13", "HB [m]",             1430,      0),
+    G ("P-13", "Pn [kW]",            140.3,     1),
+    G ("P-13", "Pb [kW]",            165.0,     1),
+    G ("P-14", "v [m/s]",            1.415,     3),
+    G ("P-14", "Re",                 212207,    0),
+    GF("P-14", "f",                  0.01554,   5),
+    G ("P-14", "hf [m]",             13.74,     2),
+    G ("P-14", "hm [m]",             0.510,     3),
+    G ("P-14", "HB [m]",             54.25,     2),
+    G ("P-14", "Pn [kW]",            13.30,     2),
+    G ("P-14", "Pb [kW]",            22.17,     2),
+
+    /* 9.4 Tipos D y F */
+    G ("P-15", "D exacto [mm]",      329.1,     1),
+    G ("P-15", "D comercial [mm]",   350,       0),
+    G ("P-15", "Qmax [l/s]",         234.23,    2),
+    G ("P-15", "hm/hf [%]",          10.42,     2),
+    G ("P-16a", "D exacto [mm]",     385.6,     1),
+    G ("P-16a", "D comercial [mm]",  400,       0),
+    G ("P-16a", "Qmax [l/s]",        329.9,     1),
+    G ("P-16b", "D exacto [mm]",     375.0,     1),
+    G ("P-16b", "D comercial [mm]",  400,       0),
+    G ("P-16b", "Qmax [l/s]",        354.8,     1),
+    G ("P-17", "D exacto CW [mm]",   256.83,    2),
+    G ("P-17", "D exacto SJ [mm]",   256.73,    2),
+    G ("P-17", "D comercial [mm]",   285.75,    2),
+    G ("P-17", "Qmax 285.75 [l/s]",  262.4,     1),
+    G ("P-17", "Qmax 285.00 [l/s]",  260.64,    2),
+    G ("P-17", "v 285.00 [m/s]",     4.086,     3),
+    G ("P-17", "hf 285.00 [m]",      65.11,     2),
+    G ("P-17", "hm 285.00 [m]",      10.89,     2),
+    G ("P-18", "v [m/s]",            3.119,     3),
+    G ("P-18", "Re",                 891156,    0),
+    GF("P-18", "f CW",               0.011989,  6),
+    GF("P-18", "f SJ",               0.011958,  6),
+    G ("P-18", "hf [m]",             39.52,     2),
+    G ("P-18", "hm [m]",             6.35,      2),
+    G ("P-18", "hT [m]",             45.87,     2),
+    G ("P-18", "hv [m]",             30.13,     2),
+    G ("P-18", "Kv",                 60.8,      1),
+    G ("P-19", "HT [m]",             30.13,     2),
+    G ("P-19", "Pb [kW]",            59.1,      1),
+    G ("P-19", "Pn [kW]",            38.4,      1),
+    G ("P-20", "HB [m]",             121.87,    2),
+    G ("P-20", "Pn [kW]",            239.1,     1),
+    G ("P-20", "Pb [kW]",            398.5,     1),
+    G ("P-20", "cota piezometrica [m]", 1136.87, 2),
+    G ("P-21", "D exacto CW [mm]",   431.23,    2),
+    G ("P-21", "D exacto SJ [mm]",   431.08,    2),
+    G ("P-21", "D comercial [mm]",   450,       0),
+    G ("P-21", "Qmax [l/s]",         444.4,     1),
+    G ("P-21", "hf [m]",             6.010,     3),
+    G ("P-21", "hm [m]",             1.990,     3),
+    G ("P-22", "HB [m]",             38.23,     2),
+    G ("P-22", "hT disponible [m]",  8.23,      2),
+    G ("P-22", "D exacto [mm]",      172.3,     1),
+    G ("P-22", "D comercial [mm]",   200,       0),
+    G ("P-22", "Qmax 200 [l/s]",     44.33,     2),
+    G ("P-22", "hf 200 [m]",         7.95,      2),
+    G ("P-22", "hm 200 [m]",         0.28,      2),
+    G ("P-22", "Qmax 150 [l/s]",     20.9,      1),
+
+    /* 9.5 Tipos E e I */
+    GF("P-24a", "f CW",              0.0261015, 7),
+    GF("P-24b", "f CW",              0.0167634, 7),
+    G ("P-25", "hf+hm [m]",          17,        0),
+    G ("P-25", "v [m/s]",            2.917,     3),
+    G ("P-25", "hm [m]",             1.518,     3),
+    G ("P-25", "hf [m]",             15.48,     2),
+    GF("P-25", "f",                  0.024152,  6),
+    G ("P-25", "ks [mm]",            0.591,     3),
+    G ("P-25", "Re",                 683128,    0),
+
+    /* 9.6 Sistemas */
+    G ("S-01", "M_A",                2176.18,   2),
+    G ("S-01", "M_B",                16525.37,  2),
+    G ("S-01", "M_B friccion",       12394.03,  2),
+    G ("S-01", "M_B local",          4131.34,   2),
+    G ("S-01", "M_BCD",              1836.15,   2),
+    G ("S-01", "M total",            4012.33,   2),
+    G ("S-01", "Q [l/s]",            70.60,     2),
+    G ("S-01", "h_A [m]",            10.85,     2),
+    G ("S-01", "h_B [m]",            9.15,      2),
+    G ("S-01", "Q_B [l/s]",          23.53,     2),
+    G ("S-02", "M_A",                7616.6,    1),
+    G ("S-02", "M_B",                89237,     0),
+    G ("S-02", "M_C",                2969.39,   2),
+    G ("S-02", "M_C friccion",       2711.19,   2),
+    G ("S-02", "M_C local",          258.2,     1),
+    G ("S-02", "M_AB",               4561.78,   2),
+    G ("S-02", "M total",            7531.17,   2),
+    G ("S-02", "Q [l/s]",            51.53,     2),
+    G ("S-02", "h_C [m]",            7.886,     3),
+    G ("S-02", "h_A [m]",            12.114,    3),
+    G ("S-02", "Q_A [l/s]",          39.88,     2),
+    G ("S-02", "Q_B [l/s]",          11.65,     2),
+    G ("S-03", "M_1",                20656.7,   1),
+    G ("S-03", "M_3",                2065.67,   2),
+    G ("S-03", "M_3 friccion",       516.4,     1),
+    G ("S-03", "M_3 local",          1549.3,    1),
+    G ("S-03", "M_23",               1192.3,    1),
+    G ("S-03", "Q [l/s]",            23.76,     2),
+    G ("S-03", "h_1 [m]",            11.66,     2),
+    G ("S-03", "h_23 [m]",           0.673,     3),
+    G ("S-03", "Q_3 [l/s]",          18.05,     2),
+    G ("S-03", "Q_2 [l/s]",          5.71,      2),
+    G ("S-04", "M_1",                2065.67,   2),
+    G ("S-04", "M_2",                37182.09,  2),
+    G ("S-04", "M_3",                10328.36,  2),
+    G ("S-04", "M_234",              729.35,    2),
+    G ("S-04", "h_4 [m]",            3.305,     3),
+    G ("S-04", "Q_2 [l/s]",          9.43,      2),
+    G ("S-04", "Q_3 [l/s]",          17.89,     2),
+    G ("S-04", "Q_1 [l/s]",          67.32,     2),
+    G ("S-04", "h_1 [m]",            9.36,      2),
+    G ("S-04", "carga total [m]",    12.67,     2),
+    G ("S-04", "p tanque A [kPa]",   124.2,     1),
+    G ("S-05", "M_A",                384.23,    2),
+    G ("S-05", "M_B",                13057.08,  2),
+    G ("S-05", "M_C",                1420.15,   2),
+    G ("S-05", "M_D",                1484.90,   2),
+    G ("S-05", "M_BC",               803.09,    2),
+    G ("S-05", "M total",            2672.22,   2),
+    G ("S-05", "Q [l/s]",            167.53,    2),
+    G ("S-05", "h_A [m]",            10.78,     2),
+    G ("S-05", "h_BC [m]",           22.54,     2),
+    G ("S-05", "h_D [m]",            41.68,     2),
+    G ("S-05", "Q_B [l/s]",          41.55,     2),
+    G ("S-05", "Q_C [l/s]",          125.98,    2),
+
+    /* 9.7 Respaldo y limites */
+    GX("R-01", "metodo (2 biseccion)", 2),
+    GX("R-01", "aviso de respaldo",  1),
+    G ("R-01", "Q [l/s]",            5.69,      2),
+    GX("R-02", "aviso laminar",      1),
+    G ("R-02", "f*Re",               64,        3),
+    G ("R-02", "hf / Hagen-Poiseuille", 1,      4),
+    G ("R-02", "Q de vuelta [l/s]",  0.02,      5),
+    GX("R-03", "aviso transicion",   1),
+    GX("R-04", "error D=0",          1),   /* H_ERR_D */
+    GX("R-04", "error L<0",          2),   /* H_ERR_L */
+    GX("R-04", "error Q=0",          3),   /* H_ERR_Q */
+    GX("R-04", "error Qmax D=0",     1),
+    GX("R-04", "error diseno L<0",   2),
+    GX("R-04", "error nu=0",         4),   /* H_ERR_NU */
+    GX("R-04", "error K<0",          6),   /* H_ERR_K */
+    GX("R-05", "error H<0",          7),   /* H_ERR_NOFLOW */
+    GX("R-05", "error H=0",          7),
+    GX("R-05", "error red H=0",      7),
+};
+
+#define GOLDEN_N (sizeof(golden) / sizeof(golden[0]))
+
+#endif

@@ -1,0 +1,9 @@
+# Compilación (obj/ es una unión a C:\dev\build, fuera de OneDrive)
+obj/
+**/obj/
+*.obj
+*.map
+*.lst
+tests/build/
+__pycache__/
+*.rom

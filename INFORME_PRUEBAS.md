@@ -29,12 +29,12 @@ Orígenes: CEdev de `github.com/CE-Programming/toolchain/releases/tag/v15.0`; CE
 |---|---|
 | Compilar `h0/` con `make` desde `C:\dev\ti84\h0` | **pasa**: `bin/HOLAH0.8xp`, 580 bytes |
 | Ejecutar H0 en CEmu | **pendiente**: no hay ROM (punto de parada 1) |
-| Ejecutar H0 en la calculadora real (OS 5.8.4.0058 con arTIfiCE v2.1) | **pendiente de verificar por Adrián** |
+| Ejecutar H0 en la calculadora real (OS 5.8.4.0058 con arTIfiCE v2.1) | **pasa** (lo verificó Adrián el 6 de noviembre de 2026, lanzando `HOLAH0` desde el menú de arTIfiCE) |
 
 ### arTIfiCE y la 5.8.4.0058
 
 - La página oficial dice que la v2.1 soporta el OS «hasta la v5.8.4» y la v3 solo la 5.8.5. Para la 5.8.4.0058 corresponde la **v2.1**.
-- La página solo habla de programas en ensamblador. Los programas del toolchain de C son programas nativos del mismo tipo, pero eso **no está probado** hasta que H0 corra en la calculadora real.
+- La página solo habla de programas en ensamblador. H0 confirmó en la calculadora real que **un programa en C de CEdev v15.0 corre en la 5.8.4.0058 con arTIfiCE v2.1**.
 - Comportamiento de CEmu con un ROM 5.8.4: por comprobar en cuanto haya ROM (se espera que bloquee programas nativos y haya que aplicar arTIfiCE dentro del emulador).
 
 ### Respuestas de Adrián (tanda única, 6 de noviembre de 2026)

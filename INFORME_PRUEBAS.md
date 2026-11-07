@@ -318,3 +318,42 @@ R-01 a R-05 pasan: respaldo por bisección con aviso, laminar ($f\,Re = 64$ y $h
 | `tests/cemu/golden` (`make debug`, casos dorados dentro del eZ80) | 51 679 bytes | lista para CEmu; imprime la tabla por la consola de CEmu |
 
 **No probado todavía en CEmu**: falta el ROM (punto de parada 1).
+
+## Fase 2: esqueleto de interfaz (6 de noviembre de 2026)
+
+### Qué se construyó
+
+- `src/ui/ui.c`: pantalla con `graphx` (doble búfer, paleta propia, fuente monoespaciada de 8 px: 40 columnas y 20 filas de cuerpo), barra de título, línea de mensajes, barra de teclas F1 a F5 (`Y=`, `ventana`, `zoom`, `trace`, `graph`) y teclado con `os_GetCSC`: `2nd`+`MODE` sale de la app, `2nd`+`,` escribe `E` (EE), `2nd`+flechas salta de página, `MODE` abre Ajustes desde cualquier pantalla.
+- `src/ui/widgets.c`: menú numerado (teclas 1 a 9 o flechas), formulario común (etiqueta, valor, unidad; campos obligatorios, opcionales, de opción y enteros; validación al aceptar, sin bloquear), visor de líneas con desplazamiento y páginas.
+- `src/ui/expr.c`: evaluador de expresiones con $+\ -\ \times\ /\ \hat{}\ (\ )$, signo, notación `E` y multiplicación implícita. Acepta la suma de $K$ del examen 2025 tal como se escribe.
+- `src/ui/numfmt.c`: formato de números con 6 decimales por defecto (ajustable de 0 a 9), sin pasar de 7 cifras significativas (límite del `float`), y notación científica de 6 cifras fuera de $[10^{-4},\,10^7)$.
+- `src/store.c`: Ajustes en el AppVar archivado `PERDCFG`, con firma, versión, tamaño, suma de control y validación de rangos. Si falta o está dañado, se usan los valores por defecto.
+- `src/screens.c`: menú principal (§7.2 de la memoria), submenús de tubería simple y biblioteca, Ajustes completos, Ayuda/Acerca de, y el tipo A como ejemplo del patrón formulario y resultado (con advertencias). Las opciones de las fases 3 a 5 muestran «En construcción: disponible en la fase N».
+- `icon.png` (tubo con gota, 16×16) y `makefile` (`PERDIDAS`, en RAM como H0).
+
+### Pruebas
+
+| Prueba | Resultado |
+|---|---|
+| Evaluador y formato (`tests/test_ui_pure.c`), `float` y `double` | **53 de 53 pasan** |
+| Interfaz con pantalla y teclado simulados en el PC (`tests/test_nav.c` y `tests/mock/`), compilada con detección de comportamiento indefinido y de accesos fuera de límites (`-fsanitize=undefined,bounds`, que detiene el programa al primer fallo) | **29 de 29 pasan** |
+| Recorrido de todos los menús y avisos, salida por menú y por `CLEAR` con confirmación | pasa |
+| P-02 resuelto desde el formulario (D en mm, $k_s$ en mm, $\sum K$ como expresión, Swamee-Jain): igual al motor y a la memoria ($h_T = 19{,}77$, $h_m = 1{,}79$, $v = 2{,}29$) | pasa |
+| Entradas inválidas: dato faltante, $D = 0$, `3+`, `1/0`, $k_s < 0$, $g = 50$, $v_{max} < v_{min}$, expresión de 70 caracteres | mensaje correcto y sin cierre |
+| Ajustes: guardar y archivar, volver a leer, AppVar dañado, truncado y ausente, restaurar valores por defecto | pasa |
+| Estrés: 40 secuencias aleatorias, **1 000 005 teclas y 709 141 pantallas** | sin cierres ni cuelgues; los Ajustes nunca quedan inválidos |
+| Compilación `make` con CEdev v15.0 | `bin/PERDIDAS.8xp`, 25 191 bytes, sin advertencias del compilador |
+| Navegación en CEmu | **pendiente**: falta el ROM |
+
+Errores encontrados y corregidos en esta fase: el búfer de edición de 32 caracteres cortaba la suma de $K$ del P-02 (34 caracteres) y daba $\sum K = 6{,}38$ en lugar de 6,7; ahora tiene 64 caracteres y avisa si se llena.
+
+### Memoria del programa (`bin/PERDIDAS.map`)
+
+| Sección | Bytes |
+|---|---|
+| `.text` (código) | 19 024 |
+| `.rodata` (textos y constantes) | 4 544 |
+| `.data` | 59 |
+| `.bss` (RAM estática) | 3 078 |
+
+Código y datos suman unos 23,6 KB de los 64 KiB disponibles. El programa necesita las librerías `GRAPHX` y `FILEIOC` del paquete `clibs.8xg` v15.0 en la calculadora.

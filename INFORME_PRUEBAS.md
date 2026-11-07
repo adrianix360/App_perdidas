@@ -351,9 +351,9 @@ Errores encontrados y corregidos en esta fase: el búfer de edición de 32 carac
 
 | Sección | Bytes |
 |---|---|
-| `.text` (código) | 19 024 |
-| `.rodata` (textos y constantes) | 4 544 |
+| `.text` (código) | 19 890 |
+| `.rodata` (textos y constantes) | 4 570 |
 | `.data` | 59 |
 | `.bss` (RAM estática) | 3 078 |
 
-Código y datos suman unos 23,6 KB de los 64 KiB disponibles. El programa necesita las librerías `GRAPHX` y `FILEIOC` del paquete `clibs.8xg` v15.0 en la calculadora.
+Código y datos suman unos 24,5 KB de los 64 KiB disponibles. El programa necesita las librerías `GRAPHX` y `FILEIOC` del paquete `clibs.8xg` v15.0 en la calculadora.

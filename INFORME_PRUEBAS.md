@@ -623,8 +623,8 @@ Errores encontrados y corregidos en esta fase: el nombre de plantilla `LISTNAME`
 
 | Sección | Bytes |
 |---|---|
-| `.text` | 32 766 |
-| `.rodata` | 15 194 |
+| `.text` | 32 808 |
+| `.rodata` | 15 195 |
 | `.data` | 1 872 |
 | `.bss` | 6 976 |
 

@@ -2,7 +2,8 @@
  "rom": "ti84ce.rom (ruta en AUTOTESTER_ROM o editar aqui)",
  "transfer_files": [
   "arTIfiCE_v2.1.8xp",
-  "PERDIDAS.8xp"
+  "PERDIDAS.8xp",
+  "PERDTXT.8xv"
  ],
  "target": {
   "name": "A",
@@ -534,7 +535,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "FB093AB"
+    "54915BAB"
    ]
   },
   "8": {
@@ -542,7 +543,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "13F59B7"
+    "5A1E91B7"
    ]
   },
   "9": {
@@ -582,7 +583,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "11D79E03"
+    "298400EE"
    ]
   },
   "14": {
@@ -598,7 +599,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "4FA0A2B2"
+    "14816AB2"
    ]
   },
   "16": {
@@ -614,7 +615,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "72947C1B"
+    "4AC7E2F6"
    ]
   },
   "18": {
@@ -638,7 +639,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "80A02712"
+    "B8F3B9FF"
    ]
   },
   "21": {
@@ -646,7 +647,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "DE738721"
+    "E62019CC"
    ]
   },
   "22": {
@@ -662,7 +663,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "625563ED"
+    "3974ABED"
    ]
   },
   "24": {
@@ -670,7 +671,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "39626FA6"
+    "6243A7A6"
    ]
   },
   "25": {

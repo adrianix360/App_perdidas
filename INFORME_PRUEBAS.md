@@ -633,3 +633,36 @@ El `.8xp` pesa 50 547 bytes de los 64 KiB que puede ocupar el programa. Comprimi
 ### Pendiente de la fase 3
 
 Prueba en la calculadora real de Adrián (TI-84 Plus CE, OS 5.8.4.0058, arTIfiCE v2.1, librerías v15.0): **pasa**. Adrián siguió la lista de 8 pasos (P-02, memoria, P-03, P-17, P-25 y salida) y reportó que todo coincide y funciona bien. **Fase 3 cerrada.**
+
+## Fase 4: biblioteca y casos guardados (12 de noviembre de 2026)
+
+### Qué se construyó
+
+- **AppVar `PERDTXT`**: los textos de la memoria de cálculo y de los resúmenes salieron del programa. `tools/memo_tables.c` es la fuente; `tools/gen_txt.c` la serializa (7 498 bytes, textos repetidos fusionados) y valida al compilar los nombres de plantilla, el balance IF/ENDIF y los índices. La app lee el AppVar directamente desde la memoria de archivo. Si falta, la memoria de cálculo lo avisa en pantalla y la app no se cierra. `tools/build_all.sh` genera `bin/PERDTXT.8xv` y `bin/PERDIDAS.8xp`.
+- **Biblioteca** (`src/data/lib.c`, `src/scr_lib.c`): 24 materiales con $k_s$ y $C_H$ (tabla del curso más Cengel, marcados), 30 accesorios con $K$, los 6 conjuntos de $K$ de los ejercicios (§8.4; sus sumas dan 6,7, 12,8, 21,4, 2,8, 10,8 y 0,7), 12 fluidos (agua de 5 a 40 °C de tabla estándar, marcada «std», y las 5 viscosidades del curso) y diámetros comerciales con una **lista propia** editable de hasta 15 valores.
+- En los formularios, **F1 MAT**, **F2 SUMA K** y **F3 FLUIDO** llenan los campos. El **sumador** lleva cantidad × $K$ por línea, ambos editables, con el total actualizado al aceptar cada valor. «Fluido por defecto» cambia $\nu$, $\gamma = \rho g$ y la presión de vapor en Ajustes, y valida antes de aplicar.
+- **Mis casos** (`src/cases.c`, AppVar `PERDCAS`): F3 GUARDAR en cualquier resultado, con nombre de hasta 8 letras o números (se escribe con las teclas verdes). Hasta 20 casos; reemplaza con confirmación; los carga y recalcula; los borra con confirmación. El archivo lleva firma, versión, tamaño y suma de control, y al leerlo se acotan todos los índices. Se escribe en RAM durante la sesión y se archiva al salir de la app.
+
+### Pruebas
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada en el PC (`tests/test_nav.c`), con 20 comprobaciones nuevas: material, sumador con conjunto y accesorio suelto, quitar línea, fluido en el formulario y por defecto, lista propia usada en el diseño (P-17 da comercial 300 mm), guardar, nombre repetido, cargar (recalcula), borrar, lista llena (20), nombre vacío, recarga tras archivar, AppVar dañado, truncado y ausente | **78 de 78 pasan** |
+| Estrés (1 000 005 teclas, 896 696 pantallas), ahora también por la biblioteca y Mis casos | sin cierres; **encontró un error real**: «Fluido por defecto» calculaba $\gamma = \rho g$ con una $g$ extrema y dejaba los Ajustes inválidos. Corregido: se valida antes de aplicar |
+| Migración a `PERDTXT` verificada en CEmu: las 26 pantallas de la fase 3 salen **idénticas** byte a byte | pasa. Antes, la regresión atrapó un error: el valor con id 0 ($Q$) terminaba el texto; ahora se guarda id + 1 |
+| CEmu, fase 4 (`tools/cemu_reset.py`, 20 capturas revisadas): MAT, sumador con el conjunto 2025, fluidos, nombre «PRUEBA» con las teclas de letras, guardado, Mis casos | pasa |
+| **Un caso guardado sobrevive a reiniciar la RAM** (CEmu, ROM 5.8.4.0058): se guarda «PRUEBA» (P-03), se sale, se archivan `prgmA` y `prgmPERDIDAS` desde MEM, se provoca el reinicio (la pantalla muestra «RAM Cleared»), se relanza arTIfiCE desde el archivo, `PERDIDAS` arranca y Mis casos carga «PRUEBA» con $Q = 318{,}8204$ l/s | **pasa** |
+| Regresión de interfaz en CEmu y casos dorados en el eZ80 | 26 de 26; 191 + 7 (r), 0 fallan |
+
+Hallazgo útil para la instalación: con arTIfiCE y `PERDIDAS` **archivados**, ambos siguen funcionando después de un reinicio de la RAM, así que no hace falta volver a pasarlos.
+
+### Memoria del programa
+
+| Sección | Bytes |
+|---|---|
+| `.text` | 41 313 |
+| `.rodata` | 9 889 |
+| `.data` | 1 872 |
+| `.bss` | 11 998 |
+
+`PERDIDAS.8xp` pesa 53 754 bytes y `PERDTXT.8xv` 7 574. Para la fase 5 (sistemas y gráficos) quedan unos 10 KiB dentro del límite de 64 KiB. Si no alcanzan, el siguiente paso es llevar también los datos de la biblioteca y la ayuda al AppVar.

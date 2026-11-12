@@ -595,3 +595,41 @@ La diferencia entre el eZ80 y el PC (ambos en `float` de 32 bits) nunca pasa de 
 | Error encontrado y corregido | la Ayuda mostraba «1/2» también en su última página |
 
 **Con esto la fase 2 queda cerrada**: navegación completa sin cierres en CEmu.
+
+## Fase 3: tubería simple con memoria de cálculo (12 de noviembre de 2026)
+
+### Qué se construyó
+
+- `src/scr_pipe.c`: formularios, cálculo, resumen y memoria de cálculo de los tipos **A** (pérdidas dado $Q$, con presión opcional en el punto final), **B** (caudal máximo: iteración del curso o bisección de respaldo, con la tabla de iteraciones), **C** (bomba o turbina, potencia neta y bruta en kW y Hp, cota piezométrica opcional), **D** (diámetro exacto por bisección con su tabla, diámetro comercial de una lista del curso, $Q_{\max}$ con el comercial, $v_p$ y válvula de control opcional), **E** (calibración de $f$ y $k_s$), **F** (válvula de control) e **I** (Darcy-Weisbach contra Hazen-Williams, en pérdidas o en caudal). Los datos tecleados se conservan entre tipos.
+- La memoria de cálculo sigue el orden de la sección 7.6: DATOS, CÁLCULOS (fórmula literal, sustitución y resultado), ITERACIONES (primeras y últimas 16 filas si hay más de 32), RESULTADOS y OBSERVACIONES (advertencias). Las fórmulas se escriben en ASCII lineal y se cortan solas a 40 columnas.
+- La memoria y los resúmenes son «programas» de datos con plantillas (`{Q}`, `{D}`…) que interpreta `run_prog`. `src/data/diams.c` trae las listas de diámetros comerciales de la sección 8.6 más una lista general.
+
+### Pruebas
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada en el PC (`tests/test_nav.c`): un caso del curso por tipo tecleado en su formulario (P-02 A, P-03 y P-07 B, P-11 y P-19 C, P-17 y P-18 D, P-18 F, P-25 E, P-01 y P-10 I), memoria de cálculo de cada uno, tipo A con los 4 métodos de $f$ y en régimen laminar, $v_p$ con pérdidas locales altas | **57 de 57 pasan** |
+| Revisión de cada memoria: sin plantillas sin resolver, con OBSERVACIONES al final (condiciones balanceadas) y sin llenar el visor (máx. 108 de 120 líneas) | pasa |
+| Estrés: 1 000 005 teclas aleatorias, 762 687 pantallas, ahora pasando por los 7 tipos | sin cierres ni cuelgues |
+| Casos dorados del motor en el PC (`float` y `double`) y en el eZ80 (CEmu) | sin cambios: 191 + 7 (r), 0 fallan |
+| CEmu: un caso por tipo tecleado en la calculadora emulada, con capturas revisadas (`tools/cemu_ui.py`, 26 pantallas) | valores iguales al PC salvo en la última cifra (por ejemplo, $K_v$ = 60,79253 en el eZ80 frente a 60,79262 en el PC) |
+| Regresión de CEmu con los CRC guardados | **26 de 26 pantallas iguales** |
+
+Valores leídos en las capturas de CEmu: P-02 $h_T = 19{,}76738$ m y $p = 323{,}39$ kPa; P-03 $Q = 318{,}8204$ l/s (20 iteraciones del curso); P-11 $H_B = 45{,}62432$ m y $P_b = 28{,}9202$ kW con $\gamma = 9810$; P-17 $D = 256{,}8315$ mm, comercial 285,75 mm, $Q_{\max} = 262{,}3841$ l/s y $K_v = 60{,}79$; P-18 $h_v = 30{,}136$ m; P-25 $k_s = 0{,}590677$ mm; P-10 $Q_{HW} = 195{,}4561$ l/s y $-7{,}79\,\%$.
+
+Errores encontrados y corregidos en esta fase: el nombre de plantilla `LISTNAME` no cabía en el búfer de 8 caracteres y la memoria del tipo D decía «Lista: ?»; los pasos sin fórmula literal (`ks/D`, `v^2/2g`) salían sin su nombre; y el aviso de pérdidas locales altas hablaba de $v_p$ también en los tipos que no la calculan.
+
+### Memoria del programa
+
+| Sección | Bytes |
+|---|---|
+| `.text` | 32 766 |
+| `.rodata` | 15 194 |
+| `.data` | 1 872 |
+| `.bss` | 6 976 |
+
+El `.8xp` pesa 50 547 bytes de los 64 KiB que puede ocupar el programa. Comprimir no ayuda, porque solo reduce el espacio guardado y no la RAM al ejecutar. Para las fases 4 y 5 se planea llevar los textos de la memoria de cálculo y de la ayuda a un AppVar archivado, como pide la sección 1.5 de la memoria técnica. Así el programa no debería pasar el límite.
+
+### Pendiente de la fase 3
+
+Prueba en la calculadora real de Adrián (lista de pasos en el chat del 12 de noviembre de 2026): **pendiente de verificar por Adrián**.

@@ -33,9 +33,18 @@ def typ(s):
     return out
 
 
-P02 = (typ("72") + ["enter"] + typ("200") + ["enter"] + typ("1000") + ["enter"]
-       + typ("0.0015") + ["enter"] + typ("0.5+3*0.15+167*0.01+12*0.18+6*0.32")
-       + ["enter"] + typ("1.007E-6") + ["enter", "enter", "right"])
+def te(*vals):
+    """Escribe cada valor y pulsa ENTER"""
+    out = []
+    for v in vals:
+        out += typ(v) + ["enter"]
+    return out
+
+
+P02 = te("72", "200", "1000", "0.0015", "0.5+3*0.15+167*0.01+12*0.18+6*0.32",
+         "1.007E-6") + ["enter"] + te("53") + ["right"]          # metodo SJ
+TOP = ["2nd", "up"]                                                # primer campo
+BACK2 = ["clear", "clear"]                                         # al submenu
 
 # (nombre, teclas antes de capturar)
 STEPS = [
@@ -44,22 +53,35 @@ STEPS = [
     ("03_form_A_vacio", ["1"]),
     ("04_falta_dato", ["graph"]),
     ("05_D_cero", ["down"] + typ("0") + ["enter"]),
-    ("06_form_A_P02", ["clear", "clear", "2nd", "up"] + P02),
-    ("07_resultado_P02", ["graph"]),
-    ("08_resultado_abajo", ["down"] * 6),
-    ("09_aviso_memoria", ["y="]),
-    ("10_vuelve_resultado", ["enter"]),
+    ("06_form_A_P02", ["clear", "clear"] + TOP + P02),
+    ("07_resultado_A_P02", ["graph"]),
+    ("08_memoria_A_p1", ["y="]),
+    ("09_memoria_A_p2", ["right"]),
+    ("10_memoria_A_p3", ["right"]),
     ("11_ajustes", ["mode"]),
     ("12_ajustes_abajo", ["down"] * 13),
-    ("13_vuelve_resultado", ["clear"]),
-    ("14_vuelve_form", ["clear"]),
-    ("15_menu_tuberia", ["clear"]),
-    ("16_aviso_pendiente", ["2"]),
-    ("17_biblioteca", ["enter", "clear", "3"]),
-    ("18_ayuda", ["clear", "6"]),
-    ("19_ayuda_pag2", ["right"]),
-    ("20_confirmar_salida", ["graph", "clear"]),
-    ("21_fuera_de_la_app", ["enter", "delay"]),
+    ("13_resultado_B_P03", ["clear", "clear", "clear", "2"] + TOP
+     + te("43.5", "293", "700", "0.0015", "11.5", "1E-6") + ["enter", "left", "graph"]),
+    ("14_memoria_B_p2", ["y=", "right"]),
+    ("15_resultado_C_P11", BACK2 + ["4"] + TOP + ["enter"]
+     + te("42", "150", "970", "0.0015", "9.4", "1.14E-6", "16", "0.65") + ["enter"]
+     + te("890") + ["graph"]),
+    ("16_memoria_C_p3", ["y=", "right", "right"]),
+    ("17_resultado_D_P17", BACK2 + ["3"] + TOP
+     + te("200", "76", "1900", "0.0015", "12.8", "1E-6") + ["enter", "right", "graph"]),
+    ("18_memoria_D_p2", ["y=", "right"]),
+    ("19_memoria_D_p5", ["right", "right", "right"]),
+    ("20_resultado_F_P18", BACK2 + ["5"] + TOP
+     + te("200", "285.75", "1900", "0.0015", "12.8", "1E-6", "76") + ["graph"]),
+    ("21_resultado_E_P25", BACK2 + ["6"] + TOP
+     + te("1135", "1070", "36", "84", "405", "274", "172", "3.5", "1.17E-6")),
+    ("22_memoria_E_p2", ["y=", "right"]),
+    ("23_resultado_I_P01", BACK2 + ["7"] + TOP + ["enter"] + te("72") + ["enter"]
+     + te("200", "1000", "0.0015", "0", "1.007E-6", "150") + ["graph"]),
+    ("24_resultado_I_P10", ["clear"] + TOP + ["right", "enter", "enter"]
+     + te("100", "300", "4500", "0.045", "5", "1E-6", "130") + ["graph"]),
+    ("25_confirmar_salida", ["clear", "clear", "clear", "clear"]),
+    ("26_fuera_de_la_app", ["enter", "delay"]),
 ]
 
 

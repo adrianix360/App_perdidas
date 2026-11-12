@@ -98,24 +98,22 @@
   "key|6",
   "key|enter",
   "key|enter",
+  "key|5",
+  "key|3",
+  "key|enter",
   "key|right",
   "delay|700",
   "hash|6",
   "key|graph",
   "delay|700",
   "hash|7",
-  "key|down",
-  "key|down",
-  "key|down",
-  "key|down",
-  "key|down",
-  "key|down",
-  "delay|700",
-  "hash|8",
   "key|y=",
   "delay|700",
+  "hash|8",
+  "key|right",
+  "delay|700",
   "hash|9",
-  "key|enter",
+  "key|right",
   "delay|700",
   "hash|10",
   "key|mode",
@@ -137,37 +135,350 @@
   "delay|700",
   "hash|12",
   "key|clear",
+  "key|clear",
+  "key|clear",
+  "key|2",
+  "key|2nd",
+  "key|up",
+  "key|4",
+  "key|3",
+  "key|.",
+  "key|5",
+  "key|enter",
+  "key|2",
+  "key|9",
+  "key|3",
+  "key|enter",
+  "key|7",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|0",
+  "key|.",
+  "key|0",
+  "key|0",
+  "key|1",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|1",
+  "key|.",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|2nd",
+  "key|,",
+  "key|-",
+  "key|6",
+  "key|enter",
+  "key|enter",
+  "key|left",
+  "key|graph",
   "delay|700",
   "hash|13",
-  "key|clear",
+  "key|y=",
+  "key|right",
   "delay|700",
   "hash|14",
   "key|clear",
+  "key|clear",
+  "key|4",
+  "key|2nd",
+  "key|up",
+  "key|enter",
+  "key|4",
+  "key|2",
+  "key|enter",
+  "key|1",
+  "key|5",
+  "key|0",
+  "key|enter",
+  "key|9",
+  "key|7",
+  "key|0",
+  "key|enter",
+  "key|0",
+  "key|.",
+  "key|0",
+  "key|0",
+  "key|1",
+  "key|5",
+  "key|enter",
+  "key|9",
+  "key|.",
+  "key|4",
+  "key|enter",
+  "key|1",
+  "key|.",
+  "key|1",
+  "key|4",
+  "key|2nd",
+  "key|,",
+  "key|-",
+  "key|6",
+  "key|enter",
+  "key|1",
+  "key|6",
+  "key|enter",
+  "key|0",
+  "key|.",
+  "key|6",
+  "key|5",
+  "key|enter",
+  "key|enter",
+  "key|8",
+  "key|9",
+  "key|0",
+  "key|enter",
+  "key|graph",
   "delay|700",
   "hash|15",
-  "key|2",
+  "key|y=",
+  "key|right",
+  "key|right",
   "delay|700",
   "hash|16",
-  "key|enter",
+  "key|clear",
   "key|clear",
   "key|3",
+  "key|2nd",
+  "key|up",
+  "key|2",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|7",
+  "key|6",
+  "key|enter",
+  "key|1",
+  "key|9",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|0",
+  "key|.",
+  "key|0",
+  "key|0",
+  "key|1",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|2",
+  "key|.",
+  "key|8",
+  "key|enter",
+  "key|1",
+  "key|2nd",
+  "key|,",
+  "key|-",
+  "key|6",
+  "key|enter",
+  "key|enter",
+  "key|right",
+  "key|graph",
   "delay|700",
   "hash|17",
-  "key|clear",
-  "key|6",
+  "key|y=",
+  "key|right",
   "delay|700",
   "hash|18",
   "key|right",
+  "key|right",
+  "key|right",
   "delay|700",
   "hash|19",
-  "key|graph",
   "key|clear",
+  "key|clear",
+  "key|5",
+  "key|2nd",
+  "key|up",
+  "key|2",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|2",
+  "key|8",
+  "key|5",
+  "key|.",
+  "key|7",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|9",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|0",
+  "key|.",
+  "key|0",
+  "key|0",
+  "key|1",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|2",
+  "key|.",
+  "key|8",
+  "key|enter",
+  "key|1",
+  "key|2nd",
+  "key|,",
+  "key|-",
+  "key|6",
+  "key|enter",
+  "key|7",
+  "key|6",
+  "key|enter",
+  "key|graph",
   "delay|700",
   "hash|20",
+  "key|clear",
+  "key|clear",
+  "key|6",
+  "key|2nd",
+  "key|up",
+  "key|1",
+  "key|1",
+  "key|3",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|0",
+  "key|7",
+  "key|0",
+  "key|enter",
+  "key|3",
+  "key|6",
+  "key|enter",
+  "key|8",
+  "key|4",
+  "key|enter",
+  "key|4",
+  "key|0",
+  "key|5",
+  "key|enter",
+  "key|2",
+  "key|7",
+  "key|4",
+  "key|enter",
+  "key|1",
+  "key|7",
+  "key|2",
+  "key|enter",
+  "key|3",
+  "key|.",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|.",
+  "key|1",
+  "key|7",
+  "key|2nd",
+  "key|,",
+  "key|-",
+  "key|6",
+  "key|enter",
+  "delay|700",
+  "hash|21",
+  "key|y=",
+  "key|right",
+  "delay|700",
+  "hash|22",
+  "key|clear",
+  "key|clear",
+  "key|7",
+  "key|2nd",
+  "key|up",
+  "key|enter",
+  "key|7",
+  "key|2",
+  "key|enter",
+  "key|enter",
+  "key|2",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|1",
+  "key|0",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|0",
+  "key|.",
+  "key|0",
+  "key|0",
+  "key|1",
+  "key|5",
+  "key|enter",
+  "key|0",
+  "key|enter",
+  "key|1",
+  "key|.",
+  "key|0",
+  "key|0",
+  "key|7",
+  "key|2nd",
+  "key|,",
+  "key|-",
+  "key|6",
+  "key|enter",
+  "key|1",
+  "key|5",
+  "key|0",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|23",
+  "key|clear",
+  "key|2nd",
+  "key|up",
+  "key|right",
+  "key|enter",
+  "key|enter",
+  "key|1",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|3",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|4",
+  "key|5",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|0",
+  "key|.",
+  "key|0",
+  "key|4",
+  "key|5",
+  "key|enter",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|2nd",
+  "key|,",
+  "key|-",
+  "key|6",
+  "key|enter",
+  "key|1",
+  "key|3",
+  "key|0",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|24",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "delay|700",
+  "hash|25",
   "key|enter",
   "delay|1500",
   "delay|700",
-  "hash|21"
+  "hash|26"
  ],
  "hashes": {
   "1": {
@@ -191,7 +502,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "78AB8E35"
+    "CE9C1E1C"
    ]
   },
   "4": {
@@ -199,7 +510,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "EAFCC81E"
+    "C842E431"
    ]
   },
   "5": {
@@ -207,7 +518,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "3E80D673"
+    "1C3EFA5C"
    ]
   },
   "6": {
@@ -215,39 +526,39 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "BD54CA6"
+    "1C706F4F"
    ]
   },
   "7": {
-   "description": "07_resultado_P02",
+   "description": "07_resultado_A_P02",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "3C3DE718"
+    "FB093AB"
    ]
   },
   "8": {
-   "description": "08_resultado_abajo",
+   "description": "08_memoria_A_p1",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "8B25997F"
+    "13F59B7"
    ]
   },
   "9": {
-   "description": "09_aviso_memoria",
+   "description": "09_memoria_A_p2",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "A717F666"
+    "C034CF35"
    ]
   },
   "10": {
-   "description": "10_vuelve_resultado",
+   "description": "10_memoria_A_p3",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "A717F666"
+    "CFEB538A"
    ]
   },
   "11": {
@@ -255,7 +566,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "C65DFFA4"
+    "84BAD6B3"
    ]
   },
   "12": {
@@ -263,79 +574,119 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "87019AC4"
+    "4CC80207"
    ]
   },
   "13": {
-   "description": "13_vuelve_resultado",
+   "description": "13_resultado_B_P03",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "55D8CBBF"
+    "11D79E03"
    ]
   },
   "14": {
-   "description": "14_vuelve_form",
+   "description": "14_memoria_B_p2",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "3C3DE718"
+    "C7CA0FDB"
    ]
   },
   "15": {
-   "description": "15_menu_tuberia",
+   "description": "15_resultado_C_P11",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "5ED3FDA5"
+    "4FA0A2B2"
    ]
   },
   "16": {
-   "description": "16_aviso_pendiente",
+   "description": "16_memoria_C_p3",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "360ED5BD"
+    "E073A4C7"
    ]
   },
   "17": {
-   "description": "17_biblioteca",
+   "description": "17_resultado_D_P17",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "5739A1B7"
+    "72947C1B"
    ]
   },
   "18": {
-   "description": "18_ayuda",
+   "description": "18_memoria_D_p2",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "4E4FACF"
+    "B7E3FD07"
    ]
   },
   "19": {
-   "description": "19_ayuda_pag2",
+   "description": "19_memoria_D_p5",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "6EFD950C"
+    "3402CF2C"
    ]
   },
   "20": {
-   "description": "20_confirmar_salida",
+   "description": "20_resultado_F_P18",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "36B363BB"
+    "80A02712"
    ]
   },
   "21": {
-   "description": "21_fuera_de_la_app",
+   "description": "21_resultado_E_P25",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "E2CDC558"
+    "DE738721"
+   ]
+  },
+  "22": {
+   "description": "22_memoria_E_p2",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "75E5F3D0"
+   ]
+  },
+  "23": {
+   "description": "23_resultado_I_P01",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "625563ED"
+   ]
+  },
+  "24": {
+   "description": "24_resultado_I_P10",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "39626FA6"
+   ]
+  },
+  "25": {
+   "description": "25_confirmar_salida",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "52111381"
+   ]
+  },
+  "26": {
+   "description": "26_fuera_de_la_app",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "708E5B24"
    ]
   }
  }

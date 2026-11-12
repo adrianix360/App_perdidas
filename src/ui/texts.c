@@ -44,7 +44,7 @@ unsigned char warn_texts(unsigned int warn, const hydro_cfg *c,
         ADD("! v < ", fmt_real(c->v_min, 2, num), " m/s: velocidad baja");
     if (warn & W_HM_HIGH)
         ADD("! hm > ", fmt_real(100 * c->hm_ratio, 0, num),
-            "% hf: locales altas, ver vp");
+            "% hf: perdidas locales altas");
     if (warn & W_LOCAL_SMALL)
         ADD("! L/D > ", fmt_real(c->ld_limit, 0, num),
             ": locales despreciables");

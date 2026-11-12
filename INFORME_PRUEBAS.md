@@ -28,14 +28,14 @@ Orígenes: CEdev de `github.com/CE-Programming/toolchain/releases/tag/v15.0`; CE
 | Prueba | Resultado |
 |---|---|
 | Compilar `h0/` con `make` desde `C:\dev\ti84\h0` | **pasa**: `bin/HOLAH0.8xp`, 580 bytes |
-| Ejecutar H0 en CEmu | **pendiente**: no hay ROM (punto de parada 1) |
+| Ejecutar H0 en CEmu (ROM de Adrián, OS 5.8.4) | **pasa** con arTIfiCE v2.1 dentro del emulador (12 de noviembre de 2026); sin arTIfiCE da «ERROR: INVALID» |
 | Ejecutar H0 en la calculadora real (OS 5.8.4.0058 con arTIfiCE v2.1) | **pasa** (lo verificó Adrián el 6 de noviembre de 2026, lanzando `HOLAH0` desde el menú de arTIfiCE) |
 
 ### arTIfiCE y la 5.8.4.0058
 
 - La página oficial dice que la v2.1 soporta el OS «hasta la v5.8.4» y la v3 solo la 5.8.5. Para la 5.8.4.0058 corresponde la **v2.1**.
 - La página solo habla de programas en ensamblador. H0 confirmó en la calculadora real que **un programa en C de CEdev v15.0 corre en la 5.8.4.0058 con arTIfiCE v2.1**.
-- Comportamiento de CEmu con un ROM 5.8.4: por comprobar en cuanto haya ROM (se espera que bloquee programas nativos y haya que aplicar arTIfiCE dentro del emulador).
+- Comportamiento de CEmu con el ROM 5.8.4: **bloquea los programas nativos** igual que la calculadora («ERROR: INVALID»). Para probar se envía `arTIfiCE_v2.1.8xp` al emulador, se lanza `prgmA` y desde su menú «arTIfiCE SHELL 2.1» se ejecuta el programa. Así funcionan todas las pruebas de CEmu.
 
 ### Respuestas de Adrián (tanda única, 6 de noviembre de 2026)
 
@@ -317,7 +317,7 @@ R-01 a R-05 pasan: respaldo por bisección con aviso, laminar ($f\,Re = 64$ y $h
 | `tests/cemu/size_probe` (motor completo, todas las funciones) | 11 194 bytes | `.text` 10 905 bytes, `.bss` 1 493 bytes |
 | `tests/cemu/golden` (`make debug`, casos dorados dentro del eZ80) | 51 679 bytes | lista para CEmu; imprime la tabla por la consola de CEmu |
 
-**No probado todavía en CEmu**: falta el ROM (punto de parada 1).
+**Probado en CEmu** el 12 de noviembre de 2026: ver la sección «CEmu» más abajo.
 
 ## Fase 2: esqueleto de interfaz (6 de noviembre de 2026)
 
@@ -343,7 +343,7 @@ R-01 a R-05 pasan: respaldo por bisección con aviso, laminar ($f\,Re = 64$ y $h
 | Ajustes: guardar y archivar, volver a leer, AppVar dañado, truncado y ausente, restaurar valores por defecto | pasa |
 | Estrés: 40 secuencias aleatorias, **1 000 005 teclas y 709 141 pantallas** | sin cierres ni cuelgues; los Ajustes nunca quedan inválidos |
 | Compilación `make` con CEdev v15.0 | `bin/PERDIDAS.8xp`, 25 191 bytes, sin advertencias del compilador |
-| Navegación en CEmu | **pendiente**: falta el ROM |
+| Navegación en CEmu | **pasa**: ver la sección «CEmu» más abajo |
 
 Errores encontrados y corregidos en esta fase: el búfer de edición de 32 caracteres cortaba la suma de $K$ del P-02 (34 caracteres) y daba $\sum K = 6{,}38$ en lugar de 6,7; ahora tiene 64 caracteres y avisa si se llena.
 
@@ -357,3 +357,241 @@ Errores encontrados y corregidos en esta fase: el búfer de edición de 32 carac
 | `.bss` (RAM estática) | 3 078 |
 
 Código y datos suman unos 24,5 KB de los 64 KiB disponibles. El programa necesita las librerías `GRAPHX` y `FILEIOC` del paquete `clibs.8xg` v15.0 en la calculadora.
+
+## CEmu: ROM, H0, casos dorados en el eZ80 y navegación (12 de noviembre de 2026)
+
+### Cómo se obtuvo el ROM
+
+1. La calculadora no se comunicaba con Windows 11: la integridad de memoria (HVCI) bloqueaba el controlador `tiehdusb.sys` de TI Connect CE 6.0.4 (Code 39; eventos 3077 y 3004 de CodeIntegrity). Adrián instaló **TI Connect CE 6.1.0.712** (descargado por Claude de la página de TI, firma Authenticode de Texas Instruments verificada), que trae un controlador WinUSB. Con eso, la calculadora aparece como «TI-84 Plus CE», estado OK.
+2. El asistente de CEmu no se pudo manejar desde la herramienta de control de pantalla. Por eso se extrajo el programa volcador del código de CEmu (`gui/qt/romselection.cpp`) a `C:\dev\tools\romdump\DUMP.8xp`: 298 bytes, suma de control verificada.
+3. Con TI Connect CE se enviaron `DUMP` y `A` (arTIfiCE) a la RAM. Adrián ejecutó `DUMP` desde arTIfiCE y se generaron `ROMData0`, `ROMData1` y `ROMDataA` a `ROMDataL` (853 kB en la memoria de archivo).
+4. `tools/build_rom.py` reproduce `RomSelection::parseROMSegments` de CEmu y armó `C:\dev\tools\CEmu\ti84ce.rom`: 4 194 304 bytes, SO de 776 298 bytes en 12 segmentos más el certificado, con la cadena «5.8.4» presente. El ROM no se guarda en el repositorio.
+
+### Herramienta de prueba
+
+Se usa `cemu-autotester.exe` de CEdev v15.0 (sin interfaz gráfica), con las librerías v15.0 (`AUTOTESTER_LIBS_DIR`). Con `-d`, cada captura que no coincide guarda la VRAM. `tools/vram2png.py` (16 bpp, pantalla del SO) y `tools/vram8png.py` (8 bpp con los dos búferes de `graphx`) la convierten a PNG para revisarla. Nota: este autotester solo acepta las teclas por su símbolo (`.`, `+`, `,`, `y=`), no los alias `dot`, `add`, `comma` ni `yequ`.
+
+### Casos dorados dentro del eZ80 (`tools/cemu_golden.py`)
+
+`TGOLDEN` (`make debug`) corre los 198 chequeos en la calculadora emulada y deja cada valor en el arreglo `golden_got`. El script lo lee de la RAM emulada y lo compara con la corrida en `float` del PC y con el valor esperado.
+
+**Total eZ80: 191 pasan, 7 pasan (r), 0 fallan. Mayor diferencia eZ80 vs PC: 1.99e-05 (P-01 error HW vs SJ [%])**
+
+La diferencia entre el eZ80 y el PC (ambos en `float` de 32 bits) nunca pasa de $2\times10^{-5}$ en términos relativos. El máximo aparece en el porcentaje de diferencia entre Hazen-Williams y Swamee-Jain, que es la resta de dos pérdidas parecidas. En los demás valores la diferencia es del orden de $10^{-7}$. Se explica solo por el redondeo de 32 bits y por las funciones matemáticas de cada compilador.
+
+<details><summary>Tabla completa: esperado, PC y eZ80</summary>
+
+| Caso | Magnitud | Esperado | PC (float) | eZ80 (CEmu) | eZ80 vs PC | Resultado eZ80 |
+|---|---|---|---|---|---|---|
+| P-01 | v [m/s] | 2.29 | 2.291831 | 2.291831 | 1.5e-09 | pasa |
+| P-01 | Re | 455180 | 455179.9 | 455179.9 | 1.1e-09 | pasa |
+| P-01 | f SJ | 0.01343 | 0.0134277 | 0.0134277 | 7.5e-10 | pasa |
+| P-01 | f CW | 0.01349 | 0.01348743 | 0.01348744 | 2.1e-07 | pasa |
+| P-01 | hf SJ [m] | 17.97 | 17.97372 | 17.97372 | 2.0e-09 | pasa |
+| P-01 | hf CW [m] | 18.05 | 18.05367 | 18.05368 | 3.2e-07 | pasa |
+| P-01 | hf HW [m] | 19.32 | 19.32015 | 19.32017 | 1.4e-06 | pasa |
+| P-01 | error HW vs SJ [%] | 7.5 | 7.491104 | 7.491253 | 2.0e-05 | pasa (r) |
+| P-02 | hm [m] | 1.79 | 1.793664 | 1.793664 | 9.7e-10 | pasa (r) |
+| P-02 | hT SJ [m] | 19.76 | 19.76738 | 19.76738 | 2.0e-09 | pasa |
+| P-02 | p/gamma [m] | 32.97 | 32.96491 | 32.96491 | 1.2e-07 | pasa |
+| P-02 | p/gamma sin hm [m] | 34.76 | 34.75857 | 34.75858 | 1.1e-07 | pasa |
+| P-03 | Q [l/s] | 318.8 | 318.8204 | 318.8203 | 4.4e-08 | pasa |
+| P-03 | v [m/s] | 4.73 | 4.728473 | 4.728473 | 7.3e-11 | pasa |
+| P-03 | f | 0.01117 | 0.0111642 | 0.0111642 | 2.5e-07 | pasa |
+| P-03 | hf [m] | 30.4 | 30.3949 | 30.39489 | 2.5e-07 | pasa |
+| P-03 | hm [m] | 13.1 | 13.10511 | 13.10511 | 5.7e-10 | pasa |
+| P-03 | metodo (1 curso) | 1 | 1 | 1 | 0.0e+00 | pasa |
+| P-04 | Q [l/s] | 531.3 | 531.2959 | 531.296 | 1.2e-07 | pasa |
+| P-04 | v [m/s] | 4.42 | 4.424794 | 4.424794 | 1.1e-07 | pasa (r) |
+| P-04 | f | 0.01079 | 0.0107882 | 0.0107882 | 1.7e-07 | pasa |
+| P-04 | hf [m] | 117 | 117.0168 | 117.0168 | 6.8e-08 | pasa |
+| P-04 | hm [m] | 7.98 | 7.983201 | 7.983202 | 1.8e-07 | pasa |
+| P-05 | Q [l/s] | 2104 | 2104.088 | 2104.088 | 2.7e-08 | pasa |
+| P-05 | v [m/s] | 2.43 | 2.429939 | 2.429939 | 6.6e-10 | pasa |
+| P-05 | f | 0.01143 | 0.01142938 | 0.01142938 | 3.3e-09 | pasa |
+| P-05 | hf [m] | 77.89 | 77.89335 | 77.89335 | 7.9e-11 | pasa |
+| P-05 | hm [m] | 2.11 | 2.106637 | 2.106637 | 2.6e-10 | pasa (r) |
+| P-06 | Q [l/s] | 15.9 | 15.89288 | 15.89288 | 1.5e-07 | pasa |
+| P-06 | v [m/s] | 8.09 | 8.094177 | 8.094178 | 1.2e-07 | pasa |
+| P-07 | Q [l/s] | 5.69 | 5.692726 | 5.692726 | 2.4e-08 | pasa |
+| P-07 | v [m/s] | 2.9 | 2.899281 | 2.899282 | 6.1e-10 | pasa |
+| P-07 | metodo (2 biseccion) | 2 | 2 | 2 | 0.0e+00 | pasa |
+| P-08 | Q [l/s] | 131 | 131.1162 | 131.1162 | 4.8e-10 | pasa |
+| P-09 | Q [l/s] | 211.97 | 211.9732 | 211.9733 | 2.2e-07 | pasa |
+| P-09 | v [m/s] | 3 | 2.998807 | 2.998808 | 1.6e-07 | pasa |
+| P-09 | hf [m] | 97.71 | 97.70824 | 97.70825 | 7.8e-08 | pasa |
+| P-09 | hm [m] | 2.29 | 2.291754 | 2.291755 | 4.1e-07 | pasa |
+| P-10 | Q HW [l/s] | 195.46 | 195.4561 | 195.4561 | 4.0e-07 | pasa |
+| P-10 | diferencia [%] | -7.8 | -7.792057 | -7.792111 | 7.0e-06 | pasa (r) |
+| P-11 | v [m/s] | 2.376714 | 2.376714 | 2.376714 | 1.8e-09 | pasa |
+| P-11 | Re | 312725.5 | 312725.5 | 312725.5 | 8.0e-10 | pasa |
+| P-11 | f | 0.014458 | 0.01445797 | 0.01445797 | 7.0e-11 | pasa |
+| P-11 | hf [m] | 26.918 | 26.91797 | 26.91797 | 1.6e-09 | pasa |
+| P-11 | hm [m] | 2.7063417 | 2.706341 | 2.706341 | 7.6e-11 | pasa |
+| P-11 | H [m] | 45.6243 | 45.62431 | 45.62431 | 1.0e-09 | pasa |
+| P-11 | P [kW] | 28.8942 | 28.89417 | 28.89417 | 2.7e-08 | pasa |
+| P-11 | P [Hp] | 38.7413 | 38.74772 | 38.74771 | 2.8e-08 | pasa |
+| P-12 | v [m/s] | 2.387 | 2.387324 | 2.387324 | 2.0e-09 | pasa |
+| P-12 | hf [m] | 20.33 | 20.33395 | 20.33395 | 2.5e-09 | pasa |
+| P-12 | HB [m] | 122.33 | 122.334 | 122.3339 | 6.4e-08 | pasa |
+| P-12 | Pn [kW] | 90 | 90.0072 | 90.0072 | 1.1e-08 | pasa |
+| P-12 | Pb [kW] | 105.9 | 105.8908 | 105.8908 | 2.8e-08 | pasa |
+| P-13 | v [m/s] | 7.958 | 7.957747 | 7.957747 | 3.2e-10 | pasa |
+| P-13 | Re | 316097 | 316097.2 | 316097.2 | 1.6e-09 | pasa |
+| P-13 | f CW | 0.02106 | 0.02106272 | 0.02106272 | 9.0e-08 | pasa |
+| P-13 | hf [m] | 1360 | 1359.646 | 1359.646 | 9.0e-08 | pasa |
+| P-13 | HB [m] | 1430 | 1429.646 | 1429.646 | 8.5e-08 | pasa |
+| P-13 | Pn [kW] | 140.3 | 140.2482 | 140.2482 | 8.0e-08 | pasa |
+| P-13 | Pb [kW] | 165 | 164.9979 | 164.9979 | 1.1e-07 | pasa |
+| P-14 | v [m/s] | 1.415 | 1.414711 | 1.414711 | 1.2e-09 | pasa |
+| P-14 | Re | 212207 | 212206.6 | 212206.6 | 1.2e-09 | pasa |
+| P-14 | f | 0.01554 | 0.01554219 | 0.01554219 | 2.1e-10 | pasa |
+| P-14 | hf [m] | 13.74 | 13.74043 | 13.74043 | 2.3e-09 | pasa |
+| P-14 | hm [m] | 0.51 | 0.5100423 | 0.5100423 | 3.1e-10 | pasa |
+| P-14 | HB [m] | 54.25 | 54.25047 | 54.25047 | 4.1e-10 | pasa |
+| P-14 | Pn [kW] | 13.3 | 13.30493 | 13.30493 | 6.0e-09 | pasa |
+| P-14 | Pb [kW] | 22.17 | 22.17488 | 22.17488 | 3.7e-09 | pasa |
+| P-15 | D exacto [mm] | 329.1 | 329.1185 | 329.1185 | 3.1e-08 | pasa |
+| P-15 | D comercial [mm] | 350 | 350 | 350 | 1.7e-08 | pasa |
+| P-15 | Qmax [l/s] | 234.23 | 234.2301 | 234.2301 | 6.6e-09 | pasa |
+| P-15 | hm/hf [%] | 10.42 | 10.42436 | 10.42436 | 1.5e-08 | pasa |
+| P-16a | D exacto [mm] | 385.6 | 385.5804 | 385.5804 | 2.1e-08 | pasa |
+| P-16a | D comercial [mm] | 400 | 400 | 400 | 1.5e-08 | pasa |
+| P-16a | Qmax [l/s] | 329.9 | 329.9219 | 329.9219 | 1.2e-08 | pasa |
+| P-16b | D exacto [mm] | 375 | 374.9735 | 374.9735 | 1.3e-08 | pasa |
+| P-16b | D comercial [mm] | 400 | 400 | 400 | 1.5e-08 | pasa |
+| P-16b | Qmax [l/s] | 354.8 | 354.8249 | 354.8249 | 2.6e-08 | pasa |
+| P-17 | D exacto CW [mm] | 256.83 | 256.8315 | 256.8315 | 5.8e-08 | pasa |
+| P-17 | D exacto SJ [mm] | 256.73 | 256.7299 | 256.7299 | 7.2e-08 | pasa |
+| P-17 | D comercial [mm] | 285.75 | 285.75 | 285.75 | 7.0e-09 | pasa |
+| P-17 | Qmax 285.75 [l/s] | 262.4 | 262.3841 | 262.3841 | 1.4e-07 | pasa |
+| P-17 | Qmax 285.00 [l/s] | 260.64 | 260.6394 | 260.6394 | 2.5e-07 | pasa |
+| P-17 | v 285.00 [m/s] | 4.086 | 4.085643 | 4.085644 | 1.2e-07 | pasa |
+| P-17 | hf 285.00 [m] | 65.11 | 65.10989 | 65.10991 | 2.3e-07 | pasa |
+| P-17 | hm 285.00 [m] | 10.89 | 10.8901 | 10.8901 | 1.7e-07 | pasa |
+| P-18 | v [m/s] | 3.119 | 3.118657 | 3.118657 | 1.2e-09 | pasa |
+| P-18 | Re | 891156 | 891156.2 | 891156.2 | 5.6e-10 | pasa |
+| P-18 | f CW | 0.011989 | 0.01198944 | 0.01198944 | 4.8e-10 | pasa |
+| P-18 | f SJ | 0.011958 | 0.01195783 | 0.01195783 | 1.0e-09 | pasa |
+| P-18 | hf [m] | 39.52 | 39.5187 | 39.5187 | 7.9e-10 | pasa |
+| P-18 | hm [m] | 6.35 | 6.345212 | 6.345212 | 6.9e-11 | pasa |
+| P-18 | hT [m] | 45.87 | 45.86391 | 45.86391 | 8.6e-10 | pasa |
+| P-18 | hv [m] | 30.13 | 30.13609 | 30.13609 | 1.3e-09 | pasa |
+| P-18 | Kv | 60.8 | 60.79261 | 60.79261 | 5.2e-10 | pasa |
+| P-19 | HT [m] | 30.13 | 30.13609 | 30.13609 | 1.3e-09 | pasa |
+| P-19 | Pb [kW] | 59.1 | 59.12702 | 59.12701 | 2.4e-08 | pasa |
+| P-19 | Pn [kW] | 38.4 | 38.43256 | 38.43256 | 3.6e-08 | pasa |
+| P-20 | HB [m] | 121.87 | 121.8639 | 121.8639 | 1.1e-09 | pasa |
+| P-20 | Pn [kW] | 239.1 | 239.097 | 239.097 | 3.6e-09 | pasa |
+| P-20 | Pb [kW] | 398.5 | 398.495 | 398.495 | 1.1e-08 | pasa |
+| P-20 | cota piezometrica [m] | 1136.87 | 1136.864 | 1136.864 | 1.6e-08 | pasa |
+| P-21 | D exacto CW [mm] | 431.23 | 431.2257 | 431.2257 | 4.8e-08 | pasa |
+| P-21 | D exacto SJ [mm] | 431.08 | 431.0791 | 431.0791 | 2.7e-08 | pasa |
+| P-21 | D comercial [mm] | 450 | 450 | 450 | 2.7e-08 | pasa |
+| P-21 | Qmax [l/s] | 444.4 | 444.4286 | 444.4284 | 4.2e-07 | pasa |
+| P-21 | hf [m] | 6.01 | 6.010041 | 6.010036 | 8.7e-07 | pasa |
+| P-21 | hm [m] | 1.99 | 1.989964 | 1.989962 | 9.0e-07 | pasa |
+| P-22 | HB [m] | 38.23 | 38.2263 | 38.2263 | 1.5e-11 | pasa |
+| P-22 | hT disponible [m] | 8.23 | 8.226303 | 8.226303 | 7.1e-11 | pasa |
+| P-22 | D exacto [mm] | 172.3 | 172.293 | 172.293 | 4.2e-08 | pasa |
+| P-22 | D comercial [mm] | 200 | 200 | 200 | 1.5e-08 | pasa |
+| P-22 | Qmax 200 [l/s] | 44.33 | 44.32172 | 44.32174 | 2.7e-07 | pasa |
+| P-22 | hf 200 [m] | 7.95 | 7.942254 | 7.942256 | 2.4e-07 | pasa |
+| P-22 | hm 200 [m] | 0.28 | 0.2840485 | 0.2840486 | 5.2e-07 | pasa (r) |
+| P-22 | Qmax 150 [l/s] | 20.9 | 20.85522 | 20.85522 | 1.2e-07 | pasa (r) |
+| P-24a | f CW | 0.0261015 | 0.02610146 | 0.02610147 | 7.2e-08 | pasa |
+| P-24b | f CW | 0.0167634 | 0.01676344 | 0.01676344 | 1.1e-07 | pasa |
+| P-25 | hf+hm [m] | 17 | 17 | 17 | 0.0e+00 | pasa |
+| P-25 | v [m/s] | 2.917 | 2.917007 | 2.917007 | 1.9e-10 | pasa |
+| P-25 | hm [m] | 1.518 | 1.517903 | 1.517903 | 1.2e-09 | pasa |
+| P-25 | hf [m] | 15.48 | 15.4821 | 15.4821 | 1.7e-09 | pasa |
+| P-25 | f | 0.024152 | 0.0241518 | 0.0241518 | 1.0e-09 | pasa |
+| P-25 | ks [mm] | 0.591 | 0.5906766 | 0.590677 | 7.9e-07 | pasa |
+| P-25 | Re | 683128 | 683128.1 | 683128.1 | 0.0e+00 | pasa |
+| S-01 | M_A | 2176.18 | 2176.18 | 2176.18 | 1.9e-09 | pasa |
+| S-01 | M_B | 16525.37 | 16525.37 | 16525.37 | 7.6e-10 | pasa |
+| S-01 | M_B friccion | 12394.03 | 12394.03 | 12394.03 | 7.6e-10 | pasa |
+| S-01 | M_B local | 4131.34 | 4131.342 | 4131.342 | 1.2e-09 | pasa |
+| S-01 | M_BCD | 1836.15 | 1836.152 | 1836.151 | 2.7e-07 | pasa |
+| S-01 | M total | 4012.33 | 4012.332 | 4012.332 | 1.2e-07 | pasa |
+| S-01 | Q [l/s] | 70.6 | 70.60193 | 70.60194 | 1.6e-07 | pasa |
+| S-01 | h_A [m] | 10.85 | 10.84746 | 10.84746 | 1.7e-07 | pasa |
+| S-01 | h_B [m] | 9.15 | 9.152542 | 9.152542 | 4.7e-10 | pasa |
+| S-01 | Q_B [l/s] | 23.53 | 23.53398 | 23.53398 | 4.2e-09 | pasa |
+| S-02 | M_A | 7616.6 | 7616.631 | 7616.631 | 8.2e-11 | pasa |
+| S-02 | M_B | 89237 | 89236.99 | 89236.99 | 1.4e-10 | pasa |
+| S-02 | M_C | 2969.39 | 2969.402 | 2969.402 | 8.1e-08 | pasa |
+| S-02 | M_C friccion | 2711.19 | 2711.193 | 2711.193 | 2.3e-10 | pasa |
+| S-02 | M_C local | 258.2 | 258.2089 | 258.2089 | 6.9e-10 | pasa |
+| S-02 | M_AB | 4561.78 | 4561.793 | 4561.793 | 6.5e-10 | pasa |
+| S-02 | M total | 7531.17 | 7531.196 | 7531.195 | 6.5e-08 | pasa |
+| S-02 | Q [l/s] | 51.53 | 51.53272 | 51.53271 | 1.5e-08 | pasa |
+| S-02 | h_C [m] | 7.886 | 7.885606 | 7.885605 | 1.2e-07 | pasa |
+| S-02 | h_A [m] | 12.114 | 12.11439 | 12.11439 | 1.0e-09 | pasa |
+| S-02 | Q_A [l/s] | 39.88 | 39.88131 | 39.88131 | 4.8e-08 | pasa |
+| S-02 | Q_B [l/s] | 11.65 | 11.65141 | 11.65141 | 2.1e-08 | pasa |
+| S-03 | M_1 | 20656.7 | 20656.71 | 20656.71 | 4.5e-10 | pasa |
+| S-03 | M_3 | 2065.67 | 2065.671 | 2065.671 | 1.2e-09 | pasa |
+| S-03 | M_3 friccion | 516.4 | 516.4178 | 516.4178 | 6.9e-10 | pasa |
+| S-03 | M_3 local | 1549.3 | 1549.253 | 1549.253 | 1.3e-09 | pasa |
+| S-03 | M_23 | 1192.3 | 1192.337 | 1192.337 | 1.0e-07 | pasa |
+| S-03 | Q [l/s] | 23.76 | 23.76193 | 23.76193 | 1.0e-07 | pasa |
+| S-03 | h_1 [m] | 11.66 | 11.66338 | 11.66339 | 1.6e-07 | pasa |
+| S-03 | h_23 [m] | 0.673 | 0.6732284 | 0.6732286 | 2.7e-07 | pasa |
+| S-03 | Q_3 [l/s] | 18.05 | 18.05305 | 18.05305 | 2.1e-07 | pasa |
+| S-03 | Q_2 [l/s] | 5.71 | 5.708876 | 5.708877 | 1.8e-07 | pasa |
+| S-04 | M_1 | 2065.67 | 2065.671 | 2065.671 | 1.2e-09 | pasa |
+| S-04 | M_2 | 37182.09 | 37182.08 | 37182.08 | 8.4e-10 | pasa |
+| S-04 | M_3 | 10328.36 | 10328.36 | 10328.36 | 4.4e-09 | pasa |
+| S-04 | M_234 | 729.35 | 729.3506 | 729.3506 | 8.6e-11 | pasa |
+| S-04 | h_4 [m] | 3.305 | 3.305074 | 3.305074 | 5.8e-10 | pasa |
+| S-04 | Q_2 [l/s] | 9.43 | 9.42809 | 9.42809 | 3.4e-08 | pasa |
+| S-04 | Q_3 [l/s] | 17.89 | 17.88854 | 17.88854 | 7.0e-09 | pasa |
+| S-04 | Q_1 [l/s] | 67.32 | 67.31664 | 67.31664 | 1.9e-08 | pasa |
+| S-04 | h_1 [m] | 9.36 | 9.36065 | 9.36065 | 2.7e-10 | pasa |
+| S-04 | carga total [m] | 12.67 | 12.66572 | 12.66572 | 5.2e-11 | pasa |
+| S-04 | p tanque A [kPa] | 124.2 | 124.2507 | 124.2507 | 1.9e-08 | pasa |
+| S-05 | M_A | 384.23 | 384.2318 | 384.2318 | 1.2e-09 | pasa |
+| S-05 | M_B | 13057.08 | 13057.08 | 13057.08 | 1.7e-09 | pasa |
+| S-05 | M_C | 1420.15 | 1420.149 | 1420.149 | 2.6e-09 | pasa |
+| S-05 | M_D | 1484.9 | 1484.904 | 1484.904 | 2.3e-09 | pasa |
+| S-05 | M_BC | 803.09 | 803.0905 | 803.0905 | 1.7e-10 | pasa |
+| S-05 | M total | 2672.22 | 2672.226 | 2672.226 | 1.6e-09 | pasa |
+| S-05 | Q [l/s] | 167.53 | 167.5306 | 167.5305 | 2.3e-08 | pasa |
+| S-05 | h_A [m] | 10.78 | 10.78404 | 10.78404 | 3.4e-09 | pasa |
+| S-05 | h_BC [m] | 22.54 | 22.53993 | 22.53993 | 1.3e-09 | pasa |
+| S-05 | h_D [m] | 41.68 | 41.67603 | 41.67603 | 1.3e-10 | pasa |
+| S-05 | Q_B [l/s] | 41.55 | 41.5483 | 41.5483 | 2.6e-08 | pasa |
+| S-05 | Q_C [l/s] | 125.98 | 125.9822 | 125.9822 | 9.8e-09 | pasa |
+| R-01 | metodo (2 biseccion) | 2 | 2 | 2 | 0.0e+00 | pasa |
+| R-01 | aviso de respaldo | 1 | 1 | 1 | 0.0e+00 | pasa |
+| R-01 | Q [l/s] | 5.69 | 5.692726 | 5.692726 | 2.4e-08 | pasa |
+| R-02 | aviso laminar | 1 | 1 | 1 | 0.0e+00 | pasa |
+| R-02 | f*Re | 64 | 64 | 64 | 0.0e+00 | pasa |
+| R-02 | hf / Hagen-Poiseuille | 1 | 1 | 1.000001 | 5.5e-07 | pasa |
+| R-02 | Q de vuelta [l/s] | 0.02 | 0.02 | 0.02 | 3.6e-09 | pasa |
+| R-03 | aviso transicion | 1 | 1 | 1 | 0.0e+00 | pasa |
+| R-04 | error D=0 | 1 | 1 | 1 | 0.0e+00 | pasa |
+| R-04 | error L<0 | 2 | 2 | 2 | 0.0e+00 | pasa |
+| R-04 | error Q=0 | 3 | 3 | 3 | 0.0e+00 | pasa |
+| R-04 | error Qmax D=0 | 1 | 1 | 1 | 0.0e+00 | pasa |
+| R-04 | error diseno L<0 | 2 | 2 | 2 | 0.0e+00 | pasa |
+| R-04 | error nu=0 | 4 | 4 | 4 | 0.0e+00 | pasa |
+| R-04 | error K<0 | 6 | 6 | 6 | 0.0e+00 | pasa |
+| R-05 | error H<0 | 7 | 7 | 7 | 0.0e+00 | pasa |
+| R-05 | error H=0 | 7 | 7 | 7 | 0.0e+00 | pasa |
+| R-05 | error red H=0 | 7 | 7 | 7 | 0.0e+00 | pasa |
+
+</details>
+
+### Navegación de `PERDIDAS` en CEmu (`tools/cemu_ui.py`, `tests/cemu/autotest_ui.json`)
+
+21 pantallas capturadas y revisadas a mano en PNG: menú principal, submenú de tubería simple, formulario vacío, «Falta este dato», $D = 0$ rechazado, P-02 escrito tecla por tecla (incluida la suma de $K$ como expresión y `1.007E-6` con `2nd` + `,`), resultado de P-02 (igual al PC: $h_T = 19{,}76738$ m, Swamee-Jain), desplazamiento, aviso de módulo pendiente, Ajustes (13 campos), regreso por `CLEAR`, Biblioteca, Ayuda con dos páginas, confirmación de salida y regreso limpio al menú de arTIfiCE.
+
+| Prueba | Resultado |
+|---|---|
+| Regresión con los CRC32 guardados (`python -I tools/cemu_ui.py --check`) | **21 de 21 pantallas iguales** |
+| Cierres o cuelgues durante la secuencia | ninguno |
+| Error encontrado y corregido | la Ayuda mostraba «1/2» también en su última página |
+
+**Con esto la fase 2 queda cerrada**: navegación completa sin cierres en CEmu.

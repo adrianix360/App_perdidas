@@ -21,6 +21,10 @@ static const char *cur_id;
 static int verbose;
 static int n_pass, n_pass_r, n_fail, n_missing;
 
+/* Valor obtenido de cada fila de la tabla (en el eZ80 se lee de la RAM
+ * emulada para compararlo con el PC; ver tools/cemu_golden.py) */
+volatile double golden_got[GOLDEN_N];
+
 static void put(const char *name, double v)
 {
     if (nout < MAX_OUT) {
@@ -57,6 +61,7 @@ static void end(void)
             continue;
         }
         got = out[found].v;
+        golden_got[i] = got;
         err = fabs(got - g->expected);
         rel = g->expected != 0 ? (got - g->expected) / fabs(g->expected) : 0;
         tol = g->tol_rel * fabs(g->expected);
@@ -650,6 +655,20 @@ int golden_run(int verb)
 #ifndef GOLDEN_NO_MAIN
 int main(int argc, char **argv)
 {
+    if (argc > 2 && !strcmp(argv[1], "-g")) {   /* volcar valores obtenidos */
+        FILE *f;
+        size_t i;
+        int r = golden_run(0);
+        f = fopen(argv[2], "w");
+        for (i = 0; f && i < GOLDEN_N; i++)
+            fprintf(f, "%u;%s;%s;%.9g;%d;%g;%g;%.9g\n", (unsigned)i,
+                    golden[i].id, golden[i].name, golden[i].expected,
+                    golden[i].dec, golden[i].tol_rel, golden[i].tol_abs,
+                    golden_got[i]);
+        if (f)
+            fclose(f);
+        return r;
+    }
     return golden_run(argc > 1 && !strcmp(argv[1], "-v"));
 }
 #endif

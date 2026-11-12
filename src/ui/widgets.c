@@ -409,7 +409,9 @@ uint8_t view_run(const char *title, const char *const fk[5])
         for (i = 0; i < vis && top + i < view_n; i++)
             ui_text(i + 1, 0, view_line[top + i], view_color[top + i], C_BG);
         if (view_n > vis) {
-            fmt_int(top / vis + 1, pg);
+            /* la ultima pagina puede empezar antes de un multiplo de vis */
+            fmt_int(top + vis >= view_n ? (view_n + vis - 1) / vis
+                                        : top / vis + 1, pg);
             strcat(pg, "/");
             fmt_int((view_n + vis - 1) / vis, t);
             strcat(pg, t);

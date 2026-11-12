@@ -377,7 +377,7 @@ Se usa `cemu-autotester.exe` de CEdev v15.0 (sin interfaz gráfica), con las lib
 
 **Total eZ80: 191 pasan, 7 pasan (r), 0 fallan. Mayor diferencia eZ80 vs PC: 1.99e-05 (P-01 error HW vs SJ [%])**
 
-La diferencia entre el eZ80 y el PC (ambos en `float` de 32 bits) nunca pasa de $2\times10^{-5}$ en términos relativos. El máximo aparece en el porcentaje de diferencia entre Hazen-Williams y Swamee-Jain, que es la resta de dos pérdidas parecidas. En los demás valores la diferencia es del orden de $10^{-7}$. Se explica solo por el redondeo de 32 bits y por las funciones matemáticas de cada compilador.
+La diferencia entre el eZ80 y el PC (ambos en `float` de 32 bits) nunca pasa de $2\times10^{-5}$ en términos relativos. Solo 3 de los 198 valores superan $10^{-6}$: los dos porcentajes de diferencia entre métodos ($2\times10^{-5}$ en P-01 y $7\times10^{-6}$ en P-10), que son restas de valores parecidos, y $h_f$ de Hazen-Williams en P-01 ($1{,}4\times10^{-6}$, por las potencias con `powf`). Los otros 195 quedan en $10^{-6}$ o menos. Las diferencias se explican por el redondeo de 32 bits y por las funciones matemáticas de cada compilador.
 
 <details><summary>Tabla completa: esperado, PC y eZ80</summary>
 

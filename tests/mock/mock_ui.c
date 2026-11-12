@@ -141,34 +141,94 @@ bool ui_alert(const char *title, const char *l1, const char *l2, uint8_t color)
 unsigned int ui_free_ram(void) { return 123456; }
 
 /* ---------------- fileioc ---------------- */
+/* PERDCFG usa mock_file (compatibilidad con pruebas anteriores); los demas
+ * AppVars usan mock_vars. */
 uint8_t mock_file[256];
 size_t mock_file_len;
 int mock_file_exists, mock_file_archived;
-static size_t pos;
-static int wmode;
+mock_var mock_vars[MOCK_FILES];
+
+static struct { int open, cfg; mock_var *v; size_t pos; int wmode; } hd[4];
+
+mock_var *mock_find(const char *name, int create)
+{
+    int i;
+    for (i = 0; i < MOCK_FILES; i++)
+        if (mock_vars[i].name[0] && !strcmp(mock_vars[i].name, name))
+            return &mock_vars[i];
+    if (!create)
+        return 0;
+    for (i = 0; i < MOCK_FILES; i++)
+        if (!mock_vars[i].name[0]) {
+            strncpy(mock_vars[i].name, name, 8);
+            return &mock_vars[i];
+        }
+    return 0;
+}
+
+int mock_load_file(const char *name, const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    mock_var *v = mock_find(name, 1);
+    if (!f || !v) return 0;
+    v->len = fread(v->data, 1, sizeof v->data, f);
+    v->exists = 1;
+    v->archived = 1;
+    fclose(f);
+    return 1;
+}
 
 uint8_t ti_Open(const char *name, const char *mode)
 {
-    (void)name;
-    pos = 0;
-    wmode = (mode[0] == 'w');
-    if (wmode) { mock_file_exists = 1; mock_file_len = 0; mock_file_archived = 0; return 1; }
-    return mock_file_exists ? 1 : 0;
+    int h;
+    for (h = 1; h < 4 && hd[h].open; h++) ;
+    if (h >= 4) return 0;
+    hd[h].pos = 0;
+    hd[h].wmode = (mode[0] == 'w');
+    hd[h].cfg = !strcmp(name, "PERDCFG");
+    if (hd[h].cfg) {
+        if (hd[h].wmode) { mock_file_exists = 1; mock_file_len = 0; mock_file_archived = 0; }
+        else if (!mock_file_exists) return 0;
+    } else {
+        mock_var *v = mock_find(name, hd[h].wmode);
+        if (!v) return 0;
+        if (hd[h].wmode) { v->exists = 1; v->len = 0; v->archived = 0; }
+        else if (!v->exists) return 0;
+        hd[h].v = v;
+    }
+    hd[h].open = 1;
+    return (uint8_t)h;
 }
-int ti_Close(uint8_t h) { (void)h; return 1; }
+int ti_Close(uint8_t h) { if (h < 4) hd[h].open = 0; return 1; }
 size_t ti_Write(const void *d, size_t size, size_t count, uint8_t h)
 {
-    (void)h;
-    if (pos + size * count > sizeof mock_file) return 0;
-    memcpy(mock_file + pos, d, size * count); pos += size * count;
-    if (pos > mock_file_len) mock_file_len = pos;
+    uint8_t *buf = hd[h].cfg ? mock_file : hd[h].v->data;
+    size_t cap = hd[h].cfg ? sizeof mock_file : sizeof hd[h].v->data;
+    size_t *len = hd[h].cfg ? &mock_file_len : &hd[h].v->len;
+    if (hd[h].pos + size * count > cap) return 0;
+    memcpy(buf + hd[h].pos, d, size * count); hd[h].pos += size * count;
+    if (hd[h].pos > *len) *len = hd[h].pos;
     return count;
 }
 size_t ti_Read(void *d, size_t size, size_t count, uint8_t h)
 {
-    (void)h;
-    if (pos + size * count > mock_file_len) return 0;
-    memcpy(d, mock_file + pos, size * count); pos += size * count;
+    uint8_t *buf = hd[h].cfg ? mock_file : hd[h].v->data;
+    size_t len = hd[h].cfg ? mock_file_len : hd[h].v->len;
+    if (hd[h].pos + size * count > len) return 0;
+    memcpy(d, buf + hd[h].pos, size * count); hd[h].pos += size * count;
     return count;
 }
-int ti_SetArchiveStatus(bool a, uint8_t h) { (void)h; mock_file_archived = a; return 1; }
+int ti_SetArchiveStatus(bool a, uint8_t h)
+{
+    if (hd[h].cfg) mock_file_archived = a; else hd[h].v->archived = a;
+    return 1;
+}
+void *ti_GetDataPtr(uint8_t h) { return hd[h].cfg ? mock_file : hd[h].v->data; }
+uint16_t ti_GetSize(uint8_t h) { return (uint16_t)(hd[h].cfg ? mock_file_len : hd[h].v->len); }
+int ti_Delete(const char *name)
+{
+    mock_var *v = mock_find(name, 0);
+    if (!v || !v->exists) return 0;
+    v->exists = 0; v->len = 0;
+    return 1;
+}

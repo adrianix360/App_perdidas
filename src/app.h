@@ -9,8 +9,10 @@
 #include "hydro/hydro.h"
 
 #define APP_NAME    "PERDIDAS"
-#define APP_VERSION "0.3"
+#define APP_VERSION "0.4"
 #define CFG_APPVAR  "PERDCFG"
+#define TX_APPVAR   "PERDTXT"
+#define CASES_APPVAR "PERDCAS"
 #define DEC_MAX     9
 
 typedef struct {

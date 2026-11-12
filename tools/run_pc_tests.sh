@@ -4,6 +4,7 @@
 # El motor se compila con -Wdouble-promotion y, en float, con
 # -fsingle-precision-constant para que ninguna cuenta se haga en double.
 set -e
+sh tools/build_all.sh > /dev/null
 GCCDIR="$(ls -d /c/Users/castr/AppData/Local/Microsoft/WinGet/Packages/BrechtSanders.WinLibs.POSIX.UCRT*/mingw64/bin 2>/dev/null | head -1)"
 [ -n "$GCCDIR" ] && PATH="$GCCDIR:$PATH"
 OUT=/c/dev/build/tests

@@ -115,6 +115,10 @@ int main(int argc, char **argv)
 
     trace = (argc > 1 && !strcmp(argv[1], "-t"));
     settings_default(&g_set);
+    if (!mock_load_file("PERDTXT", "bin/PERDTXT.bin")) {
+        printf("FALLA: no se pudo cargar bin/PERDTXT.bin (correr tools/build_all.sh)\n");
+        return 1;
+    }
 
     /* 1. Navegacion por todo el menu, con salida por "Salir" */
     a0 = n_alerts;
@@ -186,6 +190,7 @@ int main(int argc, char **argv)
     T("1"); T("1"); K(K_F5); K(K_F1);
     run();
     check(memo_ok() && has_line("Swamee-Jain"), "P-02: memoria de calculo completa");
+    check(has_line("= 0.072/0.031416"), "P-02: sustitucion v = Q/A con Q");
 
     /* Memoria del tipo A con los cuatro metodos de f y en laminar */
     {

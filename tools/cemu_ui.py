@@ -95,7 +95,7 @@ def build_cfg(crcs=None):
         hashes[str(i)] = {"description": name, "start": "vram_start",
                           "size": "vram_16_size",
                           "expected_CRCs": [crcs[name]] if crcs else ["00000000"]}
-    return {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp", "PERDIDAS.8xp"],
+    return {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp", "PERDIDAS.8xp", "PERDTXT.8xv"],
             "target": {"name": "A", "isASM": False}, "delay_after_key": 150,
             "sequence": seq, "hashes": hashes}
 
@@ -107,6 +107,7 @@ def main():
     os.makedirs(RUN)
     shutil.copy(os.path.join(ROOT, "instalacion/arTIfiCE_v2.1.8xp"), RUN)
     shutil.copy(os.path.join(ROOT, "bin/PERDIDAS.8xp"), RUN)
+    shutil.copy(os.path.join(ROOT, "bin/PERDTXT.8xv"), RUN)
     crcs = None
     if check:
         crcs = {}

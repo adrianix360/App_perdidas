@@ -6,6 +6,7 @@
  * Unidades en pantalla: Q l/s, D mm, ks mm, L m, H m; motor en SI.
  */
 #include <string.h>
+#include <fileioc.h>
 #include "app.h"
 #include "ui/ui.h"
 #include "ui/widgets.h"
@@ -107,434 +108,80 @@ static const uint8_t nforms[PT_COUNT] = {
     sizeof f_I / sizeof f_I[0] };
 
 /* ------------------------------------------------------------------ */
-/* Memoria de calculo y resumen como "programas" de datos              */
 /* ------------------------------------------------------------------ */
-/* Los textos usan plantillas: {NOMBRE} se sustituye por el valor con los
- * decimales de Ajustes y {NOMBRE!} por un valor corto (7 caracteres).
- * Asi cada formula es solo datos y el programa cabe en 64 KiB. */
-
-enum {
-    V_Q, V_QLS, V_QD, V_D, V_L, V_KS, V_K, V_NU, V_G, V_GAM,
-    V_A, V_V, V_RE, V_KSD, V_A37, V_F, V_INVSF, V_HV2G, V_HF, V_HM, V_HT,
-    V_LD, V_HMHF, V_FIT, V_TOL, V_ITER, V_H,
-    V_HS, V_ETA, V_HMACH, V_PN, V_PB, V_PNKW, V_PBKW, V_PBHP, V_ZB, V_COTA,
-    V_HP, V_PH, V_PKPA, V_HV, V_KV,
-    V_DEX, V_DCOM, V_VP, V_HFCQ, V_VCQ,
-    V_EXV, V_EXRE, V_EXF, V_EXHF, V_EXHM, V_EXHT,
-    V_Z1, V_Z2, V_P1, V_P2, V_HTOT, V_SF, V_KSMM,
-    V_CH, V_HW, V_ERR, V_QHW, V_QHWLS,
-    V_VALHT, V_VALHV, V_VALKV, V_VALV,
-    V_COUNT
-};
-
-static const char *const vname[V_COUNT] = {
-    "Q", "QLS", "QD", "D", "L", "KS", "K", "NU", "G", "GAM",
-    "A", "V", "RE", "KSD", "A37", "F", "INVSF", "HV2G", "HF", "HM", "HT",
-    "LD", "HMHF", "FIT", "TOL", "ITER", "H",
-    "HS", "ETA", "HMACH", "PN", "PB", "PNKW", "PBKW", "PBHP", "ZB", "COTA",
-    "HP", "PH", "PKPA", "HV", "KV",
-    "DEX", "DCOM", "VP", "HFCQ", "VCQ",
-    "EXV", "EXRE", "EXF", "EXHF", "EXHM", "EXHT",
-    "Z1", "Z2", "P1", "P2", "HTOT", "SF", "KSMM",
-    "CH", "HW", "ERR", "QHW", "QHWLS",
-    "VALHT", "VALHV", "VALKV", "VALV",
-};
+/* Memoria de calculo y resumen: interprete del AppVar PERDTXT          */
+/* ------------------------------------------------------------------ */
+#include "memo_defs.h"
 
 static real V[V_COUNT];
 static uint32_t FL;           /* banderas para las condiciones */
 static unsigned int W;        /* advertencias a mostrar        */
 
-enum {
-    G_FIX, G_LAM, G_TRANS, G_CW, G_SJ, G_HA, G_GO, G_HP, G_PUMP, G_ZB,
-    G_COURSE, G_BIS, G_DIRECT, G_FB, G_VP, G_VAL, G_MODEQ, G_KPOS,
-    G_WITHQ, G_HASD
-};
+/* PERDTXT: programas de la memoria de calculo en un AppVar (normalmente
+ * archivado; se lee en su lugar, sin copiarlo a la RAM). El puntero se
+ * vuelve a pedir en cada uso, porque archivar otra variable puede mover
+ * los datos de la memoria flash. */
+static const uint8_t *TX;
+static uint16_t TXN;
 
-enum { M_END = 0, M_SEC, M_DATA, M_EQ, M_RES, M_LINE, M_IF, M_IFN, M_ENDIF,
-       M_CALL, M_TABLE, M_WARN, M_DLIST, M_SEP };
+static bool tx_open(void)
+{
+    uint8_t h = ti_Open(TX_APPVAR, "r");
+    TX = 0;
+    if (!h)
+        return false;
+    TX = (const uint8_t *)ti_GetDataPtr(h);
+    TXN = (uint16_t)ti_GetSize(h);
+    ti_Close(h);
+    if (TXN < 5 + 2 * PROG_COUNT || TX[0] != 'P' || TX[1] != 'T' ||
+        TX[2] != 'X' || TX[3] != TX_VERSION || TX[4] != PROG_COUNT) {
+        TX = 0;
+        return false;
+    }
+    return true;
+}
 
-typedef struct {
-    uint8_t op, id;
-    const char *a, *b, *c, *u;
-} mstep;
+static uint16_t rd16(const uint8_t *p)
+{
+    return (uint16_t)(p[0] | p[1] << 8);
+}
 
-#define SEC(t)            { M_SEC, 0, t, 0, 0, 0 }
-#define DAT(l, i, u)      { M_DATA, i, l, 0, 0, u }
-#define EQ(l, f, s, i, u) { M_EQ, i, l, f, s, u }
-#define RES(l, i, u)      { M_RES, i, l, 0, 0, u }
-#define LN(t, col)        { M_LINE, col, t, 0, 0, 0 }
-#define IF(g)             { M_IF, g, 0, 0, 0, 0 }
-#define IFN(g)            { M_IFN, g, 0, 0, 0, 0 }
-#define ENDIF             { M_ENDIF, 0, 0, 0, 0, 0 }
-#define CALL(n)           { M_CALL, n, 0, 0, 0, 0 }
-#define TAB(k)            { M_TABLE, k, 0, 0, 0, 0 }
-#define WARNS             { M_WARN, 0, 0, 0, 0, 0 }
-#define DLIST             { M_DLIST, 0, 0, 0, 0, 0 }
-#define SEP               { M_SEP, 0, 0, 0, 0, 0 }
-#define STOP              { M_END, 0, 0, 0, 0, 0 }
+/* texto en el desplazamiento o, o NULL */
+static const char *txs(uint16_t o)
+{
+    return (o == TX_NONE || o >= TXN) ? 0 : (const char *)(TX + o);
+}
 
-/* ---- subprogramas ---- */
-enum { S_DATA, S_CALC, S_OBS, S_STATE, S_COUNT };
-
-static const mstep p_data[] = {
-    SEC("DATOS"),
-    IF(G_WITHQ), DAT("Q", V_Q, "m3/s"), ENDIF,
-    IF(G_HASD), DAT("D", V_D, "m"), ENDIF,
-    DAT("L", V_L, "m"),
-    IF(G_FIX), DAT("f (dato)", V_F, 0), ENDIF,
-    IFN(G_FIX), DAT("ks", V_KS, "m"), DAT("nu", V_NU, "m2/s"), ENDIF,
-    DAT("Suma K", V_K, 0),
-    DAT("g", V_G, "m/s2"),
-    IFN(G_FIX), LN(" Metodo de f: {METHOD}", C_GRAY), ENDIF,
-    STOP
-};
-
-static const mstep p_calc[] = {
-    EQ("A", "pi D^2/4", "pi({D})^2/4", V_A, "m2"),
-    EQ("v", "Q/A", "{Q}/{A}", V_V, "m/s"),
-    EQ("Re", "v D/nu", "{V}({D})/{NU}", V_RE, 0),
-    IF(G_FIX), EQ("f", 0, 0, V_F, "(dato)"), ENDIF,
-    IFN(G_FIX),
-      IF(G_LAM), EQ("f", "64/Re", "64/{RE}", V_F, "(laminar)"), ENDIF,
-      IFN(G_LAM),
-        EQ("ks/D", 0, "{KS}/{D}", V_KSD, 0),
-        IF(G_SJ),
-          EQ("f", "0.25/[log(ks/3.7D + 5.74/Re^0.9)]^2",
-             "0.25/[log({A37} + 5.74/{RE}^0.9)]^2", V_F, "(Swamee-Jain)"),
-        ENDIF,
-        IF(G_HA),
-          EQ("1/sqrt(f)", "-1.8 log[(ks/3.7D)^1.11 + 6.9/Re]",
-             "-1.8 log[({A37})^1.11 + 6.9/{RE}]", V_INVSF, 0),
-          RES("f (Haaland)", V_F, 0),
-        ENDIF,
-        IF(G_GO),
-          LN("1/sqrt(f) = 0.8686 ln(0.4587 Re/(C-0.31)^(C/(C+1)))", C_FG),
-          LN("C = 0.124 Re ks/D + ln(0.4587 Re)", C_FG),
-          RES("f (Goudar-Sonnad)", V_F, 0),
-        ENDIF,
-        IF(G_CW),
-          LN("1/sqrt(f) = -2 log(ks/3.7D + 2.51/(Re sqrt(f)))", C_FG),
-          LN("      = -2 log({A37} + 2.51/({RE} sqrt(f)))", C_GRAY),
-          LN(" Sustitucion sucesiva desde f1 = 0.0001: {FIT!} iteraciones", C_GRAY),
-          RES("f (Colebrook-White)", V_F, 0),
-        ENDIF,
-        IF(G_TRANS), LN(" Re en transicion: f indicativo", C_WARN), ENDIF,
-      ENDIF,
-    ENDIF,
-    EQ("v^2/2g", 0, "({V})^2/(2({G}))", V_HV2G, "m"),
-    EQ("hf", "f (L/D) v^2/2g", "{F}({L}/{D})({HV2G})", V_HF, "m"),
-    EQ("hm", "SumK v^2/2g", "{K}({HV2G})", V_HM, "m"),
-    EQ("hT", "hf + hm", "{HF} + {HM}", V_HT, "m"),
-    STOP
-};
-
-static const mstep p_obs[] = {
-    SEC("OBSERVACIONES"),
-    IF(G_KPOS), LN(" L/D = {LD!}; hm/hf = {HMHF!} %", C_GRAY), ENDIF,
-    WARNS,
-    STOP
-};
-
-static const mstep p_state[] = {
-    DAT("Q", V_QLS, "l/s"),
-    DAT("v", V_V, "m/s"),
-    DAT("Re", V_RE, 0),
-    IF(G_FIX), DAT("f (dato)", V_F, 0), ENDIF,
-    IFN(G_FIX), DAT("f", V_F, 0), ENDIF,
-    DAT("hf", V_HF, "m"),
-    DAT("hm", V_HM, "m"),
-    DAT("hT = hf + hm", V_HT, "m"),
-    STOP
-};
-
-static const mstep *const subs[S_COUNT] = { p_data, p_calc, p_obs, p_state };
-
-/* ---- A ---- */
-static const mstep sA[] = {
-    LN("RESULTADO  Perdidas dado Q", C_TITLE), SEP,
-    CALL(S_STATE),
-    DAT("v^2/2g", V_HV2G, "m"),
-    IF(G_HP), DAT("p/gamma punto", V_PH, "m"), DAT("p punto", V_PKPA, "kPa"), ENDIF,
-    SEP, WARNS, STOP
-};
-static const mstep mA[] = {
-    LN("MEMORIA  Perdidas dado Q (A)", C_TITLE), SEP,
-    CALL(S_DATA),
-    IF(G_HP), DAT("H sobre punto", V_HP, "m"), ENDIF,
-    SEC("CALCULOS"), CALL(S_CALC),
-    IF(G_HP), EQ("p/gamma", "H - v^2/2g - hT", "{HP} - {HV2G} - {HT}", V_PH, "m"), ENDIF,
-    SEC("RESULTADOS"),
-    RES("hf", V_HF, "m"), RES("hm", V_HM, "m"), RES("hT", V_HT, "m"),
-    IF(G_HP), RES("p", V_PKPA, "kPa"), ENDIF,
-    CALL(S_OBS), STOP
-};
-
-/* ---- B ---- */
-static const mstep sB[] = {
-    LN("RESULTADO  Caudal maximo", C_TITLE), SEP,
-    CALL(S_STATE),
-    IF(G_COURSE), LN(" Metodo: iteracion del curso", C_GRAY), ENDIF,
-    IF(G_DIRECT), LN(" Metodo: directo (f dado)", C_GRAY), ENDIF,
-    IF(G_BIS), LN(" Metodo: biseccion sobre v", C_GRAY), ENDIF,
-    SEP, WARNS, STOP
-};
-static const mstep mB[] = {
-    LN("MEMORIA  Caudal maximo (B)", C_TITLE), SEP,
-    CALL(S_DATA), DAT("H", V_H, "m"),
-    IF(G_DIRECT),
-      SEC("CALCULOS"),
-      EQ("v", "sqrt(2gH/(f L/D + SumK))", "sqrt(2({G})({H})/({F}({L}/{D})+{K}))",
-         V_V, "m/s"),
-    ENDIF,
-    IFN(G_DIRECT),
-      SEC("ITERACIONES"),
-      IF(G_COURSE),
-        LN("v = -sqrt(8gD hf/L) log(ks/3.7D + 2.51 nu sqrt(L)/sqrt(2gD^3 hf))", C_FG),
-        LN("hm = SumK v^2/2g;  hf(i+1) = H - hm", C_FG),
-        LN(" hf1 = H; parar si |dhf| <= {TOL!} m", C_GRAY),
-        TAB(0),
-      ENDIF,
-      IF(G_BIS),
-        IF(G_FB), LN(" La iteracion del curso no convergio.", C_WARN), ENDIF,
-        LN("Biseccion: (f L/D + SumK) v^2/2g = H", C_FG),
-        TAB(1),
-      ENDIF,
-      LN(" {ITER!} iteraciones", C_GRAY),
-      SEC("CALCULOS CON v FINAL"),
-    ENDIF,
-    EQ("Q", "v A", "{V}({A})", V_Q, "m3/s"),
-    CALL(S_CALC),
-    SEC("RESULTADOS"),
-    RES("Q", V_QLS, "l/s"), RES("v", V_V, "m/s"),
-    LN(" Comprobacion: hf + hm = {HT} m (H = {H})", C_GRAY),
-    CALL(S_OBS), STOP
-};
-
-/* ---- C ---- */
-static const mstep sC[] = {
-    IF(G_PUMP), LN("RESULTADO  Bomba", C_TITLE), ENDIF,
-    IFN(G_PUMP), LN("RESULTADO  Turbina", C_TITLE), ENDIF,
-    SEP, CALL(S_STATE),
-    IF(G_PUMP),
-      DAT("HB", V_HMACH, "m"), DAT("Pn (agua)", V_PNKW, "kW"),
-      DAT("Pb (consume)", V_PBKW, "kW"),
-    ENDIF,
-    IFN(G_PUMP),
-      DAT("HT", V_HMACH, "m"), DAT("Pn (genera)", V_PNKW, "kW"),
-      DAT("Pb (agua)", V_PBKW, "kW"),
-    ENDIF,
-    DAT("Pb", V_PBHP, "Hp"),
-    IF(G_ZB), DAT("Cota piezometr.", V_COTA, "m"), ENDIF,
-    SEP, WARNS, STOP
-};
-static const mstep mC[] = {
-    IF(G_PUMP), LN("MEMORIA  Bomba (C)", C_TITLE), ENDIF,
-    IFN(G_PUMP), LN("MEMORIA  Turbina (C)", C_TITLE), ENDIF,
-    SEP, CALL(S_DATA),
-    IF(G_PUMP), DAT("Hs (estatica)", V_HS, "m"), ENDIF,
-    IFN(G_PUMP), DAT("Ha (disponible)", V_HS, "m"), ENDIF,
-    DAT("eta", V_ETA, 0), DAT("gamma", V_GAM, "N/m3"),
-    SEC("CALCULOS"), CALL(S_CALC),
-    IF(G_PUMP),
-      EQ("HB", "Hs + hT", "{HS} + {HT}", V_HMACH, "m"),
-      EQ("Pn", "gamma Q HB", "{GAM}({Q})({HMACH})", V_PN, "W"),
-      EQ("Pb", "Pn/eta", "{PN}/{ETA}", V_PB, "W"),
-    ENDIF,
-    IFN(G_PUMP),
-      EQ("HT", "Ha - hT", "{HS} - {HT}", V_HMACH, "m"),
-      EQ("Pb", "gamma Q HT", "{GAM}({Q})({HMACH})", V_PB, "W"),
-      EQ("Pn", "eta Pb", "{ETA}({PB})", V_PN, "W"),
-    ENDIF,
-    SEC("RESULTADOS"),
-    IF(G_PUMP), RES("HB", V_HMACH, "m"), ENDIF,
-    IFN(G_PUMP), RES("HT", V_HMACH, "m"), ENDIF,
-    RES("Pn (neta)", V_PNKW, "kW"), RES("Pb (bruta)", V_PBKW, "kW"),
-    RES("Pb", V_PBHP, "Hp"),
-    IF(G_ZB),
-      IF(G_PUMP), EQ("Cota piez.", "z + HB", "{ZB} + {HMACH}", V_COTA, "m"), ENDIF,
-      IFN(G_PUMP), EQ("Cota piez.", "z - HT", "{ZB} - {HMACH}", V_COTA, "m"), ENDIF,
-    ENDIF,
-    LN(" Bruta = la mayor; neta = la menor (1 Hp = 745.7 W)", C_GRAY),
-    CALL(S_OBS), STOP
-};
-
-/* ---- D ---- */
-static const mstep sD[] = {
-    LN("RESULTADO  Diametro de diseno", C_TITLE), SEP,
-    DAT("D exacto", V_DEX, "mm"), DAT("D comercial", V_DCOM, "mm"),
-    DAT("Qmax con D com.", V_QLS, "l/s"), DAT("v (Qmax)", V_V, "m/s"),
-    DAT("hf (Qmax)", V_HF, "m"), DAT("hm (Qmax)", V_HM, "m"),
-    DAT("hm/hf", V_HMHF, "%"),
-    IF(G_VP), DAT("vp", V_VP, "m/s"), ENDIF,
-    IF(G_VAL), DAT("hv valvula (Qd)", V_VALHV, "m"), DAT("Kv valvula", V_VALKV, 0), ENDIF,
-    SEP, WARNS, STOP
-};
-static const mstep mD[] = {
-    LN("MEMORIA  Diametro de diseno (D)", C_TITLE), SEP,
-    CALL(S_DATA), DAT("Qd", V_QD, "m3/s"), DAT("H", V_H, "m"),
-    SEC("DIAMETRO EXACTO"),
-    LN("Se busca D tal que hT(Qd, D) = H", C_FG),
-    LN("(hT baja al crecer D: biseccion geometrica)", C_GRAY),
-    TAB(2),
-    LN(" {ITER!} iteraciones", C_GRAY),
-    RES("D exacto", V_DEX, "mm"),
-    LN(" Con D exacto: v = {EXV!}, Re = {EXRE!}, f = {EXF!}", C_GRAY),
-    LN(" hf = {EXHF!}, hm = {EXHM!}, hT = {EXHT!} m", C_GRAY),
-    SEC("DIAMETRO COMERCIAL"),
-    LN(" Lista: {LISTNAME} (mm)", C_GRAY), DLIST,
-    LN(" Menor diametro >= D exacto:", C_FG),
-    RES("D comercial", V_DCOM, "mm"),
-    SEC("CAUDAL CON D COMERCIAL (tipo B)"),
-    IF(G_COURSE), LN(" Iteracion del curso", C_GRAY), ENDIF,
-    IFN(G_COURSE), LN(" Biseccion sobre v", C_GRAY), ENDIF,
-    CALL(S_CALC),
-    RES("Qmax", V_QLS, "l/s"),
-    LN(" hm/hf = {HMHF!} %", C_GRAY),
-    IF(G_VP),
-      EQ("vp", "sqrt(2g(H - hf)/SumK)", "sqrt(2({G})({H} - {HFCQ})/{K})", V_VP, "m/s"),
-      LN(" v con Qd = {VCQ!} m/s debe ser <= vp", C_WARN),
-    ENDIF,
-    IF(G_VAL),
-      SEC("VALVULA DE CONTROL (Qd, D comercial)"),
-      EQ("hT", 0, 0, V_VALHT, "m"),
-      EQ("hv", "H - hT", "{H} - {VALHT}", V_VALHV, "m"),
-      EQ("Kv", "2g hv/v^2", "2({G})({VALHV})/({VALV})^2", V_VALKV, 0),
-    ENDIF,
-    CALL(S_OBS), STOP
-};
-
-/* ---- F ---- */
-static const mstep sF[] = {
-    LN("RESULTADO  Valvula de control", C_TITLE), SEP,
-    CALL(S_STATE), DAT("hv", V_HV, "m"), DAT("Kv", V_KV, 0),
-    SEP, WARNS, STOP
-};
-static const mstep mF[] = {
-    LN("MEMORIA  Valvula de control (F)", C_TITLE), SEP,
-    CALL(S_DATA), DAT("H disponible", V_H, "m"),
-    SEC("CALCULOS"), CALL(S_CALC),
-    EQ("hv", "H - hT", "{H} - {HT}", V_HV, "m"),
-    EQ("Kv", "2g hv/v^2", "2({G})({HV})/({V})^2", V_KV, 0),
-    SEC("RESULTADOS"), RES("hv", V_HV, "m"), RES("Kv", V_KV, 0),
-    CALL(S_OBS), STOP
-};
-
-/* ---- E ---- */
-static const mstep sE[] = {
-    LN("RESULTADO  Calibracion", C_TITLE), SEP,
-    DAT("v", V_V, "m/s"), DAT("Re", V_RE, 0), DAT("hf + hm", V_HTOT, "m"),
-    DAT("hm", V_HM, "m"), DAT("hf", V_HF, "m"), DAT("f", V_F, 0),
-    DAT("ks", V_KSMM, "mm"), DAT("ks/D", V_KSD, 0),
-    SEP, WARNS, STOP
-};
-static const mstep mE[] = {
-    LN("MEMORIA  Calibracion (E)", C_TITLE), SEP,
-    SEC("DATOS"),
-    DAT("z1", V_Z1, "m"), DAT("z2", V_Z2, "m"),
-    DAT("p1/gamma", V_P1, "m"), DAT("p2/gamma", V_P2, "m"),
-    DAT("L", V_L, "m"), DAT("D", V_D, "m"), DAT("Q", V_Q, "m3/s"),
-    DAT("Suma K", V_K, 0), DAT("nu", V_NU, "m2/s"),
-    SEC("CALCULOS"),
-    EQ("A", "pi D^2/4", "pi({D})^2/4", V_A, "m2"),
-    EQ("v", "Q/A", "{Q}/{A}", V_V, "m/s"),
-    EQ("hf+hm", "(z1 - z2) + (p1 - p2)/gamma", "({Z1} - {Z2}) + ({P1} - {P2})", V_HTOT, "m"),
-    EQ("hm", "SumK v^2/2g", "{K}({V})^2/(2({G}))", V_HM, "m"),
-    EQ("hf", "(hf + hm) - hm", "{HTOT} - {HM}", V_HF, "m"),
-    EQ("f", "2g D hf/(L v^2)", "2({G})({D})({HF})/({L}({V})^2)", V_F, 0),
-    EQ("Re", "v D/nu", "{V}({D})/{NU}", V_RE, 0),
-    EQ("ks", "3.7D(10^(-1/(2 sqrt f)) - 2.51/(Re sqrt f))",
-       "3.7({D})(10^(-1/(2({SF}))) - 2.51/({RE}({SF})))", V_KS, "m"),
-    SEC("RESULTADOS"), RES("f", V_F, 0), RES("ks", V_KSMM, "mm"),
-    SEC("OBSERVACIONES"), WARNS, STOP
-};
-
-/* ---- I ---- */
-static const mstep sI[] = {
-    LN("RESULTADO  Darcy-W. vs Hazen-W.", C_TITLE), SEP,
-    IFN(G_MODEQ),
-      CALL(S_STATE),
-      DAT("hf Hazen-W.", V_HW, "m"), DAT("Diferencia", V_ERR, "%"),
-      LN("   (HW - DW)/DW, solo friccion", C_GRAY),
-    ENDIF,
-    IF(G_MODEQ),
-      DAT("Q Darcy-W.", V_QLS, "l/s"), DAT("Q Hazen-W.", V_QHWLS, "l/s"),
-      DAT("Diferencia", V_ERR, "%"),
-      LN("   (HW - DW)/DW; HW sin locales", C_GRAY),
-    ENDIF,
-    SEP, WARNS, STOP
-};
-static const mstep mI[] = {
-    LN("MEMORIA  Darcy-W. vs Hazen-W. (I)", C_TITLE), SEP,
-    CALL(S_DATA), DAT("C_H", V_CH, 0),
-    IFN(G_MODEQ),
-      SEC("DARCY-WEISBACH"), CALL(S_CALC),
-      SEC("HAZEN-WILLIAMS (sin locales)"),
-      EQ("hf", "10.675 L Q^1.852/(C^1.852 D^4.87)",
-         "10.675({L})({Q})^1.852/(({CH})^1.852({D})^4.87)", V_HW, "m"),
-      SEC("COMPARACION"),
-      EQ("e", "(hf HW - hf DW)/hf DW", "({HW} - {HF})/{HF}", V_ERR, "%"),
-      LN(" Hazen-W. suele sobreestimar las perdidas", C_GRAY),
-    ENDIF,
-    IF(G_MODEQ),
-      DAT("H", V_H, "m"),
-      SEC("DARCY-WEISBACH (tipo B)"),
-      IF(G_COURSE), LN(" Iteracion del curso", C_GRAY), ENDIF,
-      IFN(G_COURSE), LN(" Biseccion sobre v", C_GRAY), ENDIF,
-      CALL(S_CALC),
-      RES("Q DW", V_QLS, "l/s"),
-      SEC("HAZEN-WILLIAMS (sin locales)"),
-      EQ("Q", "(H C^1.852 D^4.87/(10.675 L))^(1/1.852)",
-         "({H}({CH})^1.852({D})^4.87/(10.675({L})))^(1/1.852)", V_QHW, "m3/s"),
-      SEC("COMPARACION"),
-      EQ("e", "(Q HW - Q DW)/Q DW", "({QHW} - {Q})/{Q}", V_ERR, "%"),
-    ENDIF,
-    CALL(S_OBS), STOP
-};
-
-static const mstep *const sum_p[PT_COUNT] = { sA, sB, sD, sC, sF, sE, sI };
-static const mstep *const memo_p[PT_COUNT] = { mA, mB, mD, mC, mF, mE, mI };
-
-/* ---- interprete ---- */
 static char tb[200], tb2[200];
 
-/* Expande {NOMBRE} y {NOMBRE!} */
+/* Expande los codigos de valor de una plantilla */
 static const char *tpl(const char *t, char *out, size_t n)
 {
-    size_t k = 0, j;
-    char name[12], num[NUMFMT_LEN];
+    size_t k = 0;
+    char num[NUMFMT_LEN];
     const char *s;
-    bool shortf;
-    uint8_t i;
+    uint8_t code, id;
     if (!t)
         return 0;
     while (*t && k + 1 < n) {
-        if (*t != '{') {
+        code = (uint8_t)*t;
+        if (code != TX_FULL && code != TX_SHORT) {
             out[k++] = *t++;
             continue;
         }
-        t++;
-        j = 0;
-        while (*t && *t != '}' && *t != '!' && j < sizeof name - 1)
-            name[j++] = *t++;
-        name[j] = 0;
-        shortf = (*t == '!');
-        while (*t && *t != '}')
-            t++;
-        if (*t)
-            t++;
-        s = "?";
-        if (!strcmp(name, "METHOD")) {
+        if (!t[1])
+            break;
+        id = (uint8_t)(t[1] - 1);       /* el generador guarda id + 1 */
+        t += 2;
+        if (id == V_METHOD)
             s = method_names[C.method];
-        } else if (!strcmp(name, "LISTNAME")) {
-            s = diam_set_names[in.dset];
-        } else {
-            for (i = 0; i < V_COUNT; i++)
-                if (!strcmp(name, vname[i])) {
-                    s = shortf ? fmt_w(V[i], 7, num)
-                               : fmt_real(V[i], g_set.dec, num);
-                    break;
-                }
-        }
+        else if (id == V_LISTNAME)
+            s = in.dset < DIAM_SETS ? diam_set_names[in.dset] : "Propia";
+        else if (id < V_COUNT)
+            s = code == TX_SHORT ? fmt_w(V[id], 7, num)
+                                 : fmt_real(V[id], g_set.dec, num);
+        else
+            s = "?";
         while (*s && k + 1 < n)
             out[k++] = *s++;
     }
@@ -548,43 +195,54 @@ static const char *const hD[5] = { "i", "D min", "D max", "D mm", "hT-H" };
 static const real m_one[5] = { 1, 1, 1, 1, 1 };
 static const real m_D[5] = { 1, 1000, 1000, 1000, 1 };
 
-static void run_prog(const mstep *p, uint8_t depth)
+static void run_prog(uint8_t prog, uint8_t depth)
 {
-    uint8_t skip = 0, i;
+    const uint8_t *p;
+    uint16_t o;
+    uint8_t skip = 0, i, op, id;
     char num[NUMFMT_LEN];
-    for (; p->op != M_END; p++) {
+    if (!TX || prog >= PROG_COUNT)
+        return;
+    o = rd16(TX + 5 + 2 * prog);
+    for (; o + TX_STEP <= TXN; o += TX_STEP) {
+        p = TX + o;
+        op = p[0];
+        id = p[1];
+        if (op == M_END)
+            break;
         if (skip) {                       /* dentro de un IF falso */
-            if (p->op == M_IF || p->op == M_IFN)
+            if (op == M_IF || op == M_IFN)
                 skip++;
-            else if (p->op == M_ENDIF)
+            else if (op == M_ENDIF)
                 skip--;
             continue;
         }
-        switch (p->op) {
-        case M_SEC: memo_sec(p->a); break;
+        switch (op) {
+        case M_SEC: memo_sec(txs(rd16(p + 2))); break;
         case M_SEP: view_add_sep(); break;
-        case M_DATA: view_add_val(p->a, V[p->id], p->u); break;
-        case M_RES: memo_res(p->a, V[p->id], p->u); break;
+        case M_DATA: view_add_val(txs(rd16(p + 2)), V[id], txs(rd16(p + 8))); break;
+        case M_RES: memo_res(txs(rd16(p + 2)), V[id], txs(rd16(p + 8))); break;
         case M_EQ:
-            memo_eq(p->a, p->b, tpl(p->c, tb, sizeof tb), V[p->id], p->u);
+            memo_eq(txs(rd16(p + 2)), txs(rd16(p + 4)),
+                    tpl(txs(rd16(p + 6)), tb, sizeof tb), V[id], txs(rd16(p + 8)));
             break;
-        case M_LINE: memo_line(tpl(p->a, tb2, sizeof tb2), p->id); break;
+        case M_LINE: memo_line(tpl(txs(rd16(p + 2)), tb2, sizeof tb2), id); break;
         case M_IF:
-            if (!(FL & ((uint32_t)1 << p->id)))
+            if (!(FL & ((uint32_t)1 << id)))
                 skip = 1;
             break;
         case M_IFN:
-            if (FL & ((uint32_t)1 << p->id))
+            if (FL & ((uint32_t)1 << id))
                 skip = 1;
             break;
         case M_CALL:
             if (depth < 3)
-                run_prog(subs[p->id], depth + 1);
+                run_prog(id, depth + 1);
             break;
         case M_TABLE:
-            if (p->id == 0)
+            if (id == 0)
                 memo_table(hB_course, 5, &LG, m_one);
-            else if (p->id == 1)
+            else if (id == 1)
                 memo_table(hB_bis, 5, &LG, m_one);
             else
                 memo_table(hD, 5, &LG, m_D);
@@ -713,7 +371,13 @@ static void show(bool memo)
 {
     fill_values();
     view_clear();
-    run_prog(memo ? memo_p[tipo] : sum_p[tipo], 0);
+    if (!tx_open()) {
+        view_add("Falta el archivo " TX_APPVAR " (textos", C_ERR);
+        view_add("de la memoria de calculo). Envielo", C_ERR);
+        view_add("con TI Connect CE y vuelva a entrar.", C_ERR);
+        return;
+    }
+    run_prog(memo ? PROG_MEMO(tipo) : PROG_SUM(tipo), 0);
 }
 
 /* ------------------------------------------------------------------ */

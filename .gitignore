@@ -9,3 +9,4 @@ __pycache__/
 *.rom
 tests/cemu/*/bin/
 h0/bin/*.obj
+bin/PERDTXT.bin

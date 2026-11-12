@@ -16,6 +16,7 @@
 #include "../src/ui/widgets.h"
 #include "../src/ui/numfmt.h"
 #include "mock/fileioc.h"
+#include "../src/data/data.h"
 
 extern char scr[UI_ROWS + 2][UI_COLS + 1];
 extern char scr_msg[];
@@ -61,6 +62,16 @@ static const char *view_value(const char *lab)
             view_line[i][17] == '=')
             return view_line[i] + 19;
     return "";
+}
+
+/* algun renglon de la ultima pantalla contiene el texto */
+static int scr_has(const char *t)
+{
+    int r;
+    for (r = 0; r < UI_ROWS + 2; r++)
+        if (strstr(scr[r], t))
+            return 1;
+    return 0;
 }
 
 static int starts(const char *s, const char *p)
@@ -127,14 +138,14 @@ int main(int argc, char **argv)
     T("5"); K(K_CLEAR); T("6"); K(K_CLEAR); T("7"); K(K_CLEAR);
     K(K_CLEAR);
     T("2"); K(K_ENTER);
-    T("3"); T("1"); K(K_ENTER); T("2"); K(K_ENTER); T("3"); K(K_ENTER);
-    T("4"); K(K_ENTER); K(K_CLEAR);
-    T("4"); K(K_ENTER);
+    T("3"); T("1"); K(K_CLEAR); T("2"); K(K_CLEAR); T("3"); K(K_CLEAR);
+    T("4"); K(K_CLEAR); K(K_CLEAR);
+    T("4"); K(K_CLEAR);
     T("6"); { int i; for (i = 0; i < 40; i++) K(K_DOWN); } K(K_RIGHT); K(K_LEFT); K(K_F5);
     K(K_DOWN); K(K_DOWN); K(K_UP); K(K_UP);   /* menu con flechas */
     T("7");
     run();
-    check(n_alerts - a0 == 6, "6 avisos de modulos pendientes (fases 4 y 5)");
+    check(n_alerts - a0 == 1, "1 aviso de modulo pendiente (fase 5)");
     check(!ui_quit && mock_script_left() == 0, "sale por la opcion Salir sin teclas de sobra");
 
     /* 2. CLEAR en el menu principal pide confirmacion */
@@ -296,6 +307,99 @@ int main(int argc, char **argv)
     run();
     check(memo_ok(), "I P-10: memoria completa");
     check(g_set.h.method == FM_CW, "metodo en ajustes");
+
+    /* 5c. Fase 4: biblioteca y casos guardados */
+    {
+        mock_var *cv;
+        int i;
+        char nm[4];
+        /* material desde el formulario A (F1): PEAD */
+        T("1"); T("1"); K(K_PGUP); K(K_F1); K(K_DOWN); K(K_ENTER);
+        run();
+        check(scr_has("0.007") && !strcmp(last_title, "PERDIDAS DADO Q  (A)"), "MAT: PEAD pone ks = 0,007 mm");
+        /* sumador con el conjunto del examen 2025 (12,8) */
+        T("1"); T("1"); K(K_F2); K(K_F2); K(K_DOWN); K(K_ENTER); K(K_F5);
+        run();
+        check(scr_has("12.8") && !strcmp(last_title, "PERDIDAS DADO Q  (A)"), "SUMA K: conjunto 2025 = 12,8");
+        /* sumador: agregar entrada (0,5) con cantidad 3 = 1,5 */
+        T("1"); T("1"); K(K_F2); K(K_F2); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_ENTER);
+        K(K_F1); K(K_ENTER);   /* reemplaza por 2017 P4 (2,8) y agrega entrada 0,5 */
+        run();
+        check(scr_has("3.3"), "SUMA K: 2017 P4 + entrada = 3,3 en vivo");
+        T("1"); T("1"); K(K_F2); K(K_F3); K(K_F5);
+        run();
+        check(scr_has("3.3") || scr_has("2.8") || scr_has("1"), "SUMA K: quitar linea no se cae");
+        /* fluido para el formulario: agua 20 C */
+        T("1"); T("1"); K(K_F3); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_ENTER);
+        run();
+        check(scr_has("1.004E-6"), "FLUIDO: agua 20 C da nu = 1,004E-6");
+        /* fluido por defecto desde la biblioteca: 5 C */
+        T("3"); T("3"); K(K_PGUP); K(K_ENTER); K(K_ENTER);
+        run();
+        check(g_set.h.nu > 1.51e-6 && g_set.h.nu < 1.53e-6 && g_set.h.gamma > 9809 &&
+              g_set.h.gamma < 9811 && g_set.h.pv > 871 && g_set.h.pv < 873,
+              "FLUIDO por defecto: nu, gamma y pv a 5 C");
+        settings_default(&g_set);
+        /* lista propia de diametros: 250, 300, 350 */
+        T("3"); T("4"); K(K_UP); K(K_ENTER); TE("250"); TE("300"); TE("350"); K(K_F5);
+        run();
+        cv = mock_find("PERDCAS", 0);
+        check(diam_custom[0] == 250 && diam_custom[1] == 300 && diam_custom[2] == 350 &&
+              cv && cv->exists, "lista propia guardada en PERDCAS");
+        /* diseno P-17 con la lista propia: comercial 300 mm */
+        T("1"); T("3"); K(K_PGUP); TE("200"); TE("76"); TE("1900"); TE("0.0015"); TE("12.8");
+        TE("1E-6"); K(K_LEFT); K(K_F5);
+        run();
+        check(starts(view_value("D comercial"), "300 "), "D con lista propia: comercial 300 mm");
+        /* guardar ese caso como P17 */
+        T("1"); T("3"); K(K_F5); K(K_F3); T("P17"); K(K_ENTER); K(K_ENTER);
+        run();
+        check(cases_count() == 1 && !strcmp(alert_title, "Caso guardado"), "guardar caso P17");
+        /* guardar el B actual como PRUEBA */
+        T("1"); T("2"); K(K_F5); K(K_F3); T("PRUEBA"); K(K_ENTER); K(K_ENTER);
+        run();
+        check(cases_count() == 2, "guardar caso PRUEBA");
+        /* cambiar datos y cargar P17: vuelve a 300 mm y Qd 200 */
+        T("1"); T("3"); K(K_PGUP); TE("999");
+        run();
+        T("4"); K(K_ENTER);
+        run();
+        check(starts(view_value("D comercial"), "300 ") && has_line("Diametro de diseno"),
+              "cargar P17 recalcula el resultado");
+        /* nombre repetido: reemplaza sin crecer */
+        T("1"); T("3"); K(K_F5); K(K_F3); T("P17"); K(K_ENTER); K(K_ENTER); K(K_ENTER);
+        run();
+        check(cases_count() == 2, "nombre repetido reemplaza el caso");
+        /* "reinicio": archivar y volver a leer del AppVar */
+        check(cases_archive() && cv->archived, "casos archivados al salir");
+        check(cases_load() == 0 && cases_count() == 2 && diam_custom[1] == 300,
+              "casos y lista propia se recuperan del AppVar");
+        /* borrar PRUEBA (segundo de la lista) */
+        T("4"); K(K_DOWN); K(K_F3); K(K_ENTER);
+        run();
+        check(cases_count() == 1, "borrar caso");
+        /* lista llena */
+        T("1"); T("2"); K(K_F5);
+        for (i = 0; i < 19; i++) {
+            nm[0] = 'C'; nm[1] = (char)('A' + i); nm[2] = 0;
+            K(K_F3); T(nm); K(K_ENTER); K(K_ENTER);
+        }
+        K(K_F3); T("OTRO"); K(K_ENTER); K(K_ENTER);
+        run();
+        check(cases_count() == 20 && !strcmp(alert_l1, "Lista llena (20 casos)."), "lista llena a los 20 casos");
+        /* nombre vacio no se guarda; CLEAR cancela */
+        T("1"); T("2"); K(K_F5); K(K_F3); K(K_ENTER); K(K_CLEAR);
+        run();
+        check(cases_count() == 20, "nombre vacio o CLEAR no guardan");
+        /* AppVar danado */
+        cv->data[20] ^= 0x5A;
+        check(cases_load() == 2 && cases_count() == 0, "PERDCAS danado: lista vacia, sin cierre");
+        cv->len = 5;
+        check(cases_load() == 2, "PERDCAS truncado: lista vacia");
+        cv->exists = 0;
+        check(cases_load() == 1, "sin PERDCAS: lista vacia");
+        memset(diam_custom, 0, sizeof diam_custom);
+    }
 
     /* 6. Ajustes: decimales, validaciones y archivo */
     T("5"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("3"); K(K_F5);

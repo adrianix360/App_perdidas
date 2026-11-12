@@ -13,17 +13,12 @@
 #include "ui/numfmt.h"
 #include "ui/memo.h"
 #include "data/data.h"
+#include "pipe.h"
 
 /* ------------------------------------------------------------------ */
 /* Datos compartidos (unidades de pantalla)                            */
 /* ------------------------------------------------------------------ */
-static struct {
-    real Q, H, D, L, ks, K, nu, f, CH, eta, Hs, zb, Hp;
-    real z1, z2, p1, p2;
-    uint8_t sQ, sH, sD, sL, sks, sK, snu, sf, sCH, seta, sHs, szb, sHp;
-    uint8_t sz1, sz2, sp1, sp2;
-    uint8_t mach, dset, valve, modeI;
-} in;
+pipe_inputs pin;
 
 static const char *const mach_names[2] = { "Bomba", "Turbina" };
 static const char *const yesno[2] = { "No", "Si" };
@@ -60,7 +55,7 @@ static const char *const titles[PT_COUNT] = {
 /* ------------------------------------------------------------------ */
 /* Campos                                                              */
 /* ------------------------------------------------------------------ */
-#define FLD(lab, un, v, s, fl) { lab, un, &in.v, 0, &in.s, fl, 0, 0, 0, 0 }
+#define FLD(lab, un, v, s, fl) { lab, un, &pin.v, 0, &pin.s, fl, 0, 0, 0, 0 }
 #define F_Q   FLD("Caudal Q", "l/s", Q, sQ, FF_POS)
 #define F_D   FLD("Diametro D", "mm", D, sD, FF_POS)
 #define F_L   FLD("Longitud L", "m", L, sL, FF_POS)
@@ -75,15 +70,15 @@ static form_field f_A[] = { F_Q, F_D, F_L, F_KS, F_K, F_NU, F_F,
 static form_field f_B[] = { FLD("Carga H", "m", H, sH, FF_ANY), F_D, F_L,
     F_KS, F_K, F_NU, F_F, F_MET };
 static form_field f_C[] = {
-    { "Equipo", 0, 0, &in.mach, 0, FF_CHOICE, mach_names, 2, 0, 0 },
+    { "Equipo", 0, 0, &pin.mach, 0, FF_CHOICE, mach_names, 2, 0, 0 },
     F_Q, F_D, F_L, F_KS, F_K, F_NU,
     FLD("Desnivel Hs/Ha", "m", Hs, sHs, FF_ANY),
-    { "Eficiencia eta", "0-1", &in.eta, 0, &in.seta, FF_RANGE, 0, 0, 0.001, 1 },
+    { "Eficiencia eta", "0-1", &pin.eta, 0, &pin.seta, FF_RANGE, 0, 0, 0.001, 1 },
     F_F, FLD("Cota z equipo(opc)", "m", zb, szb, FF_ANY | FF_OPT), F_MET };
 static form_field f_D[] = { FLD("Caudal diseno Qd", "l/s", Q, sQ, FF_POS),
     FLD("Carga H", "m", H, sH, FF_ANY), F_L, F_KS, F_K, F_NU,
-    { "Lista diametros", 0, 0, &in.dset, 0, FF_CHOICE, diam_set_names, DIAM_SETS, 0, 0 },
-    { "Valvula control", 0, 0, &in.valve, 0, FF_CHOICE, yesno, 2, 0, 0 },
+    { "Lista diametros", 0, 0, &pin.dset, 0, FF_CHOICE, diam_set_names, DIAM_CHOICES, 0, 0 },
+    { "Valvula control", 0, 0, &pin.valve, 0, FF_CHOICE, yesno, 2, 0, 0 },
     F_MET };
 static form_field f_F[] = { F_Q, F_D, F_L, F_KS, F_K, F_NU,
     FLD("Carga H", "m", H, sH, FF_ANY), F_F, F_MET };
@@ -93,11 +88,11 @@ static form_field f_E[] = {
     FLD("Presion p2/gamma", "m", p2, sp2, FF_ANY),
     F_L, F_D, F_Q, F_K, F_NU };
 static form_field f_I[] = {
-    { "Calcular", 0, 0, &in.modeI, 0, FF_CHOICE, modeI_names, 2, 0, 0 },
+    { "Calcular", 0, 0, &pin.modeI, 0, FF_CHOICE, modeI_names, 2, 0, 0 },
     FLD("Q (modo hf)", "l/s", Q, sQ, FF_POS | FF_OPT),
     FLD("H (modo Q)", "m", H, sH, FF_POS | FF_OPT),
     F_D, F_L, F_KS, FLD("Suma K (solo DW)", 0, K, sK, FF_NONNEG), F_NU,
-    { "C_H Hazen-W.", 0, &in.CH, 0, &in.sCH, FF_RANGE, 0, 0, 1, 200 },
+    { "C_H Hazen-W.", 0, &pin.CH, 0, &pin.sCH, FF_RANGE, 0, 0, 1, 200 },
     F_MET };
 
 static form_field *const forms[PT_COUNT] = { f_A, f_B, f_D, f_C, f_F, f_E, f_I };
@@ -176,7 +171,7 @@ static const char *tpl(const char *t, char *out, size_t n)
         if (id == V_METHOD)
             s = method_names[C.method];
         else if (id == V_LISTNAME)
-            s = in.dset < DIAM_SETS ? diam_set_names[in.dset] : "Propia";
+            s = pin.dset < DIAM_CHOICES ? diam_set_names[pin.dset] : "?";
         else if (id < V_COUNT)
             s = code == TX_SHORT ? fmt_w(V[id], 7, num)
                                  : fmt_real(V[id], g_set.dec, num);
@@ -281,12 +276,12 @@ static void fill_values(void)
     case PT_C: s = &R.m.st; break;
     case PT_B: s = &R.q.st; break;
     case PT_D: s = &R.d.qmax.st; D = R.d.D_com; break;
-    case PT_I: s = in.modeI ? &R.q.st : &R.st; break;
+    case PT_I: s = pin.modeI ? &R.q.st : &R.st; break;
     default: break;
     }
     V[V_D] = D; V[V_L] = P.L; V[V_KS] = P.ks; V[V_K] = P.sumK;
     V[V_NU] = C.nu; V[V_G] = C.g; V[V_GAM] = C.gamma; V[V_TOL] = C.tol;
-    V[V_H] = in.H; V[V_QD] = in.Q / 1000; V[V_KSMM] = P.ks * 1000;
+    V[V_H] = pin.H; V[V_QD] = pin.Q / 1000; V[V_KSMM] = P.ks * 1000;
     if (s) {
         V[V_Q] = s->Q; V[V_QLS] = s->Q * 1000; V[V_A] = s->A; V[V_V] = s->v;
         V[V_RE] = s->Re; V[V_KSD] = s->ksD; V[V_F] = s->f;
@@ -306,12 +301,12 @@ static void fill_values(void)
     SETF(G_GO, C.method == FM_GOUDAR);
     SETF(G_KPOS, P.sumK > 0);
     SETF(G_WITHQ, tipo == PT_A || tipo == PT_C || tipo == PT_F ||
-                  (tipo == PT_I && !in.modeI));
+                  (tipo == PT_I && !pin.modeI));
     SETF(G_HASD, tipo != PT_D);
     switch (tipo) {
     case PT_A:
-        V[V_HP] = in.Hp; V[V_PH] = X.ph; V[V_PKPA] = X.ph * C.gamma / 1000;
-        SETF(G_HP, in.sHp);
+        V[V_HP] = pin.Hp; V[V_PH] = X.ph; V[V_PKPA] = X.ph * C.gamma / 1000;
+        SETF(G_HP, pin.sHp);
         break;
     case PT_B: case PT_I:
         V[V_ITER] = R.q.iters;
@@ -320,21 +315,21 @@ static void fill_values(void)
         SETF(G_DIRECT, R.q.solver == SOLV_DIRECT);
         SETF(G_FB, R.q.st.warn & W_FALLBACK);
         if (tipo == PT_I) {
-            V[V_CH] = in.CH; V[V_HW] = X.hw; V[V_ERR] = X.err;
+            V[V_CH] = pin.CH; V[V_HW] = X.hw; V[V_ERR] = X.err;
             V[V_QHW] = X.Qhw; V[V_QHWLS] = X.Qhw * 1000;
-            SETF(G_MODEQ, in.modeI);
-            if (!in.modeI)
+            SETF(G_MODEQ, pin.modeI);
+            if (!pin.modeI)
                 FL &= ~(((uint32_t)1 << G_COURSE) | ((uint32_t)1 << G_BIS));
         }
         break;
     case PT_C:
-        V[V_HS] = in.Hs; V[V_ETA] = in.eta; V[V_HMACH] = R.m.Hm;
+        V[V_HS] = pin.Hs; V[V_ETA] = pin.eta; V[V_HMACH] = R.m.Hm;
         V[V_PN] = R.m.Pn; V[V_PB] = R.m.Pb; V[V_PNKW] = R.m.Pn / 1000;
         V[V_PBKW] = R.m.Pb / 1000; V[V_PBHP] = R.m.Pb / 745.7;
-        V[V_ZB] = in.zb;
-        V[V_COTA] = in.zb + (in.mach == 0 ? R.m.Hm : -R.m.Hm);
-        SETF(G_PUMP, in.mach == 0);
-        SETF(G_ZB, in.szb);
+        V[V_ZB] = pin.zb;
+        V[V_COTA] = pin.zb + (pin.mach == 0 ? R.m.Hm : -R.m.Hm);
+        SETF(G_PUMP, pin.mach == 0);
+        SETF(G_ZB, pin.szb);
         break;
     case PT_F:
         V[V_HV] = R.v.hv; V[V_KV] = R.v.Kv;
@@ -354,8 +349,8 @@ static void fill_values(void)
         SETF(G_VAL, X.has_val);
         break;
     case PT_E:
-        V[V_D] = in.D / 1000; V[V_Q] = in.Q / 1000;
-        V[V_Z1] = in.z1; V[V_Z2] = in.z2; V[V_P1] = in.p1; V[V_P2] = in.p2;
+        V[V_D] = pin.D / 1000; V[V_Q] = pin.Q / 1000;
+        V[V_Z1] = pin.z1; V[V_Z2] = pin.z2; V[V_P1] = pin.p1; V[V_P2] = pin.p2;
         V[V_A] = R.k.A; V[V_V] = R.k.v; V[V_HTOT] = R.k.htot;
         V[V_HM] = R.k.hm; V[V_HF] = R.k.hf; V[V_F] = R.k.f; V[V_RE] = R.k.Re;
         V[V_SF] = R_SQRT(R.k.f); V[V_KS] = R.k.ks; V[V_KSMM] = R.k.ks * 1000;
@@ -386,12 +381,12 @@ static void show(bool memo)
 static void make_pipe(void)
 {
     C = g_set.h;
-    C.nu = in.nu;
-    P.D = in.D / 1000;
-    P.L = in.L;
-    P.ks = in.ks / 1000;
-    P.sumK = in.sK ? in.K : 0;
-    P.f_fixed = in.sf ? in.f : 0;
+    C.nu = pin.nu;
+    P.D = pin.D / 1000;
+    P.L = pin.L;
+    P.ks = pin.ks / 1000;
+    P.sumK = pin.sK ? pin.K : 0;
+    P.f_fixed = pin.sf ? pin.f : 0;
 }
 
 /* Devuelve 0 si todo bien, o un texto de error */
@@ -404,52 +399,61 @@ static const char *compute(void)
     memset(&X, 0, sizeof X);
     switch (tipo) {
     case PT_A:
-        e = hydro_pipe_state(&P, in.Q / 1000, &C, &R.st);
-        if (!e && in.sHp)
-            X.ph = hydro_pressure_head(in.Hp, 0, R.st.v, R.st.hT, &C, &R.st.warn);
+        e = hydro_pipe_state(&P, pin.Q / 1000, &C, &R.st);
+        if (!e && pin.sHp)
+            X.ph = hydro_pressure_head(pin.Hp, 0, R.st.v, R.st.hT, &C, &R.st.warn);
         break;
     case PT_B:
-        e = hydro_qmax(&P, in.H, &C, &R.q, &LG);
+        e = hydro_qmax(&P, pin.H, &C, &R.q, &LG);
         break;
     case PT_C:
-        e = (in.mach == 0) ? hydro_pump(&P, in.Q / 1000, in.Hs, in.eta, &C, &R.m)
-                           : hydro_turbine(&P, in.Q / 1000, in.Hs, in.eta, &C, &R.m);
+        e = (pin.mach == 0) ? hydro_pump(&P, pin.Q / 1000, pin.Hs, pin.eta, &C, &R.m)
+                           : hydro_turbine(&P, pin.Q / 1000, pin.Hs, pin.eta, &C, &R.m);
         break;
     case PT_D:
         P.f_fixed = 0;
-        dlist_n = diam_sets[in.dset].n;
-        for (i = 0; i < dlist_n; i++)
-            dlist[i] = diam_sets[in.dset].mm[i] / 1000;
-        e = hydro_design(&P, in.Q / 1000, in.H, dlist, dlist_n, &C, &R.d, &LG);
-        if (!e && in.valve) {
+        dlist_n = 0;
+        if (pin.dset == DIAM_CUSTOM) {
+            for (i = 0; i < DIAM_CUSTOM_MAX; i++)
+                if (diam_custom[i] > 0)
+                    dlist[dlist_n++] = diam_custom[i] / 1000;
+            if (!dlist_n)
+                return "Lista propia vacia (Biblioteca)";
+        } else {
+            dlist_n = diam_sets[pin.dset].n;
+            for (i = 0; i < dlist_n; i++)
+                dlist[i] = diam_sets[pin.dset].mm[i] / 1000;
+        }
+        e = hydro_design(&P, pin.Q / 1000, pin.H, dlist, dlist_n, &C, &R.d, &LG);
+        if (!e && pin.valve) {
             P.D = R.d.D_com;
             X.has_val = 1;   /* si hv < 0 se muestra igual, con su aviso */
-            hydro_valve(&P, in.Q / 1000, in.H, &C, &X.val);
+            hydro_valve(&P, pin.Q / 1000, pin.H, &C, &X.val);
         }
         break;
     case PT_F:
-        e = hydro_valve(&P, in.Q / 1000, in.H, &C, &R.v);
+        e = hydro_valve(&P, pin.Q / 1000, pin.H, &C, &R.v);
         break;
     case PT_E:
         P.f_fixed = 0;
-        e = hydro_calibrate(in.D / 1000, in.L, in.Q / 1000, P.sumK,
-                            in.z1 - in.z2, in.p1 - in.p2, &C, &R.k);
+        e = hydro_calibrate(pin.D / 1000, pin.L, pin.Q / 1000, P.sumK,
+                            pin.z1 - pin.z2, pin.p1 - pin.p2, &C, &R.k);
         if (e == H_ERR_KS_NEG)
             e = H_OK;    /* se muestra con su advertencia */
         break;
     case PT_I:
         P.f_fixed = 0;
-        if (in.modeI == 0) {
-            if (!in.sQ)
+        if (pin.modeI == 0) {
+            if (!pin.sQ)
                 return "Falta Q (modo hf)";
-            e = hydro_pipe_state(&P, in.Q / 1000, &C, &R.st);
-            X.hw = hydro_hw_hf(in.Q / 1000, P.D, P.L, in.CH);
+            e = hydro_pipe_state(&P, pin.Q / 1000, &C, &R.st);
+            X.hw = hydro_hw_hf(pin.Q / 1000, P.D, P.L, pin.CH);
             X.err = 100 * (X.hw - R.st.hf) / R.st.hf;
         } else {
-            if (!in.sH)
+            if (!pin.sH)
                 return "Falta H (modo Q)";
-            e = hydro_qmax(&P, in.H, &C, &R.q, &LG);
-            X.Qhw = hydro_hw_q(in.H, P.D, P.L, in.CH);
+            e = hydro_qmax(&P, pin.H, &C, &R.q, &LG);
+            X.Qhw = hydro_hw_q(pin.H, P.D, P.L, pin.CH);
             X.err = 100 * (X.Qhw - R.q.st.Q) / R.q.st.Q;
         }
         break;
@@ -466,7 +470,7 @@ static const char *compute(void)
 /* ------------------------------------------------------------------ */
 static void result_loop(void)
 {
-    static const char *const fk_sum[5] = { "MEMORIA", "", "", "", "VOLVER" };
+    static const char *const fk_sum[5] = { "MEMORIA", "", "GUARDAR", "", "VOLVER" };
     static const char *const fk_memo[5] = { "RESUMEN", "", "", "", "VOLVER" };
     bool memo = false;
     uint8_t k;
@@ -475,6 +479,8 @@ static void result_loop(void)
         k = view_run(titles[tipo], memo ? fk_memo : fk_sum);
         if (k == K_F1) {
             memo = !memo;
+        } else if (k == K_F3 && !memo) {
+            case_save_ui(tipo);
         } else if (k == K_MODE) {
             scr_settings();
         } else {
@@ -485,6 +491,11 @@ static void result_loop(void)
 
 void scr_pipe(uint8_t t)
 {
+    scr_pipe_run(t, 0);
+}
+
+void scr_pipe_run(uint8_t t, uint8_t autocalc)
+{
     static uint8_t cur[PT_COUNT];
     form_t fm;
     uint8_t k, m0;
@@ -493,13 +504,13 @@ void scr_pipe(uint8_t t)
     if (t >= PT_COUNT)
         return;
     tipo = t;
-    if (!in.snu) {
-        in.nu = g_set.h.nu;
-        in.snu = 1;
+    if (!pin.snu) {
+        pin.nu = g_set.h.nu;
+        pin.snu = 1;
     }
-    if (!in.sK) {
-        in.K = 0;
-        in.sK = 1;
+    if (!pin.sK) {
+        pin.K = 0;
+        pin.sK = 1;
     }
     memset(&fm, 0, sizeof fm);
     fm.title = titles[t];
@@ -515,12 +526,17 @@ void scr_pipe(uint8_t t)
         fm.hint = "Hs = z2-z1 (bomba); Ha = z1-z2 (turb.)";
     m0 = g_set.h.method;
     for (;;) {
-        k = form_run(&fm);
+        if (autocalc) {
+            autocalc = 0;
+            k = K_F5;
+        } else {
+            k = form_run(&fm);
+        }
         if (k == K_QUIT || k == K_CLEAR)
             break;
-        if (k == K_F1) { todo_alert("Biblioteca de materiales", 4); continue; }
-        if (k == K_F2) { todo_alert("Sumador de accesorios", 4); continue; }
-        if (k == K_F3) { todo_alert("Selector de fluido", 4); continue; }
+        if (k == K_F1) { lib_pick_material(); continue; }
+        if (k == K_F2) { lib_sumador(); continue; }
+        if (k == K_F3) { lib_pick_fluid(0); continue; }
         if (k == K_F4 || k == K_MODE) { scr_settings(); continue; }
         if (k == K_F5 || k == K_ENTER) {
             if (!form_check(&fm))

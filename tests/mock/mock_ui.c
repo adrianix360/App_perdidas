@@ -31,6 +31,7 @@ void mock_fuzz(unsigned long seed, long n) { rng = seed; fuzz_left = n; script_n
 int mock_script_left(void) { return script_n - script_i; }
 
 void ui_init(void) { ui_quit = false; }
+void ui_set_alpha_lock(bool on) { (void)on; }
 void ui_exit(void) {}
 
 static void put(uint8_t row, uint8_t col, const char *s)

@@ -57,6 +57,7 @@ typedef struct {
     const char *hint;        /* mensaje cuando no hay otro         */
     const char *msg;         /* mensaje pendiente (una vez)        */
     uint8_t msg_color;
+    void (*on_commit)(void); /* se llama tras aceptar un valor     */
 } form_t;
 
 /* Corre el formulario hasta que el usuario pulsa F1..F5, CLEAR (atras),
@@ -85,6 +86,21 @@ void view_add_sep(void);
 /* Muestra las lineas con desplazamiento. Devuelve la tecla que salio:
  * K_F1..K_F5, K_CLEAR, K_QUIT o K_MODE. */
 uint8_t view_run(const char *title, const char *const fk[5]);
+
+/* ---------------- Lista con desplazamiento ---------------- */
+#define LIST_MAX 40
+extern char list_line[LIST_MAX][UI_COLS + 1];
+/* Muestra list_line[0..n-1]; devuelve el indice elegido o -1 si se sale.
+ * *key recibe la tecla que termino (K_ENTER, K_F1..K_F5, K_CLEAR,
+ * K_QUIT, K_MODE). */
+int list_pick(const char *title, const char *hint, uint8_t n, uint8_t cur,
+              const char *const fk[5], uint8_t *key);
+
+/* ---------------- Entrada de texto (nombres) ---------------- */
+/* Letras A-Z y digitos; ALPHA alterna letras/digitos. Devuelve false si
+ * se cancela con CLEAR. */
+bool text_input(const char *title, const char *prompt, char *buf,
+                uint8_t maxlen);
 
 /* Aviso de modulo pendiente */
 void todo_alert(const char *what, uint8_t fase);

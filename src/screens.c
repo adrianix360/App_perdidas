@@ -153,28 +153,6 @@ static void scr_pipe_menu(void)
     }
 }
 
-static void scr_library_menu(void)
-{
-    static const char *const items[] = {
-        "Materiales (ks, C_H)",
-        "Accesorios (K) y sumador",
-        "Fluido (temperatura, nu, gamma)",
-        "Diametros comerciales",
-    };
-    static menu_t m = { "BIBLIOTECA", items, 4, 0 };
-    int r;
-    while (!ui_quit) {
-        r = menu_run(&m);
-        if (r == MENU_BACK || r == MENU_QUIT)
-            return;
-        if (r == MENU_MODE) {
-            scr_settings();
-            continue;
-        }
-        todo_alert(items[r], 4);
-    }
-}
-
 void scr_main(void)
 {
     static const char *const items[] = {
@@ -202,8 +180,8 @@ void scr_main(void)
         case 4: scr_settings(); break;
         case 0: scr_pipe_menu(); break;
         case 1: todo_alert("Sistemas serie / paralelo", 5); break;
-        case 2: scr_library_menu(); break;
-        case 3: todo_alert("Mis casos (guardar y cargar)", 4); break;
+        case 2: scr_library(); break;
+        case 3: scr_cases(); break;
         case 5: scr_help(); break;
         case 6: return;
         default: break;

@@ -10,6 +10,7 @@
 int main(void)
 {
     uint8_t st = settings_load();
+    uint8_t sc = cases_load();
 
     ui_init();
     if (st == 2) {
@@ -19,6 +20,12 @@ int main(void)
                  "se usan valores por defecto", C_WARN);
         g_set_dirty = true;
     }
+    if (sc == 2) {
+        ui_begin(APP_NAME, 0);
+        ui_end();
+        ui_alert("Mis casos", "Archivo de casos danado:",
+                 "se empieza con la lista vacia", C_WARN);
+    }
     scr_main();
     ui_exit();
 
@@ -26,6 +33,8 @@ int main(void)
      * mensaje de reorganizacion de memoria del sistema operativo. */
     if (g_set_dirty)
         settings_save();
+    if (cases_dirty)
+        cases_archive();
     os_ClrHome();
     return 0;
 }

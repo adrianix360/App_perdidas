@@ -56,6 +56,9 @@ void ui_end(void);
  * 2nd + , = E, 2nd + arriba/abajo = pagina) */
 ui_key ui_getkey(void);
 
+/* Con alpha-lock las teclas verdes dan letras A-Z (para nombres) */
+void ui_set_alpha_lock(bool on);
+
 /* Cuadro de mensaje que espera ENTER o CLEAR. Devuelve true con ENTER. */
 bool ui_alert(const char *title, const char *line1, const char *line2,
               uint8_t color);

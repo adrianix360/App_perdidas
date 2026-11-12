@@ -39,4 +39,22 @@ extern const char *const method_names[FM_COUNT];
 enum { PT_A = 0, PT_B, PT_D, PT_C, PT_F, PT_E, PT_I, PT_COUNT };
 void scr_pipe(uint8_t tipo);
 
+/* cases.c: casos guardados (AppVar PERDCAS) */
+#define CASES_MAX 20
+#define CASE_NAME 8
+extern bool cases_dirty;
+uint8_t cases_load(void);      /* 0 ok, 1 no existe, 2 danado */
+bool cases_write(void);
+bool cases_archive(void);
+uint8_t cases_count(void);
+void case_save_ui(uint8_t tipo);
+void scr_cases(void);
+
+/* scr_lib.c: biblioteca */
+bool lib_pick_material(void);
+bool lib_sumador(void);
+bool lib_pick_fluid(uint8_t to_settings);
+void lib_diams(void);
+void scr_library(void);
+
 #endif

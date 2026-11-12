@@ -10,6 +10,35 @@
 bool ui_quit = false;
 static bool second = false;
 static bool alpha = false;
+static bool alpha_lock = false;
+
+void ui_set_alpha_lock(bool on)
+{
+    alpha_lock = on;
+    alpha = false;      /* sin ALPHA de un solo uso pendiente */
+}
+
+/* Letra de cada tecla en modo ALPHA (TI-84 Plus CE) */
+static char alpha_char(uint8_t k)
+{
+    switch (k) {
+    case sk_Math: return 'A';   case sk_Apps: return 'B';
+    case sk_Prgm: return 'C';   case sk_Recip: return 'D';
+    case sk_Sin: return 'E';    case sk_Cos: return 'F';
+    case sk_Tan: return 'G';    case sk_Power: return 'H';
+    case sk_Square: return 'I'; case sk_Comma: return 'J';
+    case sk_LParen: return 'K'; case sk_RParen: return 'L';
+    case sk_Div: return 'M';    case sk_Log: return 'N';
+    case sk_7: return 'O';      case sk_8: return 'P';
+    case sk_9: return 'Q';      case sk_Mul: return 'R';
+    case sk_Ln: return 'S';     case sk_4: return 'T';
+    case sk_5: return 'U';      case sk_6: return 'V';
+    case sk_Sub: return 'W';    case sk_Store: return 'X';
+    case sk_1: return 'Y';      case sk_2: return 'Z';
+    default: return 0;
+    }
+}
+
 
 #define Y_TITLE 0
 #define Y_BODY 14
@@ -160,6 +189,15 @@ ui_key ui_getkey(void)
             second = false;
             r.k = K_ALPHA;
             return r;
+        }
+        if ((alpha || alpha_lock) && !second) {
+            char c = alpha_char(k);
+            alpha = false;
+            if (c) {
+                r.k = K_CHAR;
+                r.c = c;
+                return r;
+            }
         }
         if (second) {
             second = false;

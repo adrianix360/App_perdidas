@@ -20,7 +20,9 @@ const diam_set diam_sets[DIAM_SETS] = {
     { "General 50-1500", 18, d_gen },
 };
 
-const char *const diam_set_names[DIAM_SETS] = {
+const char *const diam_set_names[DIAM_CHOICES] = {
     "PVC examen 2025", "Nominal 2024 200-500", "Pract.3/Ej.5 150-400",
-    "Practica 2 50-300", "General 50-1500",
+    "Practica 2 50-300", "General 50-1500", "Lista propia",
 };
+
+real diam_custom[DIAM_CUSTOM_MAX];

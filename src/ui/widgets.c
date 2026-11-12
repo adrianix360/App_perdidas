@@ -193,6 +193,8 @@ static bool commit(form_t *fm, const char *ebuf)
     *f->val = v;
     if (f->set)
         *f->set = 1;
+    if (fm->on_commit)
+        fm->on_commit();
     return true;
 }
 
@@ -311,6 +313,8 @@ uint8_t form_run(form_t *fm)
                     else
                         *f->ch = *f->ch ? (uint8_t)(*f->ch - 1)
                                         : (uint8_t)(f->nchoices - 1);
+                    if (fm->on_commit)
+                        fm->on_commit();
                 } else if (k.k == K_RIGHT && !(f->flags & FF_INFO)) {
                     /* editar el valor actual */
                     if (field_has(f)) {
@@ -435,6 +439,115 @@ uint8_t view_run(const char *title, const char *const fk[5])
         case K_F1: case K_F2: case K_F3: case K_F4: case K_F5:
             return k.k;
         default: break;
+        }
+    }
+}
+
+/* ================================================================== */
+/* Lista con desplazamiento                                            */
+/* ================================================================== */
+char list_line[LIST_MAX][UI_COLS + 1];
+
+int list_pick(const char *title, const char *hint, uint8_t n, uint8_t cur,
+              const char *const fk[5], uint8_t *key)
+{
+    uint8_t top = 0, i, vis = UI_ROWS - 1;
+    ui_key k;
+    if (cur >= n)
+        cur = 0;
+    for (;;) {
+        if (ui_quit) {
+            *key = K_QUIT;
+            return -1;
+        }
+        if (cur < top)
+            top = cur;
+        if (cur >= top + vis)
+            top = (uint8_t)(cur - vis + 1);
+        ui_begin(title, 0);
+        for (i = 0; i < vis && top + i < n; i++) {
+            bool sel = (top + i == cur);
+            if (sel)
+                ui_row_fill(i + 1, C_SEL);
+            ui_text_n(i + 1, 0, list_line[top + i], UI_COLS, C_FG, sel ? C_SEL : C_BG);
+        }
+        if (!n)
+            ui_text(2, 1, "(vacio)", C_GRAY, C_BG);
+        ui_msg(hint ? hint : "Flechas; ENTER elige; CLEAR vuelve", C_GRAY);
+        ui_fbar(fk);
+        ui_end();
+        k = ui_getkey();
+        switch (k.k) {
+        case K_UP: if (n) cur = cur ? cur - 1 : (uint8_t)(n - 1); break;
+        case K_DOWN: if (n) cur = (cur + 1 < n) ? cur + 1 : 0; break;
+        case K_PGUP: case K_LEFT: cur = cur > vis ? (uint8_t)(cur - vis) : 0; break;
+        case K_PGDN: case K_RIGHT:
+            if (n)
+                cur = (cur + vis < n) ? (uint8_t)(cur + vis) : (uint8_t)(n - 1);
+            break;
+        case K_ENTER:
+            if (!n)
+                break;
+            *key = K_ENTER;
+            return cur;
+        case K_F1: case K_F2: case K_F3: case K_F4: case K_F5:
+            *key = k.k;
+            return n ? cur : -1;
+        case K_CLEAR: case K_QUIT: case K_MODE:
+            *key = k.k;
+            return -1;
+        default: break;
+        }
+    }
+}
+
+/* ================================================================== */
+/* Entrada de texto                                                    */
+/* ================================================================== */
+bool text_input(const char *title, const char *prompt, char *buf,
+                uint8_t maxlen)
+{
+    static const char *const fk[5] = { "", "", "", "", "LISTO" };
+    uint8_t len = (uint8_t)strlen(buf);
+    bool letters = true;
+    char line[UI_COLS + 1];
+    ui_key k;
+    for (;;) {
+        if (ui_quit)
+            return false;
+        ui_set_alpha_lock(letters);
+        ui_begin(title, letters ? "A-Z" : "0-9");
+        ui_text(2, 1, prompt, C_FG, C_BG);
+        strcpy(line, buf);
+        strcat(line, "_");
+        ui_row_fill(4, C_EDIT);
+        ui_text(4, 2, line, C_FG, C_EDIT);
+        ui_text(7, 1, "Letras: teclas verdes (sin ALPHA).", C_GRAY, C_BG);
+        ui_text(8, 1, "ALPHA alterna letras / numeros.", C_GRAY, C_BG);
+        ui_text(9, 1, "DEL borra; ENTER guarda; CLEAR cancela", C_GRAY, C_BG);
+        ui_msg(0, C_GRAY);
+        ui_fbar(fk);
+        ui_end();
+        k = ui_getkey();
+        if (k.k == K_ALPHA) {
+            letters = !letters;
+        } else if (k.k == K_CHAR) {
+            char c = k.c;
+            if (((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) && len < maxlen) {
+                buf[len++] = c;
+                buf[len] = 0;
+            }
+        } else if (k.k == K_DEL || k.k == K_LEFT) {
+            if (len)
+                buf[--len] = 0;
+        } else if (k.k == K_ENTER || k.k == K_F5) {
+            if (len) {
+                ui_set_alpha_lock(false);
+                return true;
+            }
+        } else if (k.k == K_CLEAR || k.k == K_QUIT) {
+            ui_set_alpha_lock(false);
+            return false;
         }
     }
 }

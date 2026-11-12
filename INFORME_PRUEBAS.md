@@ -632,4 +632,4 @@ El `.8xp` pesa 50 547 bytes de los 64 KiB que puede ocupar el programa. Comprimi
 
 ### Pendiente de la fase 3
 
-Prueba en la calculadora real de Adrián (lista de pasos en el chat del 12 de noviembre de 2026): **pendiente de verificar por Adrián**.
+Prueba en la calculadora real de Adrián (TI-84 Plus CE, OS 5.8.4.0058, arTIfiCE v2.1, librerías v15.0): **pasa**. Adrián siguió la lista de 8 pasos (P-02, memoria, P-03, P-17, P-25 y salida) y reportó que todo coincide y funciona bien. **Fase 3 cerrada.**

@@ -239,7 +239,7 @@ real hydro_vp(real H, real hf, real sumK, const hydro_cfg *c);
 /* Tipo G: sistemas en serie y paralelo (modulo de caudal M)           */
 /* ------------------------------------------------------------------ */
 #define NET_MAX        16
-#define NET_MAX_CHILD  6
+#define NET_MAX_CHILD  8
 enum { NODE_PIPE = 0, NODE_SERIES, NODE_PARALLEL };
 
 typedef struct {

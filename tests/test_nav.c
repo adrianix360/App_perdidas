@@ -24,6 +24,39 @@ extern char last_title[], alert_title[], alert_l1[], watch_title[];
 extern int watch_hits;
 extern long n_frames, n_alerts, n_keys;
 extern int trace;
+extern int graph_calls, graph_n, graph_bad, graph_tank2;
+extern real graph_E0, graph_Eend, graph_Elast;
+
+static void K(uint8_t k);
+static void T(const char *s);
+static void TE(const char *s);
+
+/* Sistema: n tubos; cada tubo {tramo, L, D, f} con K; modo 0 adelante
+ * (H) o 1 atras (tubo k, Q). Deja el resultado en pantalla. */
+static void net_case(int np, int mode, const char *H, const char *kp, const char *Qk,
+                     const char *const p[][5])
+{
+    int i;
+    char b[8];
+    T("2"); K(K_PGUP);
+    snprintf(b, sizeof b, "%d", np);
+    TE(b);                       /* numero de tubos: el formulario se rehace */
+    {
+        static int cur_mode = 0;     /* el formulario recuerda el modo */
+        if (mode != cur_mode) { K(K_RIGHT); cur_mode = mode; }
+    }
+    K(K_DOWN);
+    if (mode) { K(K_DOWN); TE(kp); TE(Qk); } else { TE(H); K(K_DOWN); K(K_DOWN); }
+    TE("1E-6");                  /* nu */
+    K(K_DOWN);                   /* energia del tanque 1: vacia */
+    K(K_DOWN);                   /* metodo */
+    for (i = 0; i < np; i++) {
+        TE(p[i][0]); TE(p[i][1]); TE(p[i][2]);
+        if (p[i][3][0]) TE(p[i][3]); else K(K_DOWN);
+        K(K_DOWN);               /* ks vacio (f dado) */
+        TE(p[i][4]);             /* el ENTER del ultimo campo calcula */
+    }
+}
 void mock_script(const ui_key *k, int n);
 void mock_fuzz(unsigned long seed, long n);
 int mock_script_left(void);
@@ -137,7 +170,7 @@ int main(int argc, char **argv)
     T("1"); K(K_CLEAR); T("2"); K(K_CLEAR); T("3"); K(K_CLEAR); T("4"); K(K_CLEAR);
     T("5"); K(K_CLEAR); T("6"); K(K_CLEAR); T("7"); K(K_CLEAR);
     K(K_CLEAR);
-    T("2"); K(K_ENTER);
+    T("2"); K(K_CLEAR);
     T("3"); T("1"); K(K_CLEAR); T("2"); K(K_CLEAR); T("3"); K(K_CLEAR);
     T("4"); K(K_CLEAR); K(K_CLEAR);
     T("4"); K(K_CLEAR);
@@ -145,7 +178,7 @@ int main(int argc, char **argv)
     K(K_DOWN); K(K_DOWN); K(K_UP); K(K_UP);   /* menu con flechas */
     T("7");
     run();
-    check(n_alerts - a0 == 1, "1 aviso de modulo pendiente (fase 5)");
+    check(n_alerts - a0 == 0, "ningun aviso de modulo pendiente");
     check(!ui_quit && mock_script_left() == 0, "sale por la opcion Salir sin teclas de sobra");
 
     /* 2. CLEAR en el menu principal pide confirmacion */
@@ -399,6 +432,85 @@ int main(int argc, char **argv)
         cv->exists = 0;
         check(cases_load() == 1, "sin PERDCAS: lista vacia");
         memset(diam_custom, 0, sizeof diam_custom);
+    }
+
+    /* 5d. Fase 5: sistemas serie/paralelo (S-01 a S-05) y graficas */
+    {
+        static const char *const s01[][5] = {
+            { "1", "100", "150", "0.020", "0" }, { "2", "100", "100", "0.015", "5" },
+            { "2", "100", "100", "0.015", "5" }, { "2", "100", "100", "0.015", "5" } };
+        static const char *const s02[][5] = {
+            { "1", "500", "150", "0.014", "0" }, { "1", "600", "100", "0.018", "0" },
+            { "2", "700", "200", "0.015", "5" } };
+        static const char *const s03[][5] = {
+            { "1", "100", "100", "0.025", "0" }, { "2", "100", "100", "0.025", "0" },
+            { "2", "100", "200", "0.020", "30" }, { "3", "100", "100", "0.025", "0" } };
+        static const char *const s04[][5] = {
+            { "1", "400", "200", "0.02", "0" }, { "2", "180", "100", "0.025", "0" },
+            { "2", "50", "100", "0.025", "0" }, { "2", "400", "200", "0.02", "0" } };
+        static const char *const s05[][5] = {
+            { "1", "700", "300", "0.014", "5" }, { "2", "600", "150", "0.020", "0" },
+            { "2", "500", "200", "0.011", "0" }, { "3", "600", "250", "0.028", "3" } };
+        int g0;
+
+        net_case(4, 0, "20", 0, 0, s01);
+        run();
+        check(starts(view_value("Q total"), "70.6") && starts(view_value("M total"), "4012.3") &&
+              has_line("M = 2176.1") && has_line("Q 23.53"), "S-01: Q = 70,60; M = 4012,33; QB = 23,53");
+        T("2"); K(K_F5); K(K_F1);
+        run();
+        check(memo_ok() && has_line("REDUCCION") && has_line("Q_B = sqrt(h/M)"), "S-01: memoria");
+        g0 = graph_calls;
+        T("2"); K(K_F5); K(K_F2);
+        run();
+        check(graph_calls == g0 + 1 && !graph_bad && graph_n == 2 && graph_tank2 &&
+              graph_Elast - graph_Eend < 1e-3 && graph_Elast - graph_Eend > -1e-3,
+              "S-01: grafica con 2 tramos que cierra en el tanque 2");
+
+        net_case(3, 0, "20", 0, 0, s02);
+        run();
+        check(starts(view_value("Q total"), "51.5") && has_line("Q 39.8") && has_line("Q 11.65"),
+              "S-02: Q = 51,53; QA = 39,88; QB = 11,65");
+        net_case(4, 0, "24", 0, 0, s03);
+        run();
+        check(starts(view_value("Q total"), "23.7") && has_line("Q 18.05") && has_line("Q 5.708"),
+              "S-03: Q = 23,76; Q3 = 18,05; Q2 = 5,71");
+        net_case(4, 1, 0, "4", "40", s04);
+        run();
+        check(starts(view_value("H necesaria"), "12.6") && starts(view_value("H en kPa"), "124.2") &&
+              starts(view_value("Q total"), "67.3"), "S-04 hacia atras: H = 12,67 m = 124,2 kPa");
+        T("2"); K(K_F5); K(K_F1);
+        run();
+        check(memo_ok() && has_line("sube por el arbol"), "S-04: memoria hacia atras");
+        net_case(4, 0, "75", 0, 0, s05);
+        run();
+        check(starts(view_value("Q total"), "167.5") && has_line("Q 41.54") && has_line("Q 125.98"),
+              "S-05: Q = 167,53; QB = 41,55; QC = 125,98");
+        /* f automatico: tubo con ks en vez de f */
+        T("2"); K(K_PGUP); { int i; for (i = 0; i < 8 + 3; i++) K(K_DOWN); } K(K_DEL); K(K_DOWN);
+        TE("0.0015"); K(K_F5); K(K_F1);
+        run();
+        check(memo_ok() && has_line("f auto"), "sistema con f automatico (ks)");
+        /* errores: tubo inexistente y falta de datos */
+        T("2"); K(K_PGUP); K(K_DOWN); K(K_RIGHT); K(K_DOWN); K(K_DOWN); TE("8"); K(K_F5);
+        run();
+        check(!strcmp(scr_msg, "Ese tubo no existe"), "tubo conocido inexistente: aviso");
+        /* reducir a 1 tubo y volver a 8 sin cierres */
+        T("2"); K(K_PGUP); TE("1"); K(K_PGUP); TE("8"); K(K_F5);
+        run();
+        check(!strcmp(last_title, "SISTEMA SERIE/PARALELO (G)"), "cambiar el numero de tubos (1 y 8)");
+        /* grafica de tuberia simple: B (P-03 quedo en el formulario) y C */
+        g0 = graph_calls;
+        T("1"); T("2"); K(K_F5); K(K_F2);
+        run();
+        check(graph_calls == g0 + 1 && !graph_bad && graph_Elast > -1e-3 && graph_Elast < 1e-3,
+              "grafica B: la LE llega a 0 (H - hT = 0)");
+        T("1"); T("4"); K(K_F5); K(K_F2);
+        run();
+        check(!graph_bad && graph_n >= 1, "grafica C sin datos invalidos");
+        T("1"); T("5"); K(K_F5); K(K_F2);
+        run();
+        check(!graph_bad && graph_n == 2, "grafica F con la valvula al final");
     }
 
     /* 6. Ajustes: decimales, validaciones y archivo */

@@ -14,6 +14,7 @@
 #include "ui/memo.h"
 #include "data/data.h"
 #include "pipe.h"
+#include "ui/graph.h"
 
 /* ------------------------------------------------------------------ */
 /* Datos compartidos (unidades de pantalla)                            */
@@ -468,9 +469,72 @@ static const char *compute(void)
 /* ------------------------------------------------------------------ */
 /* Bucle de resultado: resumen <-> memoria                             */
 /* ------------------------------------------------------------------ */
+/* LE y LP del tubo simple (tipos A, B, C, D y F; en E e I no aplica) */
+static void pipe_graph(void)
+{
+    gseg s[2];
+    const hydro_state *st;
+    real E0 = 0, Eend = 0;
+    uint8_t n = 1, tank2 = 1;
+    memset(s, 0, sizeof s);
+    switch (tipo) {
+    case PT_A: st = &R.st; break;
+    case PT_B: st = &R.q.st; break;
+    case PT_C: st = &R.m.st; break;
+    case PT_D: st = &R.d.qmax.st; break;
+    case PT_F: st = &R.v.st; break;
+    default:
+        ui_alert("Grafico", "No aplica a este tipo", "de problema", C_GRAY);
+        return;
+    }
+    s[0].L = P.L;
+    s[0].hloc = st->hm;
+    s[0].hfr = st->hf;
+    s[0].vh = st->hv2g;
+    s[0].name[0] = 'L';
+    switch (tipo) {
+    case PT_A:
+        E0 = pin.sHp ? pin.Hp : st->hT;
+        tank2 = 0;
+        break;
+    case PT_B:
+        E0 = pin.H;
+        break;
+    case PT_D:
+        E0 = pin.H;
+        break;
+    case PT_C:
+        if (pin.mach == 0) {          /* bomba al inicio */
+            E0 = 0;
+            s[0].jump = R.m.Hm;
+            Eend = pin.Hs;
+        } else {                      /* turbina al final */
+            E0 = pin.Hs;
+            s[1].L = 0;
+            s[1].jump = -R.m.Hm;
+            s[1].vh = st->hv2g;
+            s[1].name[0] = 'T';
+            n = 2;
+        }
+        break;
+    case PT_F:                        /* valvula al final */
+        E0 = pin.H;
+        s[1].jump = -R.v.hv;
+        s[1].vh = st->hv2g;
+        s[1].name[0] = 'V';
+        n = 2;
+        break;
+    default:
+        break;
+    }
+    if (tank2 && tipo != PT_C)
+        Eend = 0;
+    graph_run(titles[tipo], E0, s, n, Eend, tank2);
+}
+
 static void result_loop(void)
 {
-    static const char *const fk_sum[5] = { "MEMORIA", "", "GUARDAR", "", "VOLVER" };
+    static const char *const fk_sum[5] = { "MEMORIA", "GRAFICO", "GUARDAR", "", "VOLVER" };
     static const char *const fk_memo[5] = { "RESUMEN", "", "", "", "VOLVER" };
     bool memo = false;
     uint8_t k;
@@ -479,6 +543,8 @@ static void result_loop(void)
         k = view_run(titles[tipo], memo ? fk_memo : fk_sum);
         if (k == K_F1) {
             memo = !memo;
+        } else if (k == K_F2) {
+            pipe_graph();
         } else if (k == K_F3 && !memo) {
             case_save_ui(tipo);
         } else if (k == K_MODE) {

@@ -284,6 +284,12 @@ uint8_t form_run(form_t *fm)
                     continue;
                 editing = false;
                 elen = 0;
+                if (fm->restart) {
+                    fm->restart = 0;
+                    if (k.k == K_ENTER || k.k == K_DOWN)
+                        move(fm, 1);
+                    return K_NONE;
+                }
                 break;      /* sigue abajo con la tecla */
             default:
                 continue;

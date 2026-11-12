@@ -58,6 +58,7 @@ typedef struct {
     const char *msg;         /* mensaje pendiente (una vez)        */
     uint8_t msg_color;
     void (*on_commit)(void); /* se llama tras aceptar un valor     */
+    uint8_t restart;         /* on_commit pide rehacer: K_NONE      */
 } form_t;
 
 /* Corre el formulario hasta que el usuario pulsa F1..F5, CLEAR (atras),

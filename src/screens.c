@@ -179,7 +179,7 @@ void scr_main(void)
         case MENU_MODE:
         case 4: scr_settings(); break;
         case 0: scr_pipe_menu(); break;
-        case 1: todo_alert("Sistemas serie / paralelo", 5); break;
+        case 1: scr_net(); break;
         case 2: scr_library(); break;
         case 3: scr_cases(); break;
         case 5: scr_help(); break;

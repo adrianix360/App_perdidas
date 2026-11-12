@@ -9,7 +9,7 @@
 #include "hydro/hydro.h"
 
 #define APP_NAME    "PERDIDAS"
-#define APP_VERSION "0.4"
+#define APP_VERSION "0.5"
 #define CFG_APPVAR  "PERDCFG"
 #define TX_APPVAR   "PERDTXT"
 #define CASES_APPVAR "PERDCAS"
@@ -49,6 +49,9 @@ bool cases_archive(void);
 uint8_t cases_count(void);
 void case_save_ui(uint8_t tipo);
 void scr_cases(void);
+
+/* scr_net.c: sistemas serie/paralelo */
+void scr_net(void);
 
 /* scr_lib.c: biblioteca */
 bool lib_pick_material(void);

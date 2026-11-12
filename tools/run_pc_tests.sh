@@ -25,7 +25,7 @@ for m in f d; do
   gcc -o "$OUT/test_ui_pure_$m.exe" "$OUT/test_ui_pure_$m.o" "$OUT/expr_$m.o" "$OUT/numfmt_$m.o" -lm
 done
 # Interfaz con pantalla y teclado simulados (float, como la calculadora)
-UIS="src/screens.c src/store.c src/ui/widgets.c src/ui/expr.c src/ui/numfmt.c src/ui/texts.c src/hydro/hydro.c tests/mock/mock_ui.c tests/test_nav.c"
+UIS="src/screens.c src/scr_pipe.c src/data/diams.c src/ui/memo.c src/store.c src/ui/widgets.c src/ui/expr.c src/ui/numfmt.c src/ui/texts.c src/hydro/hydro.c tests/mock/mock_ui.c tests/test_nav.c"
 gcc -std=c99 -O1 -g -Wall -Wextra -Werror -Wno-unused-parameter -Itests/mock -fsanitize=undefined,bounds -fsanitize-trap=all     -fsingle-precision-constant -o "$OUT/test_nav.exe" $UIS -lm
 [ -f tests/random_cases.csv ] || python -I tools/oracle.py tests/random_cases.csv
 st=0

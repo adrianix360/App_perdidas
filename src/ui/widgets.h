@@ -71,7 +71,7 @@ bool form_check(form_t *fm);
 void form_value_text(const form_field *f, char *buf);
 
 /* ---------------- Visor de lineas ---------------- */
-#define VIEW_MAX 72
+#define VIEW_MAX 120
 extern char view_line[VIEW_MAX][UI_COLS + 1];
 extern uint8_t view_color[VIEW_MAX];
 extern uint8_t view_n;

@@ -134,7 +134,8 @@ typedef struct {
     unsigned int warn;
 } hydro_state;
 
-/* Registro de iteraciones para la memoria de calculo */
+/* Registro de iteraciones para la memoria de calculo. Si total > n, las
+ * filas 0..n/2-1 son las primeras y n/2..n-1 las ultimas iteraciones. */
 #define HYDRO_LOG_MAX  32
 #define HYDRO_LOG_COLS 5
 typedef struct {

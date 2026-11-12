@@ -10,7 +10,7 @@
 #include "ui/numfmt.h"
 #include "ui/texts.h"
 
-static const char *const method_names[FM_COUNT] = {
+const char *const method_names[FM_COUNT] = {
     "Colebrook-White", "Swamee-Jain", "Haaland", "Goudar-Sonnad"
 };
 
@@ -74,128 +74,6 @@ void scr_settings(void)
     if (!settings_valid(&g_set))
         g_set = old;
     if (memcmp(&old, &g_set, sizeof old))
-        g_set_dirty = true;
-}
-
-/* ================================================================== */
-/* Tipo A: perdidas dado el caudal (ejemplo del patron en la fase 2)   */
-/* ================================================================== */
-static struct {
-    real Q, D, L, ks, K, nu, f;
-    uint8_t sQ, sD, sL, sks, sK, snu, sf;
-} pa = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0 };
-
-static void result_A(const hydro_pipe *p, const hydro_state *s,
-                     const hydro_cfg *c)
-{
-    static const char *const fk[5] = { "MEMORIA", "", "", "", "VOLVER" };
-    char w[8][41];
-    uint8_t i, nw;
-    uint8_t k;
-
-    view_clear();
-    view_add("RESULTADO  Perdidas dado Q", C_TITLE);
-    view_add_sep();
-    view_add_val("Q", s->Q * 1000, "l/s");
-    view_add_val("v", s->v, "m/s");
-    view_add_val("Re", s->Re, 0);
-    view_add_val(p->f_fixed > 0 ? "f (dado)" : "f", s->f, 0);
-    if (p->f_fixed <= 0)
-        view_add(s->regime == REG_LAMINAR ? "   (laminar: f = 64/Re)"
-                 : (c->method == FM_CW ? "   (Colebrook-White)"
-                    : method_names[c->method]), C_GRAY);
-    view_add_val("v^2/2g", s->hv2g, "m");
-    view_add_val("hf", s->hf, "m");
-    view_add_val("hm", s->hm, "m");
-    view_add_val("hT = hf + hm", s->hT, "m");
-    view_add_val("L/D", s->LD, 0);
-    view_add_sep();
-    nw = warn_texts(s->warn, c, g_set.dec, w, 8);
-    if (!nw)
-        view_add(" Sin advertencias", C_OK);
-    for (i = 0; i < nw; i++)
-        view_add(w[i], C_WARN);
-    for (;;) {
-        k = view_run("TUBERIA SIMPLE  A", fk);
-        if (k == K_F1) {
-            todo_alert("Memoria de calculo", 3);
-            continue;
-        }
-        if (k == K_MODE) {
-            scr_settings();
-            continue;
-        }
-        break;
-    }
-}
-
-static void scr_pipe_A(void)
-{
-    static uint8_t cur;
-    form_field f[] = {
-        { "Caudal Q", "l/s", &pa.Q, 0, &pa.sQ, FF_POS, 0, 0, 0, 0 },
-        { "Diametro D", "mm", &pa.D, 0, &pa.sD, FF_POS, 0, 0, 0, 0 },
-        { "Longitud L", "m", &pa.L, 0, &pa.sL, FF_POS, 0, 0, 0, 0 },
-        { "Rugosidad ks", "mm", &pa.ks, 0, &pa.sks, FF_NONNEG, 0, 0, 0, 0 },
-        { "Suma K", 0, &pa.K, 0, &pa.sK, FF_NONNEG, 0, 0, 0, 0 },
-        { "Viscosidad nu", "m2/s", &pa.nu, 0, &pa.snu, FF_POS, 0, 0, 0, 0 },
-        { "f dado (opc.)", 0, &pa.f, 0, &pa.sf, FF_POS | FF_OPT, 0, 0, 0, 0 },
-        { "Metodo de f", 0, 0, &g_set.h.method, 0, FF_CHOICE, method_names, FM_COUNT, 0, 0 },
-    };
-    form_t fm;
-    uint8_t k, m0;
-    hydro_cfg c;
-    hydro_pipe p;
-    hydro_state s;
-    int e;
-
-    if (!pa.snu) {
-        pa.nu = g_set.h.nu;
-        pa.snu = 1;
-    }
-    memset(&fm, 0, sizeof fm);
-    fm.title = "PERDIDAS DADO Q  (A)";
-    fm.page = "1/1";
-    fm.f = f;
-    fm.n = sizeof f / sizeof f[0];
-    fm.cur = cur;
-    fm.fk[0] = "MAT";
-    fm.fk[1] = "SUMA K";
-    fm.fk[2] = "FLUIDO";
-    fm.fk[3] = "AJUSTES";
-    fm.fk[4] = "CALC";
-    m0 = g_set.h.method;
-    for (;;) {
-        k = form_run(&fm);
-        if (k == K_QUIT || k == K_CLEAR)
-            break;
-        if (k == K_F1) { todo_alert("Biblioteca de materiales", 4); continue; }
-        if (k == K_F2) { todo_alert("Sumador de accesorios", 4); continue; }
-        if (k == K_F3) { todo_alert("Selector de fluido", 4); continue; }
-        if (k == K_F4 || k == K_MODE) { scr_settings(); continue; }
-        if (k == K_F5 || k == K_ENTER) {
-            if (!form_check(&fm))
-                continue;
-            c = g_set.h;
-            c.nu = pa.nu;
-            p.D = pa.D / 1000;
-            p.L = pa.L;
-            p.ks = pa.ks / 1000;
-            p.sumK = pa.K;
-            p.f_fixed = pa.sf ? pa.f : 0;
-            e = hydro_pipe_state(&p, pa.Q / 1000, &c, &s);
-            if (e) {
-                fm.msg = hydro_err_text(e);
-                fm.msg_color = C_ERR;
-                continue;
-            }
-            result_A(&p, &s, &c);
-            if (ui_quit)
-                break;
-        }
-    }
-    cur = fm.cur;
-    if (g_set.h.method != m0)
         g_set_dirty = true;
 }
 
@@ -271,10 +149,7 @@ static void scr_pipe_menu(void)
             scr_settings();
             continue;
         }
-        if (r == 0)
-            scr_pipe_A();
-        else
-            todo_alert(items[r], 3);
+        scr_pipe((uint8_t)r);
     }
 }
 

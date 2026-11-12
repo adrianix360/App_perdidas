@@ -34,16 +34,24 @@ void hydro_log_clear(hydro_log *lg)
     }
 }
 
+/* Guarda las primeras HYDRO_LOG_MAX/2 filas y, si hay mas, las ultimas
+ * HYDRO_LOG_MAX/2 (la memoria de calculo muestra "..." entre ambas). */
 static void log_row(hydro_log *lg, real a, real b, real c, real d, real e)
 {
+    real *r;
+    unsigned char k, j;
     if (!lg)
         return;
     lg->total++;
     if (lg->n < HYDRO_LOG_MAX) {
-        real *r = lg->r[lg->n];
-        r[0] = a; r[1] = b; r[2] = c; r[3] = d; r[4] = e;
-        lg->n++;
+        r = lg->r[lg->n++];
+    } else {
+        for (k = HYDRO_LOG_MAX / 2; k + 1 < HYDRO_LOG_MAX; k++)
+            for (j = 0; j < HYDRO_LOG_COLS; j++)
+                lg->r[k][j] = lg->r[k + 1][j];
+        r = lg->r[HYDRO_LOG_MAX - 1];
     }
+    r[0] = a; r[1] = b; r[2] = c; r[3] = d; r[4] = e;
 }
 
 real hydro_area(real D)

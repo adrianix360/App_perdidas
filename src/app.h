@@ -9,7 +9,7 @@
 #include "hydro/hydro.h"
 
 #define APP_NAME    "PERDIDAS"
-#define APP_VERSION "0.2"
+#define APP_VERSION "0.3"
 #define CFG_APPVAR  "PERDCFG"
 #define DEC_MAX     9
 
@@ -30,5 +30,11 @@ bool settings_save(void);
 /* screens.c */
 void scr_main(void);
 void scr_settings(void);
+extern const char *const method_names[FM_COUNT];
+
+/* scr_pipe.c: tuberia simple. tipo: 0 A, 1 B, 2 D, 3 C, 4 F, 5 E, 6 I
+ * (mismo orden que el menu) */
+enum { PT_A = 0, PT_B, PT_D, PT_C, PT_F, PT_E, PT_I, PT_COUNT };
+void scr_pipe(uint8_t tipo);
 
 #endif

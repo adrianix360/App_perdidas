@@ -725,7 +725,7 @@ Limitaciones conocidas: los sistemas no se guardan en Mis casos (solo la tuberí
 | `PERDIDAS.8xp` (lanzador) | 585 bytes |
 | `PERDIDA0` + `PERDIDA1` (programa) | 65 308 + 9 699 bytes |
 | `PERDTXT` (textos) | 13 120 bytes (`.8xv`) |
-| `.text` / `.rodata` / `.data` / `.bss` | ver `bin/PERDIDAS.map` |
+| `.text` / `.rodata` / `.data` / `.bss` | 59 140 / 13 084 / 2 155 / 15 795 bytes |
 
 ---
 

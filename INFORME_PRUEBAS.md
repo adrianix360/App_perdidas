@@ -698,3 +698,62 @@ Con la fase 5 el programa pasa de 64 KiB (código, datos y constantes ≈ 70 KB)
 Errores corregidos en esta fase: rótulo «-9,5E-7» en vez de 0 al final de la gráfica (ruido de `float`); la leyenda LE/LP quedaba tapada por la línea de mensajes; un mensaje de 41 caracteres se montaba sobre sí mismo.
 
 Limitaciones conocidas: los sistemas no se guardan en Mis casos (solo la tubería simple); no hay ramales con tubos en serie dentro de un paralelo (ningún ejercicio del curso los usa); la gráfica es un esquema sin el perfil del terreno.
+
+## Fase 6: pulido, ayuda, README e instalación (12 de noviembre de 2026)
+
+### Qué se construyó
+
+- **Ayuda por temas** (Ayuda en el menú principal): uso y teclas, tipos de problema, fórmulas, potencia bruta y neta, $\sum K$ y fuentes de los datos, advertencias y erratas del material. Los textos van en `PERDTXT` (25 programas, 13 043 bytes), así que no ocupan RAM del programa.
+- **Casos del curso:** 21 ejercicios de los PDF (P-01, P-02, P-03, P-05, P-07, P-09, P-10, P-11, P-12, P-15, P-17 a P-21, P-25 y S-01 a S-05). Se cargan en su formulario y se resuelven con un `enter`; luego se puede ver la memoria y la gráfica.
+- **Acerca de**, con la versión y la RAM libre, y **aviso de RAM baja** al abrir la app (menos de 3 000 bytes).
+- `README_es.md`: requisitos, archivos, instalación paso a paso con arTIfiCE v2.1 para la 5.8.4.0058, cómo archivar para sobrevivir a un reinicio, uso de cada pantalla, desinstalación, tabla de fallas y cómo compilar y probar.
+- Versión 1.0. La versión final está instalada en la calculadora de Adrián (12 de noviembre de 2026): `PERDIDAS` (lanzador en RAM), `PERDIDA0`, `PERDIDA1` y `PERDTXT` en el archivo; quedan 151 kB de RAM libre.
+
+### Pruebas
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada en el PC: los 7 temas de ayuda (sin plantillas rotas ni líneas de más de 40 columnas), los 21 casos del curso cargados y calculados uno por uno, P-17 desde Casos del curso (285,75 mm y 262,38 l/s) y S-04 hacia atrás (12,67 m) | **96 de 96 pasan** |
+| Estrés: 1 000 000 de teclas, 952 074 pantallas | sin cierres ni cuelgues |
+| CEmu (`tools/cemu_net.py --fase6`, 11 capturas): menú de ayuda, temas Uso y teclas y Fórmulas, Casos del curso, P-17 y S-04 cargados y resueltos, Acerca de (64 KB de RAM libre con la app abierta) | pasa |
+| Regresión de 26 pantallas en CEmu y casos dorados en el eZ80 | 26 de 26; 191 + 7 (r), 0 fallan |
+
+### Memoria final
+
+| Parte | Tamaño |
+|---|---|
+| `PERDIDAS.8xp` (lanzador) | 585 bytes |
+| `PERDIDA0` + `PERDIDA1` (programa) | 65 308 + 9 699 bytes |
+| `PERDTXT` (textos) | 13 120 bytes (`.8xv`) |
+| `.text` / `.rodata` / `.data` / `.bss` | ver `bin/PERDIDAS.map` |
+
+---
+
+## Resumen final
+
+### Qué se probó y cómo
+
+| Capa | Qué | Resultado |
+|---|---|---|
+| 1. Motor en el PC | 198 comprobaciones de la sección 9 (P-01 a P-25 sin P-23, S-01 a S-05, R-01 a R-05), en `float` y `double` | 191 dentro del 0,1 %, 7 dentro del redondeo del valor impreso, **0 fallan** |
+| 1. Motor en el PC | 750 casos aleatorios contra el oráculo en Python ($f$, $h_f$, $Q_{\max}$ y $D$; incluye laminar y transición) | **0 fallan**; peor error $6{,}8\times10^{-6}$ |
+| 1. Interfaz en el PC | pantalla y teclado simulados con detección de comportamiento indefinido: 96 comprobaciones y 1 millón de teclas aleatorias | **96 de 96**, sin cierres |
+| 2. CEmu (ROM de Adrián, 5.8.4.0058 + arTIfiCE) | los 198 chequeos dentro del eZ80; un caso del curso por tipo; S-01 a S-05; gráficas; ayuda; casos del curso; caso guardado tras «RAM Cleared»; regresión de 26 pantallas | **todo pasa**; diferencia con el PC $\le 2\times10^{-5}$ |
+| 3. Plataforma | programa grande en lanzador + AppVars probado con arTIfiCE; AppVars dañados, truncados y ausentes; RAM libre con la app abierta | pasa |
+| 4. Calculadora real | H0 (fase 0) y prueba de la fase 3 hechas por Adrián | pasa |
+| 4. Calculadora real | **prueba final de la fase 6** | **pendiente de verificar por Adrián** |
+
+### Qué NO se pudo probar automáticamente
+
+- La lectura de la pantalla real de la calculadora (colores, nitidez, velocidad percibida). Lo cubre la prueba manual de Adrián.
+- `ti_SetArchiveStatus` cuando la memoria de archivo está casi llena (no se forzó esa condición en el emulador).
+- La función secundaria de posición máxima de la bomba por cavitación (memoria 6.10): **no implementada**. La memoria pedía consultarla antes, y la presión de vapor ya es editable en Ajustes para cuando se haga.
+
+### Problemas conocidos y limitaciones
+
+1. Los sistemas en serie y paralelo no se guardan en Mis casos (sí la tubería simple). Se pueden recuperar desde Casos del curso o tecleando.
+2. No hay ramales con tubos en serie dentro de un paralelo. Ningún ejercicio del curso los usa.
+3. La gráfica es un esquema sin el perfil del terreno; no marca la presión negativa contra un terreno real (memoria 6.8, nivel «deseable»).
+4. Los símbolos se escriben en ASCII (`nu`, `gamma`, `SumK`), sin fuente propia, como se acordó con Adrián.
+5. La app ocupa 4 archivos (lanzador, 2 AppVars y `PERDTXT`) y necesita unos 75 KB de RAM libre al ejecutar.
+6. arTIfiCE v2.1 se pierde con un reinicio de la RAM si no está archivado (recomendación en el README).

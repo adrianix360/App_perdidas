@@ -7,7 +7,7 @@ Uso (desde C:/dev/ti84): python -I tools/cemu_net.py  -> PNG en C:/dev/build/cem
 import json, os, re, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RUN = "C:/dev/build/cemu_net"
+RUN = os.environ.get("CEMU_RUN", "C:/dev/build/cemu_net")
 ROM = "C:/dev/tools/CEmu/ti84ce.rom"
 LIBS = "C:/dev/tools/clibs/clibs"
 AUT = "C:/CEdev/bin/cemu-autotester.exe"
@@ -57,6 +57,21 @@ S05 = [("1", "700", "300", "0.014", "5"), ("2", "600", "150", "0.020", "0"),
        ("2", "500", "200", "0.011", "0"), ("3", "600", "250", "0.028", "3")]
 BACK = ["clear", "clear"]           # del resultado al menu principal
 
+STEPS6 = [
+    ("01_menu", ["enter"]),
+    ("02_ayuda_menu", ["6"]),
+    ("03_tema_teclas", ["1"]),
+    ("04_tema_formulas", ["clear", "3"]),
+    ("05_tema_formulas_p2", ["right"]),
+    ("06_tema_potencia", ["clear", "4"]),
+    ("07_tema_erratas", ["clear", "7"]),
+    ("08_casos_curso", ["clear", "8"]),
+    ("09_caso_P17", ["down"] * 10 + ["enter"]),
+    ("10_caso_S04", ["clear", "clear", "down", "down", "down", "down", "down", "down",
+                     "down", "down", "down", "enter"]),
+    ("11_acerca_de", ["clear", "clear", "clear", "9"]),
+]
+
 STEPS = [
     ("01_menu", ["enter"]),
     ("02_S01_resultado", net(4, 0, "20", 0, 0, S01)),
@@ -78,6 +93,9 @@ STEPS = [
 
 
 def main():
+    global STEPS
+    if "--fase6" in sys.argv:
+        STEPS = STEPS6
     if os.path.isdir(RUN):
         shutil.rmtree(RUN)
     os.makedirs(RUN)

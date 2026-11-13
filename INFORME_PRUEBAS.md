@@ -681,8 +681,8 @@ Con la fase 5 el programa pasa de 64 KiB (código, datos y constantes ≈ 70 KB)
 
 | Sección | Bytes |
 |---|---|
-| `.text` | 57 913 |
-| `.rodata` | 11 354 |
+| `.text` | 58 032 |
+| `.rodata` | 11 344 |
 | `.data` | 2 147 |
 | `.bss` | 15 794 |
 

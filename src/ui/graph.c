@@ -25,6 +25,9 @@ static int ypix(real e)
 static void lab(real v, int x, int y, uint8_t col)
 {
     char b[NUMFMT_LEN];
+    real span = ymax - ymin;
+    if (v < span * (real)1e-5 && v > -span * (real)1e-5)
+        v = 0;                         /* ruido de float: es 0 */
     fmt_w(v, 7, b);
     gfx_SetTextFGColor(col);
     gfx_SetTextBGColor(C_BG);
@@ -87,7 +90,7 @@ void graph_run(const char *title, real E0, const gseg *s, uint8_t n,
     }
 
     for (;;) {
-        ui_begin(title, "LE / LP");
+        ui_begin(title, 0);
         /* tanques */
         gfx_SetColor(C_WATER);
         gfx_FillRectangle(2, ypix(E0), GX0 - 4, GY1 - ypix(E0) + 1);
@@ -133,10 +136,10 @@ void graph_run(const char *title, real E0, const gseg *s, uint8_t n,
         /* leyenda */
         gfx_SetTextFGColor(C_LE);
         gfx_SetTextBGColor(C_BG);
-        gfx_PrintStringXY("LE", GX0 + 4, GY1 + 14);
+        gfx_PrintStringXY("LE", 216, 14);
         gfx_SetTextFGColor(C_LP);
-        gfx_PrintStringXY("LP", GX0 + 30, GY1 + 14);
-        ui_msg("Esquema sin escala; cotas de energia en m", C_GRAY);
+        gfx_PrintStringXY("LP", 240, 14);
+        ui_msg("Esquema sin escala; cotas de energia, m", C_GRAY);
         ui_fbar(fk);
         ui_end();
         k = ui_getkey();

@@ -666,3 +666,35 @@ Hallazgo útil para la instalación: con arTIfiCE y `PERDIDAS` **archivados**, a
 | `.bss` | 11 998 |
 
 `PERDIDAS.8xp` pesa 53 754 bytes y `PERDTXT.8xv` 7 574. Para la fase 5 (sistemas y gráficos) quedan unos 10 KiB dentro del límite de 64 KiB. Si no alcanzan, el siguiente paso es llevar también los datos de la biblioteca y la ayuda al AppVar.
+
+## Fase 5: sistemas en serie y paralelo, y gráfica de LE y LP (12 de noviembre de 2026)
+
+### Qué se construyó
+
+- `src/scr_net.c`, tipo **G**: hasta 8 tubos, cada uno con su número de **tramo**. Los tubos del mismo tramo van en paralelo y los tramos en serie, en orden creciente. Con esto se escriben todos los sistemas del curso: S-01 `Serie[A, Paralelo[B, C, D]]` es A en el tramo 1 y B, C, D en el tramo 2. Hay dos modos: **hacia adelante** (dada $H$) y **hacia atrás** (dado $Q$ en un tubo, se obtiene $H$ y la presión). $f$ puede ser dato o calcularse con Colebrook-White a partir de $k_s$ (iteración externa).
+- Resumen con $Q$, $H$, $M$ y, por tubo, $M$, $Q$, $h$ y $v$, más las comprobaciones $\sum Q$ en los nudos y $\sum h$ en las rutas. La memoria de cálculo tiene la estructura de los manuscritos: datos, módulos $M = \frac{8}{\pi^2 g}\left(\frac{fL}{D^5} + \frac{\sum K}{D^4}\right)$ con la parte de fricción y la local, reducción de cada paralelo $\left(\sum 1/\sqrt{M_i}\right)^{-2}$ y de la serie, $Q = \sqrt{H/M}$ (o el recorrido hacia atrás), reparto $h = MQ^2$ y $Q_i = \sqrt{h/M_i}$, resultados y observaciones.
+- `src/ui/graph.c`, tipo **H**: esquema de la **línea de energía** (azul) y la **piezométrica** (rojo) con tanques, saltos por pérdidas locales, bomba (salto hacia arriba), turbina o válvula (salto hacia abajo) y la cota de energía en los extremos. Está en los sistemas (la ruta pasa por el tubo de mayor caudal de cada tramo, marcado «+») y en los tipos A, B, C, D y F (F2 GRÁFICO).
+
+### Tamaño: programa grande repartido en AppVars
+
+Con la fase 5 el programa pasa de 64 KiB (código, datos y constantes ≈ 70 KB). CEdev v15 lo resuelve solo: produce un **lanzador** `PERDIDAS.8xp` de 585 bytes y dos AppVars, `PERDIDA0` (65 308 bytes) y `PERDIDA1` (6 977 bytes), que el lanzador copia a la RAM al arrancar. Se comprobó en CEmu con el ROM 5.8.4 que **el lanzador funciona desde el menú de arTIfiCE v2.1**, y que también funciona archivado tras un reinicio de la RAM. A cambio, se necesitan unos 72 KB de RAM libre al ejecutar. Antes se intentó reducir el código; la gráfica reescrita con enteros salió 2,4 KB más grande, así que se volvió a la versión original.
+
+| Sección | Bytes |
+|---|---|
+| `.text` | 57 913 |
+| `.rodata` | 11 354 |
+| `.data` | 2 147 |
+| `.bss` | 15 794 |
+
+### Pruebas
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada en el PC: S-01 a S-05 tecleados en el formulario (S-04 hacia atrás), memoria (reducción, reparto, recorrido hacia atrás), $f$ automático, tubo conocido inexistente, cambio del número de tubos de 1 a 8, gráficas de S-01 (2 tramos, la LE termina en el tanque 2) y de los tipos B, C y F (datos de la gráfica finitos y coherentes) | **92 de 92 pasan** |
+| Estrés: 1 000 006 teclas, 947 672 pantallas, ahora también por Sistemas | sin cierres |
+| CEmu (`tools/cemu_net.py`, 14 capturas revisadas): S-01 $Q = 70{,}602$ l/s y $M = 4012{,}33$; S-02 $Q = 51{,}533$ l/s, $Q_A = 39{,}881$, $Q_B = 11{,}651$; S-03 $Q = 23{,}762$ l/s, $Q_3 = 18{,}053$, $Q_2 = 5{,}709$; S-04 $H = 12{,}666$ m $= 124{,}25$ kPa, $Q_1 = 67{,}317$ l/s; S-05 $Q = 167{,}531$ l/s, $Q_B = 41{,}548$, $Q_C = 125{,}982$; gráficas de S-01, S-03, S-05 y de la bomba de P-20 ($H_B = 121{,}86$ m hasta el tanque a 76 m) | **S-01 a S-05 correctos en CEmu** |
+| Regresión de CEmu (26 pantallas), casos dorados en el eZ80 y prueba de reinicio con el lanzador | 26 de 26; 191 + 7 (r), 0 fallan; el caso sobrevive |
+
+Errores corregidos en esta fase: rótulo «-9,5E-7» en vez de 0 al final de la gráfica (ruido de `float`); la leyenda LE/LP quedaba tapada por la línea de mensajes; un mensaje de 41 caracteres se montaba sobre sí mismo.
+
+Limitaciones conocidas: los sistemas no se guardan en Mis casos (solo la tubería simple); no hay ramales con tubos en serie dentro de un paralelo (ningún ejercicio del curso los usa); la gráfica es un esquema sin el perfil del terreno.

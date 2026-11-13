@@ -68,7 +68,8 @@ def main():
     if os.path.isdir(RUN):
         shutil.rmtree(RUN)
     os.makedirs(RUN)
-    for f in ("instalacion/arTIfiCE_v2.1.8xp", "bin/PERDIDAS.8xp", "bin/PERDTXT.8xv"):
+    for f in ("instalacion/arTIfiCE_v2.1.8xp", "bin/PERDIDAS.8xp", "bin/PERDIDAS.8xp.0.8xv",
+              "bin/PERDIDAS.8xp.1.8xv", "bin/PERDTXT.8xv"):
         shutil.copy(os.path.join(ROOT, f), RUN)
     seq = ["action|launch", "delay|3000"]
     hashes = {}
@@ -85,7 +86,7 @@ def main():
         seq += ["delay|800", "hash|%d" % i]
         hashes[str(i)] = {"description": name, "start": "vram_start",
                           "size": "vram_16_size", "expected_CRCs": ["00000000"]}
-    cfg = {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp", "PERDIDAS.8xp", "PERDTXT.8xv"],
+    cfg = {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp", "PERDIDAS.8xp.0.8xv", "PERDIDAS.8xp.1.8xv", "PERDTXT.8xv", "PERDIDAS.8xp"],
            "target": {"name": "A", "isASM": False}, "delay_after_key": 200,
            "sequence": seq, "hashes": hashes}
     jp = RUN + "/reset.json"

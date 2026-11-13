@@ -364,3 +364,171 @@ static const mstep mI[] = {
 
 static const mstep *const sum_p[PT_COUNT] = { sA, sB, sD, sC, sF, sE, sI };
 static const mstep *const memo_p[PT_COUNT] = { mA, mB, mD, mC, mF, mE, mI };
+
+/* ================================================================== */
+/* AYUDA: un programa de lineas por tema (sec. 7.9 de la memoria)      */
+/* ================================================================== */
+#define TX(t) LN(t, C_FG)
+#define TG(t) LN(t, C_GRAY)
+
+static const mstep h_keys[] = {
+    LN("USO Y TECLAS", C_TITLE), SEP,
+    TX(" ENTER   acepta y pasa al siguiente"),
+    TX(" CLEAR   borra lo escrito / vuelve"),
+    TX(" DEL     borra un caracter; vacia un"),
+    TX("         campo opcional"),
+    TX(" Flechas mueven; derecha edita el valor"),
+    TX("         actual; izq./der. cambian las"),
+    TX("         opciones < >"),
+    TX(" 2nd + flechas: primer / ultimo campo"),
+    TX(" (-)     signo;  2nd ,  = E (x10^)"),
+    TX(" Y= ventana zoom trace graph = F1..F5"),
+    TX(" MODE    Ajustes desde cualquier lado"),
+    TX(" 2nd MODE (QUIT)  salir de la app"),
+    SEC("CAMPOS"),
+    TX(" Aceptan cuentas: 0.5+4*1.1+3*0.3"),
+    TX(" y potencias: 1.5*10^-6 o 1.5E-6"),
+    TX(" Unidades: Q l/s, D mm, ks mm, L m,"),
+    TX(" H y cotas m, presiones en m.c.a."),
+    TX(" Los datos se conservan entre tipos."),
+    SEC("RESULTADOS"),
+    TX(" F1 MEMORIA: calculo paso a paso"),
+    TX(" F2 GRAFICO: lineas de energia (LE) y"),
+    TX("    piezometrica (LP)"),
+    TX(" F3 GUARDAR: guarda el caso (8 letras)"),
+    STOP
+};
+
+static const mstep h_types[] = {
+    LN("TIPOS DE PROBLEMA", C_TITLE), SEP,
+    TX("A Perdidas dado Q: v, Re, f, hf, hm."),
+    TG("  Opcional: p/gamma en el punto final."),
+    TX("B Caudal maximo dada la carga H."),
+    TG("  Iteracion del curso; si no converge,"),
+    TG("  biseccion sobre v (la memoria avisa)."),
+    TX("C Bomba o turbina: HB o HT y potencias"),
+    TG("  Hs = z2 - z1 (bomba); Ha = z1 - z2"),
+    TG("  (turbina); suma p/gamma si hay tanques"),
+    TG("  presurizados."),
+    TX("D Diametro exacto (biseccion), comercial"),
+    TG("  (menor >= exacto) y Qmax con el"),
+    TG("  comercial; valvula de control opcional"),
+    TX("F Valvula: hv = H - hT; Kv = 2g hv/v^2."),
+    TX("E Calibrar: f y ks con la caida medida."),
+    TX("I Darcy-W. contra Hazen-Williams."),
+    TX("G Sistemas: tubos por tramos (mismo"),
+    TG("  tramo = paralelo; tramos en serie)."),
+    TG("  Adelante: dada H. Atras: dado Q en un"),
+    TG("  tubo se obtiene H y la presion."),
+    STOP
+};
+
+static const mstep h_form[] = {
+    LN("FORMULAS", C_TITLE), SEP,
+    TX("A = pi D^2/4;  v = Q/A;  Re = v D/nu"),
+    TX("hf = f (L/D) v^2/2g  (Darcy-Weisbach)"),
+    TX("hm = SumK v^2/2g;  hT = hf + hm"),
+    SEC("FACTOR DE FRICCION"),
+    TX("Re < 2000: f = 64/Re (laminar)"),
+    TX("2000-4000: transicion (indicativo)"),
+    TX("CW: 1/sqrt f = -2 log(ks/3.7D +"),
+    TX("    2.51/(Re sqrt f))"),
+    TX("SJ: f = 0.25/[log(ks/3.7D +"),
+    TX("    5.74/Re^0.9)]^2"),
+    TX("Haaland: 1/sqrt f = -1.8 log["),
+    TX("    (ks/3.7D)^1.11 + 6.9/Re]"),
+    SEC("HAZEN-WILLIAMS"),
+    TX("hf = 10.675 L Q^1.852/(C^1.852 D^4.87)"),
+    TG(" sin perdidas locales; agua fria"),
+    SEC("MODULOS (sistemas)"),
+    TX("M = 8/(pi^2 g)(f L/D^5 + SumK/D^4)"),
+    TX("h = M Q^2; serie: M = suma de Mi"),
+    TX("paralelo: M = (suma 1/sqrt Mi)^-2"),
+    SEC("OTRAS"),
+    TX("vp = sqrt(2g(H - hf)/SumK)"),
+    TX("ks = 3.7D(10^(-1/(2 sqrt f)) -"),
+    TX("     2.51/(Re sqrt f))"),
+    TX("Expansion: K = (1 - A1/A2)^2 (con v1)"),
+    STOP
+};
+
+static const mstep h_power[] = {
+    LN("POTENCIA BRUTA Y NETA", C_TITLE), SEP,
+    TX("La bruta es la mayor y la neta la"),
+    TX("menor (convencion de los examenes):"),
+    SEC("BOMBA"),
+    TX(" Pn = gamma Q HB  (la recibe el agua)"),
+    TX(" Pb = Pn/eta      (la consume)"),
+    SEC("TURBINA"),
+    TX(" Pb = gamma Q HT  (la entrega el agua)"),
+    TX(" Pn = eta Pb      (la que se genera)"),
+    SEP,
+    TG(" 1 Hp = 745.7 W; gamma = 9810 N/m3"),
+    TG(" por defecto (editable en Ajustes)."),
+    STOP
+};
+
+static const mstep h_lib[] = {
+    LN("SUMA K Y BIBLIOTECA", C_TITLE), SEP,
+    TX("SumK suma los K de todos los"),
+    TX("accesorios del tubo: cantidad x K."),
+    TG("Se escribe a mano (acepta cuentas) o"),
+    TG("con F2 SUMA K en el formulario."),
+    TX("Notacion: hm = hL = hl; K = KL = km."),
+    SEC("FUENTES DE LOS DATOS"),
+    TX(" ks y C_H: tabla del curso"),
+    TG("   (Perdidas-01.pdf, pags. 12 y 30)"),
+    TX(" (C): Cengel; los K del curso pueden"),
+    TX("   diferir del fabricante: editables"),
+    TX(" Conjuntos de K: los ejercicios"),
+    TG("   (PVC 200 mm, examenes 2017-2025)"),
+    TX(" (std): agua a presion atmosferica,"),
+    TG("   tabla estandar (no de los PDF)"),
+    TX(" nu del curso: 1E-6, 1.007E-6,"),
+    TX("   1.02E-6, 1.14E-6 y 1.17E-6"),
+    STOP
+};
+
+static const mstep h_warn[] = {
+    LN("ADVERTENCIAS", C_TITLE), SEP,
+    TX("! Re < 2000: laminar, f = 64/Re"),
+    TX("! Re en transicion: resultado indicativo"),
+    TX("! ks/D > 0.05: fuera de Colebrook-White"),
+    TX("! Fuera del rango de Swamee-Jain"),
+    TX("! v > 5 o v < 0.3 m/s (editable)"),
+    TG("   criterio general, no del curso"),
+    TX("! hm > 30% hf: perdidas locales altas"),
+    TG("   en el diseno se muestra vp"),
+    TX("! L/D > 4000: locales despreciables"),
+    TG("   igual se suman (ajuste del curso)"),
+    TX("! Presion manometrica negativa"),
+    TX("! p/gamma < -10.3 m: imposible"),
+    TX("! Iteracion del curso no convergio:"),
+    TX("   se resolvio por biseccion"),
+    TX("! ks negativo: datos inconsistentes"),
+    STOP
+};
+
+static const mstep h_err[] = {
+    LN("ERRATAS DEL MATERIAL", C_TITLE), SEP,
+    TX("Perdidas-01 p.34: usa D^4.87 aunque"),
+    TX("  escribe 4.57 (19.32 m sale con 4.87)"),
+    TX("PVC 200 mm: el enunciado dice 32 l/s;"),
+    TX("  la solucion usa 72 l/s"),
+    TX("Presentacion ej. 1: H = 43.5 m (hoja)"),
+    TX("Presentacion ej. 2: ks = 2.0E-6 m"),
+    TX("Presentacion ej. 4: L = 970 m (hoja) y"),
+    TX("  gamma = 9801 (agua a 15 C)"),
+    TX("2018 P1a: Q = 5.69 l/s, no 56.9;"),
+    TX("  el manuscrito usa L = 2.06 m"),
+    TX("2024 P3: QB = 23.53 l/s, no 20.53"),
+    TX("2025 P1: con 285.75 mm, Q = 262.4"),
+    TX("  l/s (la solucion uso 285.00 mm)"),
+    TX("2024 y 2025: D exacto con Swamee-Jain"),
+    TG("  (CW difiere 0.04 %: ver Ajustes)"),
+    STOP
+};
+
+static const mstep *const help_p[HELP_COUNT] = {
+    h_keys, h_types, h_form, h_power, h_lib, h_warn, h_err
+};

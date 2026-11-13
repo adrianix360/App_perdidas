@@ -26,6 +26,12 @@ int main(void)
         ui_alert("Mis casos", "Archivo de casos danado:",
                  "se empieza con la lista vacia", C_WARN);
     }
+    if (ui_free_ram() < 3000) {      /* memoria 7.1.7: avisar a tiempo */
+        ui_begin(APP_NAME, 0);
+        ui_end();
+        ui_alert("Poca RAM libre", "Archive o borre programas y",
+                 "variables para no perder datos", C_WARN);
+    }
     scr_main();
     ui_exit();
 

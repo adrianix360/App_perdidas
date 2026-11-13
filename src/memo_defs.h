@@ -50,6 +50,8 @@ enum { M_END = 0, M_SEC, M_DATA, M_EQ, M_RES, M_LINE, M_IF, M_IFN, M_ENDIF,
 enum { S_DATA, S_CALC, S_OBS, S_STATE, S_COUNT };
 #define PROG_SUM(t)  (S_COUNT + (t))
 #define PROG_MEMO(t) (S_COUNT + PT_COUNT + (t))
-#define PROG_COUNT   (S_COUNT + 2 * PT_COUNT)
+#define HELP_COUNT   7
+#define PROG_HELP(i) (S_COUNT + 2 * PT_COUNT + (i))
+#define PROG_COUNT   (S_COUNT + 2 * PT_COUNT + HELP_COUNT)
 
 #endif

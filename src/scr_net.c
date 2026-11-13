@@ -359,8 +359,62 @@ static void graph(void)
     graph_run("SISTEMA: LE y LP", E0, s, nt, E0 - Htot, 1);
 }
 
-/* ------------------------------------------------------------------ */
+/* Casos del curso S-01 a S-05: {tramo, L, D (mm), f, K} por tubo */
+static const real exn[5][4][5] = {
+    { { 1, 100, 150, 0.020, 0 }, { 2, 100, 100, 0.015, 5 },
+      { 2, 100, 100, 0.015, 5 }, { 2, 100, 100, 0.015, 5 } },
+    { { 1, 500, 150, 0.014, 0 }, { 1, 600, 100, 0.018, 0 },
+      { 2, 700, 200, 0.015, 5 }, { 0 } },
+    { { 1, 100, 100, 0.025, 0 }, { 2, 100, 100, 0.025, 0 },
+      { 2, 100, 200, 0.020, 30 }, { 3, 100, 100, 0.025, 0 } },
+    { { 1, 400, 200, 0.02, 0 }, { 2, 180, 100, 0.025, 0 },
+      { 2, 50, 100, 0.025, 0 }, { 2, 400, 200, 0.02, 0 } },
+    { { 1, 700, 300, 0.014, 5 }, { 2, 600, 150, 0.020, 0 },
+      { 2, 500, 200, 0.011, 0 }, { 3, 600, 250, 0.028, 3 } },
+};
+static const uint8_t exn_np[5] = { 4, 3, 4, 4, 4 };
+static const real exn_H[5] = { 20, 20, 24, 0, 75 };
+
+static void net_run(uint8_t autocalc);
+
+void scr_net_example(uint8_t idx)
+{
+    uint8_t i;
+    if (idx >= 5)
+        return;
+    memset(&ni.p, 0, sizeof ni.p);
+    ni.np = exn_np[idx];
+    ni.snp = 1;
+    ni.mode = idx == 3;
+    ni.H = exn_H[idx];
+    ni.sH = idx != 3;
+    ni.kp = 4;
+    ni.skp = idx == 3;
+    ni.Qk = 40;
+    ni.sQk = idx == 3;
+    ni.nu = 1e-6;
+    ni.snu = 1;
+    ni.sz1 = 0;
+    for (i = 0; i < exn_np[idx]; i++) {
+        npipe *p = &ni.p[i];
+        p->tr = exn[idx][i][0];
+        p->L = exn[idx][i][1];
+        p->D = exn[idx][i][2];
+        p->f = exn[idx][i][3];
+        p->K = exn[idx][i][4];
+        p->str = p->sL = p->sD = p->sf = p->sK = 1;
+        p->sks = 0;
+    }
+    net_run(1);
+}
+
 void scr_net(void)
+{
+    net_run(0);
+}
+
+/* ------------------------------------------------------------------ */
+static void net_run(uint8_t autocalc)
 {
     static const char *const fk_sum[5] = { "MEMORIA", "GRAFICO", "", "", "VOLVER" };
     static const char *const fk_memo[5] = { "RESUMEN", "GRAFICO", "", "", "VOLVER" };
@@ -386,7 +440,12 @@ void scr_net(void)
         fm.cur = cur < n ? cur : 0;
         fm.on_commit = np_changed;
         fm_now = &fm;
-        k = form_run(&fm);
+        if (autocalc) {
+            autocalc = 0;
+            k = K_F5;
+        } else {
+            k = form_run(&fm);
+        }
         fm_now = 0;
         cur = fm.cur;
         if (k == K_QUIT || k == K_CLEAR)

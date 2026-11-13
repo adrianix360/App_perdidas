@@ -9,6 +9,10 @@
 #include "ui/widgets.h"
 #include "ui/numfmt.h"
 #include "ui/texts.h"
+#include "data/data.h"
+#include "pipe.h"
+
+#define HELP_COUNT_UI 7   /* temas en PERDTXT (memo_defs.h: HELP_COUNT) */
 
 const char *const method_names[FM_COUNT] = {
     "Colebrook-White", "Swamee-Jain", "Haaland", "Goudar-Sonnad"
@@ -80,48 +84,89 @@ void scr_settings(void)
 /* ================================================================== */
 /* Ayuda / Acerca de                                                   */
 /* ================================================================== */
-static void scr_help(void)
+static void about(void)
 {
     static const char *const fk[5] = { "", "", "", "", "VOLVER" };
     char num[24];
-    uint8_t k;
     view_clear();
-    view_add(APP_NAME " v" APP_VERSION "  Perdidas en tuberias", C_TITLE);
+    view_add(APP_NAME " v" APP_VERSION, C_TITLE);
+    view_add("Perdidas de energia en tuberias", C_FG);
     view_add("IC-0605 Mecanica de Fluidos, UCR", C_FG);
     view_add("Adrian Castro Ramirez", C_FG);
     view_add_sep();
-    view_add("TECLAS", C_TITLE);
-    view_add(" ENTER   acepta y pasa al siguiente", C_FG);
-    view_add(" CLEAR   borra / vuelve atras", C_FG);
-    view_add(" DEL     borra un caracter", C_FG);
-    view_add(" Flechas mueven; der. edita el valor", C_FG);
-    view_add(" (-)     signo;  2nd ,  = E (x10^)", C_FG);
-    view_add(" Y= ... GRAPH  teclas F1 a F5", C_FG);
-    view_add(" MODE    Ajustes desde cualquier lado", C_FG);
-    view_add(" 2nd MODE (QUIT)  salir de la app", C_FG);
-    view_add_sep();
-    view_add("CAMPOS", C_TITLE);
-    view_add(" Aceptan cuentas: 0.5+4*1.1+3*0.3", C_FG);
-    view_add(" y potencias: 1.5*10^-6 o 1.5E-6", C_FG);
-    view_add(" Unidades: Q l/s, D mm, ks mm, L m", C_FG);
-    view_add_sep();
-    view_add("CONVENCIONES DEL CURSO", C_TITLE);
-    view_add(" Laminar si Re < 2000 (f = 64/Re)", C_FG);
-    view_add(" Transicion 2000-4000: indicativo", C_FG);
-    view_add(" Potencia bruta = la mayor; neta =", C_FG);
-    view_add(" la menor (bomba y turbina)", C_FG);
+    view_add("Programa nativo en C (CE Toolchain", C_GRAY);
+    view_add("v15.0). En OS 5.5 a 5.8.4 se lanza", C_GRAY);
+    view_add("con arTIfiCE v2.1.", C_GRAY);
+    view_add("Archivos: PERDIDAS, PERDIDA0,", C_GRAY);
+    view_add("PERDIDA1, PERDTXT; crea PERDCFG", C_GRAY);
+    view_add("(ajustes) y PERDCAS (casos).", C_GRAY);
     view_add_sep();
     strcpy(num, " RAM libre: ");
     fmt_int((long)ui_free_ram(), num + strlen(num));
     strcat(num, " B");
     view_add(num, C_GRAY);
+    view_run("ACERCA DE", fk);
+}
+
+static void course_cases(void)
+{
+    static uint8_t cur;
+    uint8_t i, k;
+    int r;
     for (;;) {
-        k = view_run("AYUDA / ACERCA DE", fk);
-        if (k == K_MODE) {
+        for (i = 0; i < EXAMPLES; i++)
+            strcpy(list_line[i], examples[i].name);
+        r = list_pick("CASOS DEL CURSO", "ENTER carga los datos y calcula",
+                      EXAMPLES, cur, 0, &k);
+        if (r < 0 || k != K_ENTER)
+            return;
+        cur = (uint8_t)r;
+        if (examples[r].tipo == PT_COUNT) {
+            scr_net_example(examples[r].n);
+        } else {
+            pipe_load_example(examples[r].tipo, examples[r].vals, examples[r].n);
+            scr_pipe_run(examples[r].tipo, 1);
+        }
+        if (ui_quit)
+            return;
+    }
+}
+
+static void scr_help(void)
+{
+    static const char *const items[] = {
+        "Uso y teclas",
+        "Tipos de problema",
+        "Formulas",
+        "Potencia bruta y neta",
+        "Suma K y fuentes de datos",
+        "Advertencias",
+        "Erratas del material",
+        "Casos del curso (cargar)",
+        "Acerca de",
+    };
+    static const char *const fk[5] = { "", "", "", "", "VOLVER" };
+    static menu_t m = { "AYUDA", items, 9, 0 };
+    int r;
+    while (!ui_quit) {
+        r = menu_run(&m);
+        if (r == MENU_BACK || r == MENU_QUIT)
+            return;
+        if (r == MENU_MODE) {
             scr_settings();
             continue;
         }
-        break;
+        if (r < HELP_COUNT_UI) {
+            if (!help_topic((uint8_t)r)) {
+                ui_alert("Ayuda", "Falta el archivo PERDTXT.", "Envielo con TI Connect CE", C_ERR);
+                continue;
+            }
+            view_run("AYUDA", fk);
+        } else if (r == HELP_COUNT_UI) {
+            course_cases();
+        } else {
+            about();
+        }
     }
 }
 

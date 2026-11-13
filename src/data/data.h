@@ -64,4 +64,15 @@ typedef struct {
 } water;
 extern const water waters[WATERS];
 
+/* ---- casos del curso (examples.c) ---- */
+#define EX_NONE ((real)-1e30)      /* campo vacio */
+#define EXAMPLES 21
+typedef struct {
+    const char *name;
+    unsigned char tipo;            /* PT_*; PT_COUNT = sistema       */
+    const real *vals;              /* en el orden del formulario     */
+    unsigned char n;               /* n valores; sistema: su indice  */
+} example;
+extern const example examples[EXAMPLES];
+
 #endif

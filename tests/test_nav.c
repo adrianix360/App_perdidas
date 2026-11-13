@@ -122,6 +122,17 @@ static int has_line(const char *t)
     return 0;
 }
 
+/* sin plantillas sin resolver (para la ayuda, que no tiene OBSERVACIONES) */
+static int memo_ok_noobs(void)
+{
+    uint8_t i;
+    for (i = 0; i < view_n; i++)
+        if (strchr(view_line[i], '?') || strchr(view_line[i], '{') ||
+            strlen(view_line[i]) > UI_COLS)
+            return 0;
+    return 1;
+}
+
 /* memoria completa: sin plantillas sin resolver, con OBSERVACIONES al
  * final (IF/ENDIF balanceados) y sin llenar el visor */
 static int memo_ok(void)
@@ -174,7 +185,8 @@ int main(int argc, char **argv)
     T("3"); T("1"); K(K_CLEAR); T("2"); K(K_CLEAR); T("3"); K(K_CLEAR);
     T("4"); K(K_CLEAR); K(K_CLEAR);
     T("4"); K(K_CLEAR);
-    T("6"); { int i; for (i = 0; i < 40; i++) K(K_DOWN); } K(K_RIGHT); K(K_LEFT); K(K_F5);
+    T("6"); T("1"); { int i; for (i = 0; i < 40; i++) K(K_DOWN); } K(K_RIGHT); K(K_LEFT); K(K_F5);
+    T("9"); K(K_F5); K(K_CLEAR);
     K(K_DOWN); K(K_DOWN); K(K_UP); K(K_UP);   /* menu con flechas */
     T("7");
     run();
@@ -511,6 +523,45 @@ int main(int argc, char **argv)
         T("1"); T("5"); K(K_F5); K(K_F2);
         run();
         check(!graph_bad && graph_n == 2, "grafica F con la valvula al final");
+    }
+
+    /* 5e. Fase 6: ayuda por temas y casos del curso */
+    {
+        int i, ok = 1;
+        char t[2] = { 0, 0 };
+        for (i = 0; i < 7; i++) {
+            t[0] = (char)('1' + i);
+            T("6"); T(t);
+            run();
+            if (view_n < 8 || !memo_ok_noobs()) {
+                ok = 0;
+                printf("  tema %d: %d lineas\n", i + 1, view_n);
+            }
+        }
+        check(ok, "7 temas de ayuda desde PERDTXT, sin plantillas rotas");
+        ok = 1;
+        for (i = 0; i < EXAMPLES; i++) {
+            int j;
+            T("6"); T("8");
+            K(K_PGUP); K(K_PGUP);   /* primer caso */
+            for (j = 0; j < i; j++) K(K_DOWN);
+            K(K_ENTER);
+            run();
+            if (strncmp(view_line[0], "RESULTADO", 9)) {
+                ok = 0;
+                printf("  caso %s: sin resultado (\"%s\" / \"%s\")\n", examples[i].name,
+                       view_line[0], scr_msg);
+            }
+        }
+        check(ok, "los 21 casos del curso cargan y calculan");
+        T("6"); T("8"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 10; i++) K(K_DOWN); K(K_ENTER);
+        run();
+        check(starts(view_value("D comercial"), "285.75") && starts(view_value("Qmax con D com."), "262.38"),
+              "caso del curso P-17 da 285,75 mm y 262,38 l/s");
+        T("6"); T("8"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 19; i++) K(K_DOWN); K(K_ENTER);
+        run();
+        check(starts(view_value("H necesaria"), "12.66"), "caso del curso S-04 (hacia atras) da 12,67 m");
+        settings_default(&g_set);
     }
 
     /* 6. Ajustes: decimales, validaciones y archivo */

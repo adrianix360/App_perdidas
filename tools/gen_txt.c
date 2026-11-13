@@ -96,6 +96,8 @@ int main(int argc, char **argv)
         progs[PROG_SUM(i)] = sum_p[i];
         progs[PROG_MEMO(i)] = memo_p[i];
     }
+    for (i = 0; i < HELP_COUNT; i++)
+        progs[PROG_HELP(i)] = help_p[i];
     for (p = 0; p < PROG_COUNT; p++) {
         int depth = 0;
         const mstep *s = progs[p];

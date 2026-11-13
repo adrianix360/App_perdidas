@@ -363,6 +363,43 @@ static void fill_values(void)
     }
 }
 
+/* Carga un caso del curso en el formulario del tipo dado */
+void pipe_load_example(uint8_t t, const real *v, uint8_t n)
+{
+    uint8_t i;
+    form_field *f;
+    if (t >= PT_COUNT)
+        return;
+    for (i = 0; i < n && i < nforms[t]; i++) {
+        f = &forms[t][i];
+        if (f->flags & FF_CHOICE) {
+            uint8_t c = (uint8_t)v[i];
+            if (c < f->nchoices) {
+                if (f->ch == &g_set.h.method && *f->ch != c)
+                    g_set_dirty = true;
+                *f->ch = c;
+            }
+        } else if (v[i] <= EX_NONE) {
+            if (f->set)
+                *f->set = 0;
+        } else {
+            *f->val = v[i];
+            if (f->set)
+                *f->set = 1;
+        }
+    }
+}
+
+/* Ayuda: dibuja el tema i (programa de PERDTXT) en el visor */
+bool help_topic(uint8_t i)
+{
+    view_clear();
+    if (!tx_open())
+        return false;
+    run_prog(PROG_HELP(i), 0);
+    return true;
+}
+
 static void show(bool memo)
 {
     fill_values();

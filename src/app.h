@@ -9,7 +9,7 @@
 #include "hydro/hydro.h"
 
 #define APP_NAME    "PERDIDAS"
-#define APP_VERSION "0.5"
+#define APP_VERSION "1.0"
 #define CFG_APPVAR  "PERDCFG"
 #define TX_APPVAR   "PERDTXT"
 #define CASES_APPVAR "PERDCAS"
@@ -38,6 +38,8 @@ extern const char *const method_names[FM_COUNT];
  * (mismo orden que el menu) */
 enum { PT_A = 0, PT_B, PT_D, PT_C, PT_F, PT_E, PT_I, PT_COUNT };
 void scr_pipe(uint8_t tipo);
+void pipe_load_example(uint8_t tipo, const real *v, uint8_t n);
+bool help_topic(uint8_t i);
 
 /* cases.c: casos guardados (AppVar PERDCAS) */
 #define CASES_MAX 20
@@ -52,6 +54,7 @@ void scr_cases(void);
 
 /* scr_net.c: sistemas serie/paralelo */
 void scr_net(void);
+void scr_net_example(uint8_t idx);
 
 /* scr_lib.c: biblioteca */
 bool lib_pick_material(void);

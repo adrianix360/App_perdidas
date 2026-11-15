@@ -872,3 +872,46 @@ Limitaciones conocidas: los sistemas no se guardan en Mis casos (solo la tuberí
 **Tamaños y RAM.** `PERDIDA1` 25 083 B, `PERDGFX` 15 373 B (el .8xv). **RAM libre con la app abierta: 49 159 B** (fase 1b: 58 942). Para las fases 3 a 6 quedan unos 19 KB sobre el mínimo de 30 KB. Las pantallas de arrastre, vertedores y canales se harán con un motor común de formulario y memoria en `PERDTXT`.
 
 **Valores del catálogo sin verificar con el libro** (no hay foto de las tablas): todos traen su fuente. Diferencia interna que conviene revisar: el cono de 30° vale 0,5 en Çengel, pero la tabla por ángulo de White da 0,55 a 30°.
+
+## v2.0, fase 3: arrastre y sustentación (15 de noviembre de 2026)
+
+**Construido.** `src/scr_drag.c`, en Flujos externos › Arrastre y sustentación:
+
+- **AR-1**: fuerza de arrastre o de sustentación (elige $C_D$ o $C_L$).
+- **AR-2**: velocidad terminal con empuje. En agua el volumen es obligatorio; en aire, según Ajustes.
+- **AR-3**: estructura de hasta 6 cuerpos, cada uno con $C_D$, figura, dimensiones, área, cota $y$ y velocidad propia opcional. Da fuerza total, momento en la base, $y_{cp}$ y un ESQUEMA con las fuerzas a su altura.
+- **AR-4**: vuelo nivelado en dos pasos en la misma pantalla. Sin «CD alas» calcula $\rho(h)$, $q$ y el $C_L$ necesario, y pide leer $\alpha$ y $C_D$ en la gráfica; con la lectura da el arrastre de las alas y del fuselaje, el empuje, la potencia y, si se da $C_{L,\max}$, la velocidad de pérdida.
+- **Placa plana y Stokes** (el EX-4 del prompt; queda aquí porque es materia de arrastre): $C_f$ laminar, turbulento y mixto, con régimen automático o elegido; esfera de Stokes con $F=3\pi\mu VD$.
+- El catálogo también se abre desde este menú.
+
+Detalles de la entrada de datos:
+
+- **Fluido**: «Aire (Ajustes)», «Agua» o «Manual»; las dos primeras llenan $\rho$ y $\nu$.
+- **Velocidad** en m/s, km/h o nudos; el factor del nudo sale de Ajustes, y AR-4 empieza en nudos.
+- **F1 CD** abre el catálogo y devuelve $C_D$ y figura; con tabla, pide el parámetro. Escribir el número de la figura también pone su $C_D$.
+- **Área**: si no se teclea, se calcula con la fórmula de la figura y la memoria la muestra con la plantilla `{TXT}`.
+- **Re < 1**: con una figura que tiene fórmula de Stokes (esfera o disco) se usa $C_D=k/Re$ y la memoria lo dice.
+- **Avisos**: $Re<10^4$, crisis de arrastre (esfera con $Re>2\times10^5$, cilindro largo con $Re>5\times10^5$) y $Re<1$.
+
+Memorias de cálculo en `PERDTXT` (10 programas nuevos, `tools/memo_drag.c`). En AR-3 los renglones de cada cuerpo los arma la pantalla, con un gancho del intérprete (`TB_HOOK`). La estructura reutiliza el búfer del formulario de Sistemas (`ff_shared`): 0 B de RAM extra. Cambio en el catálogo pedido por Adrián: el cubo de arista usa por defecto el área proyectada $\sqrt2\,D^2$; para usar $D^2$ se teclea $A$.
+
+**Pruebas.**
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada: 13 comprobaciones nuevas, cada caso tecleado: AR-01, AR-03a, AR-03b, AR-02a con memoria y esquema, AR-04 en los dos pasos, AR-06 turbulento y mixto, AR-05, y W < B rechazado | 135 de 135; estrés sin cierres. Se amplió el AppVar simulado a 32 KB, porque `PERDTXT` ya mide 21,9 KB |
+| Dorados, aleatorios v1.0 y v2.0 | sin cambios, 0 fallas |
+| CEmu: 69 pantallas (15 nuevas) | revisadas; línea base nueva, 69 de 69 iguales |
+
+| Caso | En CEmu | Esperado |
+|---|---|---|
+| AR-01 | $v_t=4{,}92243$ m/s (17,72 km/h), $Re=2\,625\,296$ | 4,922 |
+| AR-02a | $q=462{,}963$; $F_1=25{,}463$; $F_2=26{,}180$ kN; $M=1324{,}422$ kN·m; $y_{cp}=25{,}6458$ m; aviso de crisis | 1 324; 25,65 |
+| AR-03b / AR-03a | 1,32891 / 1,58035 m/s (interfaz simulada) | 1,329 / 1,580 |
+| AR-04 | $\rho=0{,}40145$; $q=12\,213$; $C_L=0{,}883108$; $D_{fus}=267{,}41$ kN; $T=306{,}274$ kN; $P=75{,}5$ MW | 0,8831; 267,41; 306,27 |
+| AR-05 | $F_D=9{,}42\times10^{-9}$ N (interfaz simulada) | 9,425E-9 |
+| AR-06 | $Re_L=1\,333\,333$; $C_f$ 0,004408 y 0,003102; $F_D=0{,}528963$ N | 0,529 |
+
+**RAM.** `PERDIDA1` 39 728 B, `PERDTXT` 21 933 B. **RAM libre con la app abierta: 34 505 B** (fase 2: 49 159). Quedan 4,5 KB sobre el mínimo de 30 KB, y las fases 4 y 5 no caben en ese margen: se consulta a Adrián.
+
+**Aprendido.** `make clean` borra todo `bin/`, incluido `PERDGFX.bin` (se recupera con `git checkout` o con `tools/gen_gfx.py`). Se probó `PREFER_OS_CRT` de CEdev: ahorra solo 450 B y cambia las rutinas de punto flotante, así que se descartó.

@@ -23,6 +23,9 @@ extern const hydro_log *memo_log;    /* tablas de iteraciones            */
 extern hydro_log memo_lg;            /* registro comun de las pantallas  */
 extern const real *memo_dlist;       /* lista de diametros (m), M_DLIST  */
 extern uint8_t memo_dlist_n;
+/* M_TABLE TB_HOOK: lineas que arma la pantalla (p. ej. un cuerpo por linea) */
+extern void (*memo_hook)(void);
+extern const char *memo_txt;         /* plantilla {TXT}                  */
 
 #define MSETF(g, cond) do { if (cond) memo_FL |= (uint32_t)1 << (g); } while (0)
 

@@ -24,6 +24,12 @@ static const char *const vname[V_COUNT] = {
     "VALHT", "VALHV", "VALKV", "VALV",
     "FCW", "FSJ", "FHA", "FGO", "DSJ", "DHA", "DGO", "FSEL", "KPLUS",
     "DMM",
+    "RHO", "VIN", "VEL", "QDYN", "CDV", "AREF", "DIM1", "DIM2", "LREF",
+    "FD", "W", "BUOY", "NET", "VOL", "VT", "VTKMH", "MU", "KST",
+    "FTOT", "MOM", "YCP",
+    "ALT", "CL", "ATOT", "AW", "NW", "CDW", "CDF", "DF", "AFUS", "DWING",
+    "DFUS", "THR", "PWR", "ALPHA", "CLMAX", "VST",
+    "CFL", "CFT", "CFM", "CF", "APL", "FACES",
 };
 
 typedef struct {
@@ -636,4 +642,8 @@ static const mstep x_fric_memo[] = {
     STOP
 };
 
-static const mstep *const x_p[XP_COUNT] = { x_fric_sum, x_fric_memo };
+#include "memo_drag.c"
+
+static const mstep *const x_p[XP_COUNT] = { x_fric_sum, x_fric_memo,
+    x_ar1_sum, x_ar1_memo, x_ar2_sum, x_ar2_memo, x_ar3_sum, x_ar3_memo,
+    x_ar4_sum, x_ar4_memo, x_pl_sum, x_pl_memo };

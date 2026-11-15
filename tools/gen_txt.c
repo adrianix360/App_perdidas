@@ -35,6 +35,7 @@ static unsigned char *encode(const char *s, int tpl, size_t *len, const char *wh
                 if (!strcmp(name, vname[i])) id = i;
             if (!strcmp(name, "METHOD")) id = V_METHOD;
             if (!strcmp(name, "LISTNAME")) id = V_LISTNAME;
+            if (!strcmp(name, "TXT")) id = V_TXT;
             if (id < 0) {
                 fprintf(stderr, "ERROR: plantilla {%s} desconocida en %s\n", name, where);
                 errors++;

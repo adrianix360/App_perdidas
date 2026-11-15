@@ -30,7 +30,7 @@ for m in f d; do
   gcc -o "$OUT/test_ui_pure_$m.exe" "$OUT/test_ui_pure_$m.o" "$OUT/expr_$m.o" "$OUT/numfmt_$m.o" -lm
 done
 # Interfaz con pantalla y teclado simulados (float, como la calculadora)
-UIS="src/data/examples.c src/scr_net.c tests/mock/mock_graph.c src/screens.c src/scr_pipe.c src/scr_fric.c src/scr_cat.c src/data/dragcat.c tests/mock/mock_gfxcat.c src/memo_run.c src/scr_lib.c src/cases.c src/data/lib.c src/data/diams.c src/ui/memo.c src/store.c src/ui/widgets.c src/ui/expr.c src/ui/numfmt.c src/ui/texts.c src/hydro/hydro.c src/hydro/drag.c src/hydro/weir.c src/hydro/chan.c tests/mock/mock_ui.c tests/test_nav.c"
+UIS="src/data/examples.c src/scr_net.c tests/mock/mock_graph.c src/screens.c src/scr_pipe.c src/scr_fric.c src/scr_cat.c src/scr_drag.c src/data/dragcat.c tests/mock/mock_gfxcat.c src/memo_run.c src/scr_lib.c src/cases.c src/data/lib.c src/data/diams.c src/ui/memo.c src/store.c src/ui/widgets.c src/ui/expr.c src/ui/numfmt.c src/ui/texts.c src/hydro/hydro.c src/hydro/drag.c src/hydro/weir.c src/hydro/chan.c tests/mock/mock_ui.c tests/test_nav.c"
 gcc -std=c99 -O1 -g -Wall -Wextra -Werror -Wno-unused-parameter -Itests/mock -fsanitize=undefined,bounds -fsanitize-trap=all     -fsingle-precision-constant -o "$OUT/test_nav.exe" $UIS -lm
 [ -f tests/random_cases.csv ] || python -I tools/oracle.py tests/random_cases.csv
 [ -f tests/random_cases2.csv ] || python -I tools/oracle2.py tests/random_cases2.csv

@@ -20,6 +20,8 @@ const hydro_log *memo_log;
 hydro_log memo_lg;
 const real *memo_dlist;
 uint8_t memo_dlist_n;
+void (*memo_hook)(void);
+const char *memo_txt;
 
 void memo_reset(void)
 {
@@ -87,6 +89,8 @@ static const char *tpl(const char *t, char *out, size_t n)
         if (id == V_METHOD)
             s = method_names[memo_cfg && memo_cfg->method < FM_COUNT ?
                              memo_cfg->method : 0];
+        else if (id == V_TXT)
+            s = memo_txt ? memo_txt : "";
         else if (id == V_LISTNAME)
             s = pin.dset < DIAM_CHOICES ? diam_set_names[pin.dset] : "?";
         else if (id < V_COUNT)
@@ -154,6 +158,11 @@ static void run_prog(uint8_t prog, uint8_t depth)
                 run_prog(id, depth + 1);
             break;
         case M_TABLE:
+            if (id == TB_HOOK) {
+                if (memo_hook)
+                    memo_hook();
+                break;
+            }
             if (!memo_log)
                 break;
             if (id == TB_B_COURSE)

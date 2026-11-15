@@ -81,6 +81,10 @@ void scr_fric(real *dest, uint8_t *dset);
 int scr_cat(uint8_t use);
 extern real cat_sel_cd, cat_sel_param;
 
+/* scr_drag.c (v2.0): arrastre y sustentacion. 0 AR-1, 1 AR-2, 2 AR-3,
+ * 3 AR-4, 4 placa plana y Stokes */
+void scr_drag(uint8_t t);
+
 /* scr_lib.c: biblioteca */
 bool lib_pick_material(void);
 bool lib_sumador(void);

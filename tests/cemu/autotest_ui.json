@@ -656,13 +656,201 @@
   "key|clear",
   "key|clear",
   "key|clear",
-  "key|clear",
+  "key|4",
+  "key|1",
+  "key|2",
   "delay|700",
   "hash|55",
+  "key|2nd",
+  "key|up",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|9",
+  "key|5",
+  "key|0",
+  "key|enter",
+  "key|down",
+  "key|down",
+  "key|5",
+  "key|enter",
+  "key|8",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|56",
+  "key|y=",
+  "delay|700",
+  "hash|57",
+  "key|right",
+  "delay|700",
+  "hash|58",
+  "key|clear",
+  "key|clear",
+  "key|3",
+  "key|2nd",
+  "key|up",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|1",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|right",
+  "key|down",
+  "key|0",
+  "key|.",
+  "key|9",
+  "key|1",
+  "key|6",
+  "key|6",
+  "key|6",
+  "key|6",
+  "key|7",
+  "key|enter",
+  "key|1",
+  "key|1",
+  "key|enter",
+  "key|2",
+  "key|enter",
+  "key|3",
+  "key|0",
+  "key|enter",
+  "key|down",
+  "key|1",
+  "key|5",
+  "key|enter",
+  "key|down",
+  "key|0",
+  "key|.",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|enter",
+  "key|1",
+  "key|2",
+  "key|enter",
+  "key|down",
+  "key|down",
+  "key|3",
+  "key|6",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|59",
+  "key|y=",
+  "key|right",
+  "delay|700",
+  "hash|60",
+  "key|y=",
+  "key|window",
+  "delay|700",
+  "hash|61",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "key|4",
+  "key|2nd",
+  "key|up",
+  "key|3",
+  "key|.",
+  "key|9",
+  "key|2nd",
+  "key|,",
+  "key|6",
+  "key|enter",
+  "key|4",
+  "key|8",
+  "key|0",
+  "key|enter",
+  "key|right",
+  "key|down",
+  "key|1",
+  "key|0",
+  "key|6",
+  "key|7",
+  "key|5",
+  "key|enter",
+  "key|down",
+  "key|2",
+  "key|enter",
+  "key|1",
+  "key|8",
+  "key|0",
+  "key|.",
+  "key|8",
+  "key|enter",
+  "key|1",
+  "key|enter",
+  "key|5",
+  "key|.",
+  "key|2",
+  "key|8",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|62",
+  "key|clear",
+  "key|2nd",
+  "key|down",
+  "key|up",
+  "key|0",
+  "key|.",
+  "key|0",
+  "key|0",
+  "key|8",
+  "key|8",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|63",
+  "key|y=",
+  "key|right",
+  "delay|700",
+  "hash|64",
+  "key|clear",
+  "key|clear",
+  "key|5",
+  "key|2nd",
+  "key|up",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|1",
+  "key|0",
+  "key|enter",
+  "key|left",
+  "key|left",
+  "key|down",
+  "key|2",
+  "key|enter",
+  "key|1",
+  "key|enter",
+  "key|down",
+  "key|right",
+  "key|right",
+  "key|graph",
+  "delay|700",
+  "hash|65",
+  "key|y=",
+  "delay|700",
+  "hash|66",
+  "key|clear",
+  "key|clear",
+  "delay|700",
+  "hash|67",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "delay|700",
+  "hash|68",
   "key|enter",
   "delay|1500",
   "delay|700",
-  "hash|56"
+  "hash|69"
  ],
  "hashes": {
   "1": {
@@ -918,7 +1106,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "BA951899"
+    "B7E40B74"
    ]
   },
   "33": {
@@ -1014,7 +1202,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "9112CF02"
+    "960AC3C2"
    ]
   },
   "45": {
@@ -1022,7 +1210,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "64B00DDA"
+    "63A8011A"
    ]
   },
   "46": {
@@ -1098,19 +1286,123 @@
    ]
   },
   "55": {
-   "description": "55_confirmar_salida",
+   "description": "55_ar_form_terminal",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "809F65E2"
+    "AB25E54F"
    ]
   },
   "56": {
-   "description": "56_fuera_de_la_app",
+   "description": "56_ar01_resultado",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "708E5B24"
+    "D5411102"
+   ]
+  },
+  "57": {
+   "description": "57_ar01_memoria_p1",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "F7C9BC92"
+   ]
+  },
+  "58": {
+   "description": "58_ar01_memoria_p2",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "5A94A39F"
+   ]
+  },
+  "59": {
+   "description": "59_ar02a_resultado",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "7CC3EF93"
+   ]
+  },
+  "60": {
+   "description": "60_ar02a_memoria_p2",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "AAEC7C36"
+   ]
+  },
+  "61": {
+   "description": "61_ar02a_esquema",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "9A15882E"
+   ]
+  },
+  "62": {
+   "description": "62_ar04_paso1",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "C692675"
+   ]
+  },
+  "63": {
+   "description": "63_ar04_paso2",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "9F304828"
+   ]
+  },
+  "64": {
+   "description": "64_ar04_memoria_p2",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "E8DE2851"
+   ]
+  },
+  "65": {
+   "description": "65_ar06_placa",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "981B89A8"
+   ]
+  },
+  "66": {
+   "description": "66_ar06_memoria",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "3E425A93"
+   ]
+  },
+  "67": {
+   "description": "67_menu_arrastre",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "BDE10287"
+   ]
+  },
+  "68": {
+   "description": "68_confirmar_salida",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "79B25EDE"
+   ]
+  },
+  "69": {
+   "description": "69_fuera_de_la_app",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "E2CDC558"
    ]
   }
  }

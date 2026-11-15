@@ -214,7 +214,47 @@ static void scr_pipe_menu(void)
     }
 }
 
-/* v2.0: arrastre, vertedores y canales (fases 3 a 5) */
+/* v2.0: submenu generico; fn recibe el indice elegido */
+static void sub_menu(menu_t *m, void (*fn)(uint8_t))
+{
+    int r;
+    while (!ui_quit) {
+        r = menu_run(m);
+        if (r == MENU_BACK || r == MENU_QUIT)
+            return;
+        if (r == MENU_MODE)
+            scr_settings();
+        else
+            fn((uint8_t)r);
+    }
+}
+
+static void drag_item(uint8_t r)
+{
+    if (r == 5)
+        scr_cat(0);
+    else
+        scr_drag(r);
+}
+
+static void ext_item(uint8_t r)
+{
+    static const char *const items[] = {
+        "Fuerza de arrastre FD o FL  (AR-1)",
+        "Velocidad terminal          (AR-2)",
+        "Estructura: varios cuerpos  (AR-3)",
+        "Vuelo nivelado (avion)      (AR-4)",
+        "Placa plana y flujo lento (Stokes)",
+        "Catalogo de coeficientes CD",
+    };
+    static menu_t m = { "ARRASTRE Y SUSTENTACION", items, 6, 0 };
+    if (r == 0)
+        sub_menu(&m, drag_item);
+    else
+        todo_alert(r == 1 ? "Vertedores y orificios" : "Canales y medicion",
+                   (uint8_t)(3 + r));
+}
+
 static void scr_ext_menu(void)
 {
     static const char *const items[] = {
@@ -223,17 +263,7 @@ static void scr_ext_menu(void)
         "Canales y medicion",
     };
     static menu_t m = { "FLUJOS EXTERNOS Y MEDICION", items, 3, 0 };
-    int r;
-    while (!ui_quit) {
-        r = menu_run(&m);
-        if (r == MENU_BACK || r == MENU_QUIT)
-            return;
-        if (r == MENU_MODE) {
-            scr_settings();
-            continue;
-        }
-        todo_alert(items[r], (uint8_t)(3 + r));
-    }
+    sub_menu(&m, ext_item);
 }
 
 void scr_main(void)

@@ -43,7 +43,10 @@ static const char *const mode_names[2] = { "Adelante (H dada)", "Atras (Q en tub
 /* ------------------------------------------------------------------ */
 /* Formulario dinamico                                                 */
 /* ------------------------------------------------------------------ */
-static form_field ff[8 + 6 * NP];
+/* v2.0: buferes compartidos con la estructura de arrastre (scr_drag.c);
+ * nunca estan activos a la vez */
+form_field ff_shared[8 + 6 * NP];
+#define ff ff_shared
 static form_t *fm_now;
 
 /* si cambia el numero de tubos, el formulario se rehace al instante */
@@ -55,7 +58,8 @@ static void np_changed(void)
         fm_now->restart = 1;
     }
 }
-static char flab[6 * NP][18];
+char flab_shared[6 * NP][18];
+#define flab flab_shared
 
 static uint8_t build_form(void)
 {

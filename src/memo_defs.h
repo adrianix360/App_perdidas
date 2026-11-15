@@ -32,12 +32,19 @@ enum {
     /* v2.0: Calcular f */
     V_FCW, V_FSJ, V_FHA, V_FGO, V_DSJ, V_DHA, V_DGO, V_FSEL, V_KPLUS,
     V_DMM,
+    /* v2.0: arrastre y sustentacion */
+    V_RHO, V_VIN, V_VEL, V_QDYN, V_CDV, V_AREF, V_DIM1, V_DIM2, V_LREF,
+    V_FD, V_W, V_BUOY, V_NET, V_VOL, V_VT, V_VTKMH, V_MU, V_KST,
+    V_FTOT, V_MOM, V_YCP,
+    V_ALT, V_CL, V_ATOT, V_AW, V_NW, V_CDW, V_CDF, V_DF, V_AFUS, V_DWING,
+    V_DFUS, V_THR, V_PWR, V_ALPHA, V_CLMAX, V_VST,
+    V_CFL, V_CFT, V_CFM, V_CF, V_APL, V_FACES,
     V_COUNT
 };
 
 
 /* valores especiales de texto (no numericos) */
-enum { V_METHOD = V_COUNT, V_LISTNAME };
+enum { V_METHOD = V_COUNT, V_LISTNAME, V_TXT };
 
 enum {
     G_FIX, G_LAM, G_TRANS, G_CW, G_SJ, G_HA, G_GO, G_HP, G_PUMP, G_ZB,
@@ -58,6 +65,26 @@ enum {
 #define G_OSJ     G_X7   /* fuera de rango: Swamee-Jain        */
 #define G_OHA     G_X8   /* fuera de rango: Haaland            */
 #define G_OGO     G_X9   /* fuera de rango: Goudar-Sonnad      */
+/* Arrastre y sustentacion */
+#define G_DLIFT   G_X0   /* AR-1: sustentacion (C_L)           */
+#define G_DFIG    G_X1   /* C_D de una figura del catalogo     */
+#define G_DACALC  G_X2   /* area calculada con la formula      */
+#define G_DBUOY   G_X3   /* con empuje                         */
+#define G_DSTK    G_X4   /* se uso la formula de Stokes        */
+#define G_DRELOW  G_X5   /* Re < 1E4: fuera de la tabla        */
+#define G_DCRIS   G_X6   /* posible crisis de arrastre         */
+#define G_DRE1    G_X7   /* Re < 1                             */
+#define G_DSTEP2  G_X8   /* AR-4: con la lectura de la grafica */
+#define G_DALT    G_X9   /* AR-4: rho por altitud              */
+#define G_DVST    G_X10  /* AR-4: con C_Lmax                   */
+#define G_DVCONV  G_X11  /* V dada en km/h o nudos             */
+/* Placa plana y Stokes */
+#define G_PSTK    G_X0   /* caso Stokes (esfera)               */
+#define G_PLAM    G_X1
+#define G_PTURB   G_X2
+#define G_PMIX    G_X3
+#define G_PLAMNA  G_X4   /* Re > 5E5: laminar no aplica        */
+#define G_PTURBNA G_X5   /* Re > 1E7                           */
 
 enum { M_END = 0, M_SEC, M_DATA, M_EQ, M_RES, M_LINE, M_IF, M_IFN, M_ENDIF,
        M_CALL, M_TABLE, M_WARN, M_DLIST, M_SEP };
@@ -70,10 +97,15 @@ enum { S_DATA, S_CALC, S_OBS, S_STATE, S_COUNT };
 #define HELP_COUNT   7
 #define PROG_HELP(i) (S_COUNT + 2 * PT_COUNT + (i))
 /* v2.0: programas de los modulos nuevos, despues de la ayuda */
-enum { XP_FRIC_SUM, XP_FRIC_MEMO, XP_COUNT };
+enum { XP_FRIC_SUM, XP_FRIC_MEMO,
+       XP_AR1_SUM, XP_AR1_MEMO, XP_AR2_SUM, XP_AR2_MEMO, XP_AR3_SUM,
+       XP_AR3_MEMO, XP_AR4_SUM, XP_AR4_MEMO, XP_PL_SUM, XP_PL_MEMO,
+       XP_COUNT };
 #define PROG_X(i)    (S_COUNT + 2 * PT_COUNT + HELP_COUNT + (i))
 #define PROG_COUNT   (S_COUNT + 2 * PT_COUNT + HELP_COUNT + XP_COUNT)
 /* tablas de iteraciones (M_TABLE id) */
-enum { TB_B_COURSE = 0, TB_B_BIS, TB_D, TB_CW, TB_COUNT };
+enum { TB_B_COURSE = 0, TB_B_BIS, TB_D, TB_CW,
+       TB_HOOK,          /* lo dibuja la pantalla (memo_hook) */
+       TB_COUNT };
 
 #endif

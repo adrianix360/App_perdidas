@@ -6,7 +6,7 @@
 #include "../hydro/drag.h"
 
 const char *const area_txt[AR_COUNT] = {
-    "pi D^2/4", "D^2", "L D", "b h"
+    "pi D^2/4", "D^2", "L D", "b h", "sqrt(2) D^2"
 };
 
 const drag_shape drag_shapes[CAT_N] = {
@@ -33,9 +33,9 @@ const drag_shape drag_shapes[CAT_N] = {
       DK_GENERIC, TB_NONE, 0, "White", "" },
     { "Cubo, cara al flujo", "una cara normal al flujo", 1.05, AR_SQ,
       DK_GENERIC, TB_NONE, 0, "Cengel 11-2", "White 1.07" },
-    { "Cubo, arista al flujo", "girado 45 grados", 0.80, AR_SQ, DK_GENERIC,
+    { "Cubo, arista al flujo", "girado 45 grados", 0.80, AR_SQ2, DK_GENERIC,
       TB_NONE, 0, "Cengel 11-2",
-      "White 0.81. Area: D^2 (tablas) o|sqrt(2) D^2 proyectada (Tarea 4-2 P5)" },
+      "White 0.81. Area proyectada sqrt(2)D^2;|las tablas usan D^2 (escriba A)" },
     { "Cilindro finito perpend.", "eje normal al flujo", 0.9, AR_LD,
       DK_LONGCYL, TBC_LD_PERP, 0, "Cengel 11-2",
       "Tabla por L/D; L/D >= 1000: infinito|(1.2). Valor inicial: L/D = 10" },
@@ -109,6 +109,7 @@ real dragcat_area(uint8_t area, real a, real b)
     switch (area) {
     case AR_CIRC: return hydro_area(a);
     case AR_SQ: return a * a;
+    case AR_SQ2: return (real)1.41421356 * a * a;
     default: return a * b;
     }
 }

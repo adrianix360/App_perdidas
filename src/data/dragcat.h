@@ -15,6 +15,7 @@ enum { AR_CIRC = 0,   /* pi D^2/4          */
        AR_SQ,         /* D^2               */
        AR_LD,         /* L D (2D: por L)   */
        AR_BH,         /* b h               */
+       AR_SQ2,        /* sqrt(2) D^2 (cubo de arista, proyectada) */
        AR_COUNT };
 
 /* tablas por parametro */

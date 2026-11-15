@@ -101,8 +101,28 @@ STEPS = [
     ("53_cat_ranking", ["clear", "trace"]),
     ("54_cat_tabla_LD15", ["clear", "2nd", "down", "up", "up", "up", "up", "up", "up",
                            "enter", "trace"] + te("15")),
-    ("55_confirmar_salida", ["clear", "clear", "clear", "clear", "clear"]),
-    ("56_fuera_de_la_app", ["enter", "delay"]),
+    # v2.0 fase 3: arrastre y sustentacion
+    ("55_ar_form_terminal", ["clear", "clear", "clear", "clear", "4", "1", "2"]),
+    ("56_ar01_resultado", TOP + ["down"] * 3 + te("950") + ["down", "down"]
+     + te("5", "8") + ["graph"]),
+    ("57_ar01_memoria_p1", ["y="]),
+    ("58_ar01_memoria_p2", ["right"]),
+    ("59_ar02a_resultado", ["clear", "clear", "3"] + TOP + ["down"] * 4 + te("100")
+     + ["right", "down"] + te("0.9166667", "11", "2", "30") + ["down"] + te("15")
+     + ["down"] + te("0.5", "1", "12") + ["down", "down"] + te("36") + ["graph"]),
+    ("60_ar02a_memoria_p2", ["y=", "right"]),
+    ("61_ar02a_esquema", ["y=", "window"]),
+    ("62_ar04_paso1", ["clear", "clear", "clear", "4"] + TOP + te("3.9E6", "480")
+     + ["right", "down"] + te("10675") + ["down"] + te("2", "180.8", "1", "5.28")
+     + ["graph"]),
+    ("63_ar04_paso2", ["clear", "2nd", "down", "up"] + te("0.0088") + ["graph"]),
+    ("64_ar04_memoria_p2", ["y=", "right"]),
+    ("65_ar06_placa", ["clear", "clear", "5"] + TOP + ["down"] * 4 + te("10")
+     + ["left", "left", "down"] + te("2", "1") + ["down", "right", "right", "graph"]),
+    ("66_ar06_memoria", ["y="]),
+    ("67_menu_arrastre", ["clear", "clear"]),
+    ("68_confirmar_salida", ["clear", "clear", "clear"]),
+    ("69_fuera_de_la_app", ["enter", "delay"]),
 ]
 
 

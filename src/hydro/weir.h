@@ -59,5 +59,9 @@ int weir_profile_pts(const real *y, const real *v, unsigned char n, real b,
 
 /* VE-7: v = Q/(b h), E = h + v^2/2g */
 int weir_section(real Q, real b, real h, real g, real *v, real *E);
+/* VE-7: tirantes alternos con la energia especifica E y q = Q/b:
+ * E = h + q^2/(2 g h^2). hc = (q^2/g)^(1/3), Emin = 1,5 hc.
+ * Devuelve H_ERR_NOROOT si E < Emin (no hay flujo con esa energia). */
+int weir_alt_depths(real q, real E, real g, real *hsub, real *hsup, real *hc);
 
 #endif

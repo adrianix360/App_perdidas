@@ -39,6 +39,12 @@ enum {
     V_ALT, V_CL, V_ATOT, V_AW, V_NW, V_CDW, V_CDF, V_DF, V_AFUS, V_DWING,
     V_DFUS, V_THR, V_PWR, V_ALPHA, V_CLMAX, V_VST,
     V_CFL, V_CFT, V_CFM, V_CF, V_APL, V_FACES,
+    /* v2.0: vertedores y orificios */
+    V_WCD, V_WD1, V_WD2, V_WH, V_WQ, V_WQLS, V_WK, V_WLEV, V_WH0, V_WAREA,
+    V_WBE, V_WNC, V_WIT, V_WT2, V_WG2,
+    V_PRK, V_PRN, V_PRB, V_PRH, V_PRQ, V_PRVM, V_PRNP,
+    V_SQ, V_SB, V_SH1, V_SV1, V_SE1, V_SQQ, V_SFR1, V_SDZ, V_SE2, V_SHS,
+    V_SHP, V_SHC, V_SVS, V_SVP,
     V_COUNT
 };
 
@@ -85,6 +91,21 @@ enum {
 #define G_PMIX    G_X3
 #define G_PLAMNA  G_X4   /* Re > 5E5: laminar no aplica        */
 #define G_PTURBNA G_X5   /* Re > 1E7                           */
+/* Vertedores y orificios */
+#define G_WTRI    G_X0
+#define G_WRECT   G_X1
+#define G_WORC    G_X2
+#define G_WORR    G_X3
+#define G_WINV    G_X4   /* dado Q: hallar H o el nivel        */
+#define G_WH0     G_X5   /* cota de la cresta h0 = h - H       */
+#define G_WFRAN   G_X6   /* contracciones laterales (Francis)  */
+#define G_WPART   G_X7   /* orificio con carga parcial         */
+#define G_WHIGH   G_X8   /* H mayor que la altura del vertedero*/
+#define G_WDRY    G_X9   /* un elemento no recibe agua         */
+#define G_WPTS    G_X10  /* perfil por puntos                  */
+#define G_WSIMP   G_X11  /* Simpson (si no, trapecios)         */
+#define G_SBER    G_X10  /* aguas abajo: tirante por Bernoulli */
+#define G_SNOE    G_X11  /* E < Emin: no hay tirante            */
 
 enum { M_END = 0, M_SEC, M_DATA, M_EQ, M_RES, M_LINE, M_IF, M_IFN, M_ENDIF,
        M_CALL, M_TABLE, M_WARN, M_DLIST, M_SEP };
@@ -100,6 +121,8 @@ enum { S_DATA, S_CALC, S_OBS, S_STATE, S_COUNT };
 enum { XP_FRIC_SUM, XP_FRIC_MEMO,
        XP_AR1_SUM, XP_AR1_MEMO, XP_AR2_SUM, XP_AR2_MEMO, XP_AR3_SUM,
        XP_AR3_MEMO, XP_AR4_SUM, XP_AR4_MEMO, XP_PL_SUM, XP_PL_MEMO,
+       XP_VE1_SUM, XP_VE1_MEMO, XP_VE4_SUM, XP_VE4_MEMO, XP_VE6_SUM,
+       XP_VE6_MEMO, XP_VE7_SUM, XP_VE7_MEMO,
        XP_COUNT };
 #define PROG_X(i)    (S_COUNT + 2 * PT_COUNT + HELP_COUNT + (i))
 #define PROG_COUNT   (S_COUNT + 2 * PT_COUNT + HELP_COUNT + XP_COUNT)

@@ -805,6 +805,78 @@ int main(int argc, char **argv)
         settings_default(&g_set);
     }
 
+    /* 5i. v2.0 fase 4: vertedores y orificios (VE-01 a VE-08) en FLUJOS */
+    {
+        settings_default(&g_set);
+        /* VE-03: triangular 90, Q = 200 l/s -> H */
+        T("2"); T("1"); K(K_PGUP); K(K_DOWN); K(K_RIGHT); K(K_DOWN); K(K_DOWN);
+        TE("90"); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("200"); K(K_F5);
+        runf();
+        check(has_line("> H = 0.45689"), "VE-03: H = 0.4569 m");
+        T("2"); T("1"); K(K_F5); K(K_F1);
+        runf();
+        check(has_line("(Q/K)^(2/5)") && has_line("tan(theta/2)") && memo_ok_noobs(),
+              "VE-03: memoria con la formula inversa");
+        /* VE-05: triangular 60, Q = 16 l/s */
+        T("2"); T("1"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("60");
+        K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("16"); K(K_F5);
+        runf();
+        check(has_line("> H = 0.2072"), "VE-05: H = 0.2072 m");
+        /* VE-01: triangular 90 en 1.4 m + 3 orificios de 0.2 m en 0.1 m, h = 2 */
+        T("2"); T("2"); K(K_PGUP); K(K_DOWN); K(K_DOWN); TE("2"); K(K_DOWN); K(K_DOWN);
+        K(K_DOWN); K(K_DOWN); TE("90"); K(K_DOWN); TE("1.4"); K(K_DOWN);
+        K(K_RIGHT); K(K_RIGHT); K(K_DOWN); TE("3"); TE("0.2"); K(K_DOWN); TE("0.1"); K(K_F5);
+        runf();
+        check(has_line("> Q total = 0.7405"), "VE-01: Q total = 0.7405 m3/s");
+        T("2"); T("2"); K(K_F5); K(K_F1);
+        runf();
+        check(has_line("1 Triangular x1") && has_line("2 Orificio circ. x3") && memo_ok_noobs(),
+              "VE-01: memoria con un renglon por elemento");
+        T("2"); T("2"); K(K_F5); K(K_F2);
+        runf();
+        check(!gfx_bad_now(), "VE-01: esquema dentro de la pantalla");
+        /* VE-02: Q = 500 l/s -> nivel */
+        T("2"); T("2"); K(K_PGUP); K(K_DOWN); K(K_RIGHT); K(K_DOWN); K(K_DOWN); TE("500"); K(K_F5);
+        runf();
+        check(has_line("> Nivel h = 1.8287"), "VE-02: h = 1.829 m");
+        /* VE-06: triangular 60 en 0 + rectangular 1.3 m en 0.2072, Q = 36 l/s */
+        T("2"); T("2"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("36"); K(K_DOWN);
+        K(K_DOWN); K(K_DOWN); TE("60"); K(K_DOWN); TE("0"); K(K_DOWN);
+        K(K_LEFT); K(K_DOWN); TE("1"); TE("1.3"); K(K_DOWN); TE("0.20724"); K(K_F5);
+        runf();
+        check(has_line("> Nivel h = 0.2391") && has_line("Q=0.02288"),
+              "VE-06: h = 0.2391 m, Q tri 22.88 l/s");
+        /* VE-08: Q = 4/3 m3/s, nivel aguas arriba 1 m -> h0 */
+        T("2"); T("1"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("90");
+        K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("4/3"); K(K_RIGHT); K(K_DOWN); TE("1"); K(K_F5);
+        runf();
+        check(has_line("> H = 0.97583") && has_line("> h0 = h - H = 0.0241"),
+              "VE-08: H = 0.9758 m y h0 = 0.0242 m");
+        /* VE-07: perfil v = 2 y^2, b = 2, h = 1 */
+        T("2"); T("3"); K(K_PGUP); K(K_DOWN); TE("2"); TE("1"); TE("2"); TE("2"); K(K_F5);
+        runf();
+        check(has_line("> Q = 1.33333"), "VE-07: Q = 1.3333 m3/s");
+        T("2"); T("3"); K(K_PGUP); K(K_RIGHT); K(K_DOWN); K(K_DOWN); K(K_DOWN);
+        TE("0"); TE("0"); TE("0.25"); TE("0.125"); TE("0.5"); TE("0.5"); TE("0.75"); TE("1.125");
+        TE("1"); TE("2"); K(K_F5);
+        runf();
+        check(has_line("> Q = 1.33333"), "VE-07: Q por puntos (Simpson) = 1.3333");
+        T("2"); T("3"); K(K_F5); K(K_F1);
+        runf();
+        check(has_line("Simpson"), "VE-07: la memoria dice Simpson");
+        /* aguas abajo: Q = 4/3, b = 2, h1 = 1; tirantes alternos */
+        T("2"); T("4"); K(K_PGUP); K(K_RIGHT); K(K_DOWN); TE("4/3"); K(K_DOWN); TE("2"); TE("1"); K(K_F5);
+        runf();
+        check(has_line("> v1 = 0.66666") && has_line("> h2 supercrit. = 0.1622"),
+              "VE-10: v1 = 0.667 m/s y h2 supercritico 0.1623 m");
+        /* orificio con carga parcial */
+        T("2"); T("1"); K(K_PGUP); K(K_RIGHT); K(K_RIGHT); K(K_DOWN); K(K_LEFT); K(K_DOWN);
+        K(K_DOWN); TE("0.4"); K(K_DOWN); K(K_DOWN); TE("0.1"); K(K_F5);
+        runf();
+        check(has_line("borde superior"), "orificio con H < d/2: aviso de carga parcial");
+        settings_default(&g_set);
+    }
+
     /* 6. Ajustes: decimales, validaciones y archivo */
     T("7"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("3"); K(K_F5);
     run();

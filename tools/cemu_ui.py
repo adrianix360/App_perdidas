@@ -130,9 +130,25 @@ STEPS_FLUJOS = [
      + ["left", "left", "down"] + te("2", "1") + ["down", "right", "right", "graph"]),
     ("66_ar06_memoria", ["y="]),
     ("67_menu_arrastre", ["clear", "clear"]),
-    ("68_acerca_de_ram", ["clear", "7", "1"]),
-    ("69_confirmar_salida", ["clear", "clear", "clear"]),
-    ("70_fuera_de_la_app", ["enter", "delay"]),
+    # v2.0 fase 4: vertedores y orificios
+    ("70_ve03_simple", ["clear", "2", "1"] + TOP + ["down", "right", "down", "down"]
+     + te("90") + ["down", "down", "down"] + te("200") + ["graph"]),
+    ("71_ve03_memoria", ["y="]),
+    ("72_ve01_compuesta", ["clear", "clear", "2"] + TOP + ["down", "down"] + te("2")
+     + ["down"] * 4 + te("90") + ["down"] + te("1.4") + ["down", "right", "right", "down"]
+     + te("3", "0.2") + ["down"] + te("0.1") + ["graph"]),
+    ("73_ve01_memoria_p1", ["y="]),
+    ("74_ve01_esquema", ["y=", "window"]),
+    ("75_ve02_nivel", ["clear", "clear"] + TOP + ["down", "right", "down", "down"]
+     + te("500") + ["graph"]),
+    ("76_ve07_perfil", ["clear", "clear", "3"] + TOP + ["down"] + te("2", "1", "2", "2")),
+    ("77_ve_aguas_abajo", ["clear", "clear", "4"] + TOP + ["right", "down"]
+     + te("1.3333333") + ["right", "down"] + te("2", "1") + ["graph"]),
+    ("78_ve_aguas_abajo_mem", ["y="]),
+    ("79_menu_vertedores", ["clear", "clear"]),
+    ("80_acerca_de_ram", ["clear", "7", "1"]),
+    ("81_confirmar_salida", ["clear", "clear", "clear"]),
+    ("82_fuera_de_la_app", ["enter", "delay"]),
 ]
 
 

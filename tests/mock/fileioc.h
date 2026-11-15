@@ -20,7 +20,7 @@ extern int mock_file_exists, mock_file_archived;
 #define MOCK_FILES 4
 typedef struct {
     char name[9];
-    uint8_t data[32768];
+    uint8_t data[49152];
     size_t len;
     int exists, archived;
 } mock_var;

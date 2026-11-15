@@ -16,7 +16,7 @@ BINDIR = ../bin
 
 # Como PERDIDAS: lanzador chico en RAM y el codigo en AppVars archivados
 # (FLUJOS0, FLUJOS1...). Un .8xp grande en RAM ocuparia el doble al correr.
-CONVBINFLAGS = -m 32768
+CONVBINFLAGS = -m 60000
 
 CFLAGS = -Wall -Wextra -Oz -DPROG_FLUJOS
 CXXFLAGS = -Wall -Wextra -Oz -DPROG_FLUJOS

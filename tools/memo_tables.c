@@ -30,6 +30,11 @@ static const char *const vname[V_COUNT] = {
     "ALT", "CL", "ATOT", "AW", "NW", "CDW", "CDF", "DF", "AFUS", "DWING",
     "DFUS", "THR", "PWR", "ALPHA", "CLMAX", "VST",
     "CFL", "CFT", "CFM", "CF", "APL", "FACES",
+    "WCD", "WD1", "WD2", "WH", "WQ", "WQLS", "WK", "WLEV", "WH0", "WAREA",
+    "WBE", "WNC", "WIT", "WT2", "WG2",
+    "PRK", "PRN", "PRB", "PRH", "PRQ", "PRVM", "PRNP",
+    "SQ", "SB", "SH1", "SV1", "SE1", "SQQ", "SFR1", "SDZ", "SE2", "SHS",
+    "SHP", "SHC", "SVS", "SVP",
 };
 
 typedef struct {
@@ -643,7 +648,10 @@ static const mstep x_fric_memo[] = {
 };
 
 #include "memo_drag.c"
+#include "memo_weir.c"
 
 static const mstep *const x_p[XP_COUNT] = { x_fric_sum, x_fric_memo,
     x_ar1_sum, x_ar1_memo, x_ar2_sum, x_ar2_memo, x_ar3_sum, x_ar3_memo,
-    x_ar4_sum, x_ar4_memo, x_pl_sum, x_pl_memo };
+    x_ar4_sum, x_ar4_memo, x_pl_sum, x_pl_memo,
+    x_ve1_sum, x_ve1_memo, x_ve4_sum, x_ve4_memo, x_ve6_sum, x_ve6_memo,
+    x_ve7_sum, x_ve7_memo };

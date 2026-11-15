@@ -193,6 +193,20 @@ static void case_VE(void)
     put("h0 [m]", 1 - h);
     end();
 
+    begin("VE-10");
+    {
+        real v1, E1, hs, hp, hc;
+        weir_section((real)(4.0 / 3.0), 2, 1, g, &v1, &E1);
+        put("v1 [m/s]", v1);
+        put("E1 [m]", E1);
+        weir_alt_depths((real)(2.0 / 3.0), E1, g, &hs, &hp, &hc);
+        put("hc [m]", hc);
+        put("h sub [m]", hs);
+        put("h sup [m]", hp);
+        put("error E<Emin", weir_alt_depths(1, (real)0.1, g, &hs, &hp, &hc));
+    }
+    end();
+
     begin("VE-09");
     s1 = WE(WE_TRI, 90, 0, 1);
     s2[0] = s1;

@@ -299,6 +299,12 @@ static const golden_t golden[] = {
     G ("VE-07", "Q puntos [m3/s]",     1.3333,   4),
     G ("VE-08", "H [m]",               0.9758,   4),
     G ("VE-08", "h0 [m]",              0.0242,   4),
+    G ("VE-10", "v1 [m/s]",            0.66667,  5),
+    G ("VE-10", "E1 [m]",              1.02265,  5),
+    G ("VE-10", "hc [m]",              0.35649,  5),
+    G ("VE-10", "h sub [m]",           1.0,      4),
+    G ("VE-10", "h sup [m]",           0.16226,  5),
+    GX("VE-10", "error E<Emin",        10),  /* H_ERR_NOROOT */
     GX("VE-09", "equivalencia 1 tri",  1),
     GX("VE-09", "error Q=0",           3),   /* H_ERR_Q */
     GX("VE-09", "error d=0",           18),  /* H_ERR_ARG */

@@ -190,3 +190,33 @@ int weir_section(real Q, real b, real h, real g, real *v, real *E)
     *E = h + *v * *v / (2.0 * g);
     return H_OK;
 }
+
+/* biseccion de E(h) - E en [lo, hi] (E(h) es monotona en cada rama) */
+static real alt_bis(real q, real E, real g, real lo, real hi)
+{
+    unsigned char k;
+    real m, f0 = lo + q * q / (2.0 * g * lo * lo) - E, fm;
+    for (k = 0; k < 80; k++) {
+        m = 0.5 * (lo + hi);
+        fm = m + q * q / (2.0 * g * m * m) - E;
+        if ((fm > 0) == (f0 > 0)) {
+            lo = m;
+            f0 = fm;
+        } else {
+            hi = m;
+        }
+    }
+    return 0.5 * (lo + hi);
+}
+
+int weir_alt_depths(real q, real E, real g, real *hsub, real *hsup, real *hc)
+{
+    if (!(q > 0) || !(E > 0) || !(g > 0))
+        return H_ERR_ARG;
+    *hc = R_POW(q * q / g, (real)(1.0 / 3.0));
+    if (E < 1.5 * *hc)
+        return H_ERR_NOROOT;
+    *hsub = alt_bis(q, E, g, *hc, E);              /* rama lenta  */
+    *hsup = alt_bis(q, E, g, *hc * 1e-3, *hc);     /* rama rapida */
+    return H_OK;
+}

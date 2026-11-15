@@ -310,19 +310,154 @@
   "delay|700",
   "hash|36",
   "key|clear",
+  "key|2",
+  "key|1",
+  "key|2nd",
+  "key|up",
+  "key|down",
+  "key|right",
+  "key|down",
+  "key|down",
+  "key|9",
+  "key|0",
+  "key|enter",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|2",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|37",
+  "key|y=",
+  "delay|700",
+  "hash|38",
+  "key|clear",
+  "key|clear",
+  "key|2",
+  "key|2nd",
+  "key|up",
+  "key|down",
+  "key|down",
+  "key|2",
+  "key|enter",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|9",
+  "key|0",
+  "key|enter",
+  "key|down",
+  "key|1",
+  "key|.",
+  "key|4",
+  "key|enter",
+  "key|down",
+  "key|right",
+  "key|right",
+  "key|down",
+  "key|3",
+  "key|enter",
+  "key|0",
+  "key|.",
+  "key|2",
+  "key|enter",
+  "key|down",
+  "key|0",
+  "key|.",
+  "key|1",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|39",
+  "key|y=",
+  "delay|700",
+  "hash|40",
+  "key|y=",
+  "key|window",
+  "delay|700",
+  "hash|41",
+  "key|clear",
+  "key|clear",
+  "key|2nd",
+  "key|up",
+  "key|down",
+  "key|right",
+  "key|down",
+  "key|down",
+  "key|5",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|42",
+  "key|clear",
+  "key|clear",
+  "key|3",
+  "key|2nd",
+  "key|up",
+  "key|down",
+  "key|2",
+  "key|enter",
+  "key|1",
+  "key|enter",
+  "key|2",
+  "key|enter",
+  "key|2",
+  "key|enter",
+  "delay|700",
+  "hash|43",
+  "key|clear",
+  "key|clear",
+  "key|4",
+  "key|2nd",
+  "key|up",
+  "key|right",
+  "key|down",
+  "key|1",
+  "key|.",
+  "key|3",
+  "key|3",
+  "key|3",
+  "key|3",
+  "key|3",
+  "key|3",
+  "key|3",
+  "key|enter",
+  "key|right",
+  "key|down",
+  "key|2",
+  "key|enter",
+  "key|1",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|44",
+  "key|y=",
+  "delay|700",
+  "hash|45",
+  "key|clear",
+  "key|clear",
+  "delay|700",
+  "hash|46",
+  "key|clear",
   "key|7",
   "key|1",
   "delay|700",
-  "hash|37",
+  "hash|47",
   "key|clear",
   "key|clear",
   "key|clear",
   "delay|700",
-  "hash|38",
+  "hash|48",
   "key|enter",
   "delay|1500",
   "delay|700",
-  "hash|39"
+  "hash|49"
  ],
  "hashes": {
   "1": {
@@ -614,23 +749,103 @@
    ]
   },
   "37": {
-   "description": "68_acerca_de_ram",
+   "description": "70_ve03_simple",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "5699E149"
+    "7C9D60E3"
    ]
   },
   "38": {
-   "description": "69_confirmar_salida",
+   "description": "71_ve03_memoria",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "C7487F7C"
+    "2CE74567"
    ]
   },
   "39": {
-   "description": "70_fuera_de_la_app",
+   "description": "72_ve01_compuesta",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "4C885922"
+   ]
+  },
+  "40": {
+   "description": "73_ve01_memoria_p1",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "9CAC786F"
+   ]
+  },
+  "41": {
+   "description": "74_ve01_esquema",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "D36F97C8"
+   ]
+  },
+  "42": {
+   "description": "75_ve02_nivel",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "FC76596D"
+   ]
+  },
+  "43": {
+   "description": "76_ve07_perfil",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "FAD5A1E"
+   ]
+  },
+  "44": {
+   "description": "77_ve_aguas_abajo",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "AEC8B2E8"
+   ]
+  },
+  "45": {
+   "description": "78_ve_aguas_abajo_mem",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "7A2C4E18"
+   ]
+  },
+  "46": {
+   "description": "79_menu_vertedores",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "7E494F79"
+   ]
+  },
+  "47": {
+   "description": "80_acerca_de_ram",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "C19A8E9"
+   ]
+  },
+  "48": {
+   "description": "81_confirmar_salida",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "343B2162"
+   ]
+  },
+  "49": {
+   "description": "82_fuera_de_la_app",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [

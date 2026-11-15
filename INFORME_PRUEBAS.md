@@ -942,3 +942,36 @@ Memorias de cálculo en `PERDTXT` (10 programas nuevos, `tools/memo_drag.c`). En
 | FLUJOS | `FLUJOS` 591 B + `FLUJOS0` 32 844 B + `FLUJOS1` 17 937 B | **88 758 B** |
 
 Los dos superan con holgura los 30 KB pedidos. FLUJOS tiene más de 50 KB de margen para vertedores y canales.
+
+## v2.0, fase 4: vertedores y orificios, en FLUJOS (15 de noviembre de 2026)
+
+**Construido** (`src/scr_weir.c`, FLUJOS › 2):
+
+- **Vertedero u orificio** (VE-1, VE-2 y VE-5): triangular, rectangular (con contracciones de Francis opcionales), orificio circular o rectangular. «Dado H → Q» o «Dado Q → H» (fórmula cerrada; con Francis, bisección). Con el «nivel arriba» calcula la cota de la cresta $h_0=h-H$. $C_d$ por defecto de Ajustes (0,6) y caudal en l/s o m³/s.
+- **Estructura compuesta** (VE-4): hasta 8 elementos que mezclan tipos, con «cantidad ×», cota $z$ y $C_d$ propio u opcional. «Nivel → Q» por elemento y total, o «Q → nivel» por bisección. El reparto entre elementos (Tarea 4-2 P2b) sale en el mismo resultado. ESQUEMA con la pared, los elementos y el nivel.
+- **Perfil de velocidades** (VE-6): $v=k\,y^n$ con fórmula cerrada, o tabla de hasta 9 puntos $(y, v)$ con Simpson si están igualmente espaciados y son impares, y con trapecios si no.
+- **Aguas abajo** (VE-7): $v_1$, $E_1$, $Fr_1$ y, por Bernoulli con escalón $dz$, los dos tirantes alternos (subcrítico y supercrítico), con $h_c$ y $E_{min}$. Avisa si $E_2<E_{min}$.
+- **Motor**: `weir_alt_depths` (bisección en cada rama) con su caso dorado VE-10 (canal de la Tarea 4-2 P3: $v_1=0{,}6667$, $E_1=1{,}0227$, $h_c=0{,}3565$, tirantes 1,0 y 0,1623 m).
+- **Avisos**: orificio con nivel bajo su borde superior, $H$ mayor que la altura del vertedero, Francis y elementos sin agua.
+- **Memorias** en `PERDTXT` (8 programas nuevos, `tools/memo_weir.c`); la compuesta lista los elementos con el gancho `TB_HOOK`.
+
+**Pruebas.**
+
+| Prueba | Resultado |
+|---|---|
+| Dorados (con VE-10) en `float` y `double` | 308 pasan, 8 por redondeo, 0 fallan |
+| Interfaz simulada: 14 comprobaciones nuevas (VE-01 a VE-08 tecleados, memorias, esquema, Simpson, tirantes alternos, carga parcial) | 150 de 150; estrés sin cierres |
+| CEmu: FLUJOS 49 pantallas (10 nuevas); PERDIDAS 34 | 49 de 49 y 34 de 34 |
+
+| Caso | Resultado | Esperado |
+|---|---|---|
+| VE-01 | $Q_{tri}=0{,}39526$; $Q_{or}$ total 0,34526 (0,11509 cada uno); **$Q=0{,}740518$ m³/s** (CEmu) | 0,7405 (sol. 0,74056) |
+| VE-02 | **$h=1{,}828798$ m** (CEmu) | 1,829 |
+| VE-03 | **$H=0{,}45689$ m** (CEmu) | 0,4569 |
+| VE-04 | 0,5079 m (dorado del motor) | 0,50794 |
+| VE-05 | $H=0{,}2072$ m | 0,2072 |
+| VE-06 | $h=0{,}2391$ m; $Q_{tri}=22{,}88$ l/s | 0,2391 |
+| VE-07 | $Q=1{,}333333$ m³/s con la fórmula y por Simpson con 5 puntos (CEmu) | 1,3333 |
+| VE-08 | $H=0{,}97583$ m; $h_0=0{,}02417$ m | 0,9758; 0,0242 |
+
+**Tamaños y RAM.** FLUJOS: lanzador 591 B + `FLUJOS0` 60 076 B + `FLUJOS1` 5 980 B (`-m 60000`, para que sean 2 AppVars). `PERDTXT` 26 340 B. **RAM libre con FLUJOS abierto: 73 483 B.** PERDIDAS no cambió (58 420 B).

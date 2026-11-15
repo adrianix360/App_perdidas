@@ -93,6 +93,10 @@ void flujos_main(void);
  * 3 AR-4, 4 placa plana y Stokes */
 void scr_drag(uint8_t t);
 
+/* scr_weir.c (v2.0): vertedores y orificios. 0 simple (VE-1, VE-2,
+ * VE-5), 1 compuesta (VE-4), 2 perfil (VE-6), 3 aguas abajo (VE-7) */
+void scr_weir(uint8_t t);
+
 /* scr_lib.c: biblioteca */
 bool lib_pick_material(void);
 bool lib_sumador(void);

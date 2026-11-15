@@ -31,6 +31,11 @@ static void drag_item(uint8_t r)
         scr_drag(r);
 }
 
+static void weir_item(uint8_t r)
+{
+    scr_weir(r);
+}
+
 static void help_item(uint8_t r)
 {
     (void)r;
@@ -57,10 +62,17 @@ void flujos_main(void)
         "Placa plana y flujo lento (Stokes)",
         "Catalogo de coeficientes CD",
     };
+    static const char *const ve_items[] = {
+        "Vertedero u orificio (VE-1,2,5)",
+        "Estructura compuesta      (VE-4)",
+        "Perfil de velocidades     (VE-6)",
+        "Aguas abajo: energia      (VE-7)",
+    };
     static const char *const help_items[] = { "Acerca de" };
     static menu_t m = { "FLUJOS EXTERNOS Y MEDICION", items, 8, 0 };
     static menu_t mar = { "ARRASTRE Y SUSTENTACION", ar_items, 6, 0 };
     static menu_t mh = { "AYUDA", help_items, 1, 0 };
+    static menu_t mve = { "VERTEDORES Y ORIFICIOS", ve_items, 4, 0 };
     int r;
     while (!ui_quit) {
         r = menu_run(&m);
@@ -75,7 +87,7 @@ void flujos_main(void)
         case MENU_MODE:
         case 5: scr_settings(); break;
         case 0: sub_menu(&mar, drag_item); break;
-        case 1: todo_alert(items[1], 4); break;
+        case 1: sub_menu(&mve, weir_item); break;
         case 2: todo_alert(items[2], 5); break;
         case 3: scr_cat(0); break;
         case 4: todo_alert(items[4], 6); break;

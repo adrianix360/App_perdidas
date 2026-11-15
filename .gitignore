@@ -10,3 +10,5 @@ __pycache__/
 tests/cemu/*/bin/
 h0/bin/*.obj
 bin/PERDTXT.bin
+flujos/src
+flujos/obj

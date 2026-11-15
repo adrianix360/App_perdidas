@@ -915,3 +915,30 @@ Memorias de cálculo en `PERDTXT` (10 programas nuevos, `tools/memo_drag.c`). En
 **RAM.** `PERDIDA1` 39 728 B, `PERDTXT` 21 933 B. **RAM libre con la app abierta: 34 505 B** (fase 2: 49 159). Quedan 4,5 KB sobre el mínimo de 30 KB, y las fases 4 y 5 no caben en ese margen: se consulta a Adrián.
 
 **Aprendido.** `make clean` borra todo `bin/`, incluido `PERDGFX.bin` (se recupera con `git checkout` o con `tools/gen_gfx.py`). Se probó `PREFER_OS_CRT` de CEdev: ahorra solo 450 B y cambia las rutinas de punto flotante, así que se descartó.
+
+## v2.0: separación en dos programas, PERDIDAS y FLUJOS (15 de noviembre de 2026)
+
+**Decisión de Adrián** (después de la fase 3, con 34,5 KB libres y vertedores y canales todavía por hacer): separar la app en dos programas.
+
+- **PERDIDAS**: tubería simple, sistemas, «Calcular f», biblioteca (materiales, accesorios, fluido con aire, diámetros), mis casos, ajustes y ayuda. La entrada 4 del menú, «Flujos externos (FLUJOS)», avisa que hay que abrir el otro programa. Así no cambió la numeración del menú.
+- **FLUJOS**: arrastre y sustentación, vertedores y orificios, canales y medición, catálogo de coeficientes de arrastre, mis casos, ajustes y ayuda.
+- Los dos comparten `PERDTXT` (memorias y ayuda), `PERDCFG` (ajustes) y `PERDCAS` (casos). FLUJOS usa además `PERDGFX`.
+
+**Cómo se arma.** Es un solo código fuente (`src/`). `flujos/makefile` compila con `-DPROG_FLUJOS`, que hace que `main.c` llame a `flujos_main()` (`src/flujos.c`) en vez de `scr_main()`. El enlazado con LTO deja en cada programa solo lo que usa. `flujos/src` y `flujos/obj` son uniones (CEdev no acepta `SRCDIR=../src`). `CONVBINFLAGS = -m 32768` hace que FLUJOS sea, como PERDIDAS, un lanzador chico más AppVars de código archivados (`FLUJOS0`, `FLUJOS1`). Un `.8xp` grande en RAM ocuparía el doble al ejecutarse: con 50 KB en RAM quedaban 38,7 KB libres, y con lanzador quedan 88,8 KB. `tools/build_all.sh` compila los dos. La ayuda por temas (`help_topic`) pasó a `memo_run.c` y «Acerca de» (`scr_about`) es común a los dos.
+
+**Pruebas.**
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada: catálogo y arrastre recorridos desde el menú de FLUJOS (`runf`), aviso de PERDIDAS › 4 y estrés repartido entre los dos programas | 136 de 136 |
+| Dorados, aleatorios v1.0 y v2.0, eZ80 | sin cambios, 0 fallas |
+| CEmu (`tools/cemu_ui.py` y `tools/cemu_ui.py --flujos`) | PERDIDAS 34 de 34; FLUJOS 39 de 39 (líneas base `autotest_ui.json` y `autotest_flujos.json`) |
+
+**Tamaños y RAM con la app abierta (CEmu).**
+
+| Programa | Archivos | RAM libre |
+|---|---|---|
+| PERDIDAS | `PERDIDAS` 585 B + `PERDIDA0` 65 308 B + `PERDIDA1` 15 813 B | **58 420 B** |
+| FLUJOS | `FLUJOS` 591 B + `FLUJOS0` 32 844 B + `FLUJOS1` 17 937 B | **88 758 B** |
+
+Los dos superan con holgura los 30 KB pedidos. FLUJOS tiene más de 50 KB de margen para vertedores y canales.

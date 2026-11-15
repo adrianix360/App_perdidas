@@ -32,7 +32,11 @@ int main(void)
         ui_alert("Poca RAM libre", "Archive o borre programas y",
                  "variables para no perder datos", C_WARN);
     }
+#ifdef PROG_FLUJOS
+    flujos_main();
+#else
     scr_main();
+#endif
     ui_exit();
 
     /* Se guarda despues de cerrar graphx: archivar puede mostrar el

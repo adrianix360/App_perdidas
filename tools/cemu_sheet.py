@@ -2,14 +2,15 @@ r"""
 cemu_sheet.py - Rehace los PNG de la ultima corrida de cemu_ui.py (con la
 paleta de PERDGFX) y arma la hoja de contacto del catalogo de C_D con las
 17 fichas de detalle capturadas en CEmu (tests/cemu/hoja_contacto_cemu.png).
-Uso (desde C:/dev/ti84), despues de python -I tools/cemu_ui.py (sin --check):
+Uso (desde C:/dev/ti84), despues de python -I tools/cemu_ui.py --flujos (sin --check):
   python -I tools/cemu_sheet.py
 """
 import importlib.util, os, subprocess, sys
 from PIL import Image, ImageChops
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RUN = "C:/dev/build/cemu_ui"
+RUN = "C:/dev/build/cemu_flujos"
+sys.argv.append("--flujos")   # el catalogo esta en FLUJOS
 spec = importlib.util.spec_from_file_location("cu", os.path.join(ROOT, "tools/cemu_ui.py"))
 cu = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cu)

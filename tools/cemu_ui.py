@@ -12,11 +12,13 @@ Uso (desde C:/dev/ti84):
 import json, os, re, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RUN = "C:/dev/build/cemu_ui"
+FLUJOS = "--flujos" in sys.argv
+RUN = "C:/dev/build/cemu_flujos" if FLUJOS else "C:/dev/build/cemu_ui"
 ROM = "C:/dev/tools/CEmu/ti84ce.rom"
 LIBS = "C:/dev/tools/clibs/clibs"
 AUT = "C:/CEdev/bin/cemu-autotester.exe"
-SAVED = os.path.join(ROOT, "tests/cemu/autotest_ui.json")
+SAVED = os.path.join(ROOT, "tests/cemu/autotest_flujos.json" if "--flujos" in sys.argv
+                     else "tests/cemu/autotest_ui.json")
 
 # El autotester de CEdev v15.0 solo acepta los simbolos (no "dot", "add"...)
 CH = {}
@@ -88,10 +90,17 @@ STEPS = [
     ("29_calc_f_memoria_p3", ["right"]),
     ("30_calc_f_F03", ["clear", "window", "down"] + te("200") + ["down"]
      + te("285.75", "0.0015", "1E-6") + ["graph"]),
-    ("31_menu_flujos", ["clear", "clear", "4"]),
-    ("32_acerca_de_ram", ["clear", "8", "9"]),
-    # v2.0 fase 2: catalogo de CD (Biblioteca 5)
-    ("33_cat_lista_p1", ["clear", "clear", "5", "5"]),
+    ("31_aviso_flujos", ["clear", "clear", "4"]),
+    ("32_acerca_de_ram", ["enter", "8", "9"]),
+    ("33_confirmar_salida", ["clear", "clear", "clear"]),
+    ("34_fuera_de_la_app", ["enter", "delay"]),
+]
+
+# v2.0: programa FLUJOS (python -I tools/cemu_ui.py --flujos)
+STEPS_FLUJOS = [
+    ("01_menu_flujos", ["enter"]),
+    # catalogo de CD (menu 4)
+    ("33_cat_lista_p1", ["4"]),
     ("34_cat_lista_p2", ["2nd", "down"]),
 ] + [("%d_cat_detalle_%02d" % (35 + k, k + 1),
       (["2nd", "up", "2nd", "up", "enter"] if k == 0 else ["down"])) for k in range(17)] + [
@@ -102,7 +111,7 @@ STEPS = [
     ("54_cat_tabla_LD15", ["clear", "2nd", "down", "up", "up", "up", "up", "up", "up",
                            "enter", "trace"] + te("15")),
     # v2.0 fase 3: arrastre y sustentacion
-    ("55_ar_form_terminal", ["clear", "clear", "clear", "clear", "4", "1", "2"]),
+    ("55_ar_form_terminal", ["clear", "clear", "clear", "1", "2"]),
     ("56_ar01_resultado", TOP + ["down"] * 3 + te("950") + ["down", "down"]
      + te("5", "8") + ["graph"]),
     ("57_ar01_memoria_p1", ["y="]),
@@ -121,9 +130,18 @@ STEPS = [
      + ["left", "left", "down"] + te("2", "1") + ["down", "right", "right", "graph"]),
     ("66_ar06_memoria", ["y="]),
     ("67_menu_arrastre", ["clear", "clear"]),
-    ("68_confirmar_salida", ["clear", "clear", "clear"]),
-    ("69_fuera_de_la_app", ["enter", "delay"]),
+    ("68_acerca_de_ram", ["clear", "7", "1"]),
+    ("69_confirmar_salida", ["clear", "clear", "clear"]),
+    ("70_fuera_de_la_app", ["enter", "delay"]),
 ]
+
+
+if FLUJOS:
+    STEPS = STEPS_FLUJOS
+# lanzador y AppVars de codigo (PERDIDA0/1, FLUJOS0/1...), el .8xp al final
+_P = "FLUJOS" if FLUJOS else "PERDIDAS"
+PROG_FILES = sorted(f for f in os.listdir(os.path.join(ROOT, "bin"))
+                    if f.startswith(_P + ".8xp.") and f.endswith(".8xv")) + [_P + ".8xp"]
 
 
 def build_cfg(crcs=None):
@@ -136,7 +154,7 @@ def build_cfg(crcs=None):
         hashes[str(i)] = {"description": name, "start": "vram_start",
                           "size": "vram_16_size",
                           "expected_CRCs": [crcs[name]] if crcs else ["00000000"]}
-    return {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp", "PERDIDAS.8xp.0.8xv", "PERDIDAS.8xp.1.8xv", "PERDTXT.8xv", "PERDGFX.8xv", "PERDIDAS.8xp"],
+    return {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp"] + PROG_FILES + ["PERDTXT.8xv", "PERDGFX.8xv"],
             "target": {"name": "A", "isASM": False}, "delay_after_key": 150,
             "sequence": seq, "hashes": hashes}
 
@@ -147,8 +165,8 @@ def main():
         shutil.rmtree(RUN)
     os.makedirs(RUN)
     shutil.copy(os.path.join(ROOT, "instalacion/arTIfiCE_v2.1.8xp"), RUN)
-    for f in ("bin/PERDIDAS.8xp", "bin/PERDIDAS.8xp.0.8xv", "bin/PERDIDAS.8xp.1.8xv"):
-        shutil.copy(os.path.join(ROOT, f), RUN)
+    for f in PROG_FILES:
+        shutil.copy(os.path.join(ROOT, "bin", f), RUN)
     shutil.copy(os.path.join(ROOT, "bin/PERDTXT.8xv"), RUN)
     shutil.copy(os.path.join(ROOT, "bin/PERDGFX.8xv"), RUN)
     crcs = None

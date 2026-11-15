@@ -15,3 +15,4 @@ convbin -j bin -k 8xv -n PERDTXT -r -i bin/PERDTXT.bin -o bin/PERDTXT.8xv -l 1
 # Ilustraciones del catalogo de CD: se regeneran con python -I tools/gen_gfx.py (lento)
 [ -f bin/PERDGFX.bin ] && convbin -j bin -k 8xv -n PERDGFX -r -i bin/PERDGFX.bin -o bin/PERDGFX.8xv -l 1
 make 2>&1 | grep -v -E "GNU-stack|deprecated"
+(cd flujos && make 2>&1 | grep -v -E "GNU-stack|deprecated")

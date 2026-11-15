@@ -375,9 +375,8 @@ void scr_library(void)
         "Accesorios (K) y sumador",
         "Fluido por defecto (T, nu, gamma)",
         "Diametros comerciales",
-        "Coeficientes de arrastre (CD)",
     };
-    static menu_t m = { "BIBLIOTECA", items, 5, 0 };
+    static menu_t m = { "BIBLIOTECA", items, 4, 0 };
     int r;
     while (!ui_quit) {
         r = menu_run(&m);
@@ -398,7 +397,6 @@ void scr_library(void)
             break;
         case 2: lib_pick_fluid(1); break;
         case 3: lib_diams(); break;
-        case 4: scr_cat(0); break;
         default: break;
         }
     }

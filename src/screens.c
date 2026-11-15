@@ -96,22 +96,26 @@ void scr_settings(void)
 /* ================================================================== */
 /* Ayuda / Acerca de                                                   */
 /* ================================================================== */
-static void about(void)
+void scr_about(void)
 {
     static const char *const fk[5] = { "", "", "", "", "VOLVER" };
     char num[24];
     view_clear();
     view_add(APP_NAME " v" APP_VERSION, C_TITLE);
+#ifdef PROG_FLUJOS
+    view_add("Arrastre, vertedores y canales", C_FG);
+#else
     view_add("Perdidas de energia en tuberias", C_FG);
+#endif
     view_add("IC-0605 Mecanica de Fluidos, UCR", C_FG);
     view_add("Adrian Castro Ramirez", C_FG);
     view_add_sep();
     view_add("Programa nativo en C (CE Toolchain", C_GRAY);
     view_add("v15.0). En OS 5.5 a 5.8.4 se lanza", C_GRAY);
-    view_add("con arTIfiCE v2.1.", C_GRAY);
-    view_add("Archivos: PERDIDAS, PERDIDA0,", C_GRAY);
-    view_add("PERDIDA1, PERDTXT, PERDGFX; crea", C_GRAY);
-    view_add("PERDCFG (ajustes) y PERDCAS (casos).", C_GRAY);
+    view_add("con arTIfiCE v2.1. Dos programas:", C_GRAY);
+    view_add("PERDIDAS (tuberias) y FLUJOS (flujos", C_GRAY);
+    view_add("externos). Comparten PERDTXT, PERDCFG", C_GRAY);
+    view_add("y PERDCAS; FLUJOS usa PERDGFX.", C_GRAY);
     view_add_sep();
     strcpy(num, " RAM libre: ");
     fmt_int((long)ui_free_ram(), num + strlen(num));
@@ -177,7 +181,7 @@ static void scr_help(void)
         } else if (r == HELP_COUNT_UI) {
             course_cases();
         } else {
-            about();
+            scr_about();
         }
     }
 }
@@ -214,56 +218,10 @@ static void scr_pipe_menu(void)
     }
 }
 
-/* v2.0: submenu generico; fn recibe el indice elegido */
-static void sub_menu(menu_t *m, void (*fn)(uint8_t))
+/* v2.0: arrastre, vertedores y canales viven en el programa FLUJOS */
+static void ext_info(void)
 {
-    int r;
-    while (!ui_quit) {
-        r = menu_run(m);
-        if (r == MENU_BACK || r == MENU_QUIT)
-            return;
-        if (r == MENU_MODE)
-            scr_settings();
-        else
-            fn((uint8_t)r);
-    }
-}
-
-static void drag_item(uint8_t r)
-{
-    if (r == 5)
-        scr_cat(0);
-    else
-        scr_drag(r);
-}
-
-static void ext_item(uint8_t r)
-{
-    static const char *const items[] = {
-        "Fuerza de arrastre FD o FL  (AR-1)",
-        "Velocidad terminal          (AR-2)",
-        "Estructura: varios cuerpos  (AR-3)",
-        "Vuelo nivelado (avion)      (AR-4)",
-        "Placa plana y flujo lento (Stokes)",
-        "Catalogo de coeficientes CD",
-    };
-    static menu_t m = { "ARRASTRE Y SUSTENTACION", items, 6, 0 };
-    if (r == 0)
-        sub_menu(&m, drag_item);
-    else
-        todo_alert(r == 1 ? "Vertedores y orificios" : "Canales y medicion",
-                   (uint8_t)(3 + r));
-}
-
-static void scr_ext_menu(void)
-{
-    static const char *const items[] = {
-        "Arrastre y sustentacion",
-        "Vertedores y orificios",
-        "Canales y medicion",
-    };
-    static menu_t m = { "FLUJOS EXTERNOS Y MEDICION", items, 3, 0 };
-    sub_menu(&m, ext_item);
+    ui_alert("Flujos externos", "Abra el programa FLUJOS", "(arTIfiCE, igual que este)", C_TITLE);
 }
 
 void scr_main(void)
@@ -272,7 +230,7 @@ void scr_main(void)
         "Tuberia simple",
         "Sistemas (serie / paralelo)",
         "Calcular f (solo f)",
-        "Flujos externos y medicion",
+        "Flujos externos (FLUJOS)",
         "Biblioteca",
         "Mis casos",
         "Ajustes",
@@ -296,7 +254,7 @@ void scr_main(void)
         case 0: scr_pipe_menu(); break;
         case 1: scr_net(); break;
         case 2: scr_fric(0, 0); break;
-        case 3: scr_ext_menu(); break;
+        case 3: ext_info(); break;
         case 4: scr_library(); break;
         case 5: scr_cases(); break;
         case 7: scr_help(); break;

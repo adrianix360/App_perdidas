@@ -80,6 +80,15 @@ static void run(void)
     sn = 0;
 }
 
+/* v2.0: el programa FLUJOS (mismo codigo, otro menu principal) */
+static void runf(void)
+{
+    mock_script(S, sn);
+    ui_quit = false;
+    flujos_main();
+    sn = 0;
+}
+
 static void check(int ok, const char *what)
 {
     checks++;
@@ -187,7 +196,6 @@ int main(int argc, char **argv)
     K(K_CLEAR);
     T("2"); K(K_CLEAR);
     T("3"); K(K_CLEAR);                  /* v2.0: Calcular f */
-    T("4"); K(K_CLEAR);                  /* v2.0: flujos externos */
     T("5"); T("1"); K(K_CLEAR); T("2"); K(K_CLEAR); T("3"); K(K_CLEAR);
     T("4"); K(K_CLEAR); K(K_CLEAR);
     T("6"); K(K_CLEAR);
@@ -198,6 +206,12 @@ int main(int argc, char **argv)
     run();
     check(n_alerts - a0 == 0, "ningun aviso de modulo pendiente");
     check(!ui_quit && mock_script_left() == 0, "sale por la opcion Salir sin teclas de sobra");
+
+    /* v2.0: la entrada 4 avisa que los flujos externos estan en FLUJOS */
+    T("4");
+    run();
+    check(!strcmp(alert_title, "Flujos externos") && !strcmp(alert_l1, "Abra el programa FLUJOS"),
+          "PERDIDAS 4: aviso de abrir FLUJOS");
 
     /* 2. CLEAR en el menu principal pide confirmacion */
     K(K_CLEAR); K(K_CLEAR); K(K_CLEAR); K(K_ENTER);
@@ -637,41 +651,41 @@ int main(int argc, char **argv)
         int d0;
         settings_default(&g_set);
         d0 = gfx_draws;
-        T("5"); T("5");
-        run();
+        T("4");
+        runf();
         check(scr_has("COEFICIENTES DE ARRASTRE") && scr_has("Esfera lisa") &&
               gfx_draws - d0 >= 10 && !gfx_bad, "catalogo: lista con 10 miniaturas por pagina");
-        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER);
-        run();
+        T("4"); K(K_PGUP); K(K_PGUP); K(K_ENTER);
+        runf();
         check(scr_has("CD = 0.5") && scr_has("pi D^2/4") && !gfx_bad, "detalle de la esfera");
         /* cilindro finito: tabla L/D, L/D = 15 interpola 0,9167 */
-        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER); { int i; for (i = 0; i < 10; i++) K(K_DOWN); }
+        T("4"); K(K_PGUP); K(K_PGUP); K(K_ENTER); { int i; for (i = 0; i < 10; i++) K(K_DOWN); }
         K(K_F4); TE("15");
-        run();
+        runf();
         check(starts(alert_l1, "CD = 0.91667") && strstr(alert_l1, "interpolado") != 0,
               "TABLA: L/D = 15 interpola 0.9167 (vecinos 10 y 40)");
-        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER); { int i; for (i = 0; i < 10; i++) K(K_DOWN); }
+        T("4"); K(K_PGUP); K(K_PGUP); K(K_ENTER); { int i; for (i = 0; i < 10; i++) K(K_DOWN); }
         K(K_F4); TE("1000");
-        run();
+        runf();
         check(starts(alert_l1, "CD = 1.2"), "TABLA: L/D >= 1000 usa el valor infinito 1.2");
         /* EDITAR y restaurar */
-        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER); K(K_F3); TE("0.47");
-        run();
+        T("4"); K(K_PGUP); K(K_PGUP); K(K_ENTER); K(K_F3); TE("0.47");
+        runf();
         check(g_set.cd_user[0] > 0.469 && g_set.cd_user[0] < 0.471 && g_set_dirty,
               "EDITAR guarda un CD propio (esfera 0.47)");
-        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER);
-        run();
+        T("4"); K(K_PGUP); K(K_PGUP); K(K_ENTER);
+        runf();
         check(scr_has("(catal. 0.5)"), "el detalle muestra el valor del catalogo");
-        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER); K(K_F3); K(K_F1);
-        run();
+        T("4"); K(K_PGUP); K(K_PGUP); K(K_ENTER); K(K_F3); K(K_F1);
+        runf();
         check(g_set.cd_user[0] == 0, "F1 CATALOGO restaura el valor");
         /* comparar y ranking */
-        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_F2); K(K_DOWN); K(K_DOWN); K(K_F2); K(K_F3);
-        run();
+        T("4"); K(K_PGUP); K(K_PGUP); K(K_F2); K(K_DOWN); K(K_DOWN); K(K_F2); K(K_F3);
+        runf();
         check(scr_has("COMPARAR FIGURAS") && scr_has("Fig 2 / fig 1: 2.34") && !gfx_bad,
               "COMPARAR: hemisferio plano 2.34 veces la esfera");
-        T("5"); T("5"); K(K_F1); K(K_F4);
-        run();
+        T("4"); K(K_F1); K(K_F4);
+        runf();
         check(scr_has("13 Cuerpo aerodinamico") && scr_has("16 Barra cuadrada"),
               "RANKING de menor a mayor CD");
         /* USAR desde un formulario */
@@ -684,8 +698,8 @@ int main(int argc, char **argv)
         sn = 0;
         /* sin PERDGFX: aviso y sin cierre */
         gfx_missing = 1;
-        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER);
-        run();
+        T("4"); K(K_PGUP); K(K_PGUP); K(K_ENTER);
+        runf();
         check(!strcmp(scr_msg, "Falta PERDGFX: sin ilustraciones"), "sin PERDGFX: aviso, sin cierre");
         gfx_missing = 0;
         /* aire por defecto desde la biblioteca */
@@ -724,69 +738,69 @@ int main(int argc, char **argv)
     {
         settings_default(&g_set);
         /* AR-01 paracaidista: aire, W = 950, figura 5 (CD 1.3), D = 8 */
-        T("4"); T("1"); T("2"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN);
+        T("1"); T("2"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN);
         TE("950"); K(K_DOWN); K(K_DOWN); TE("5"); TE("8"); K(K_F5);
-        run();
+        runf();
         check(has_line("> v terminal = 4.9224") && has_line("2625"), "AR-01: v terminal 4.922 m/s");
-        T("4"); T("1"); T("2"); K(K_F5); K(K_F1);
-        run();
+        T("1"); T("2"); K(K_F5); K(K_F1);
+        runf();
         check(has_line("sqrt[2(W-B)/(rho CD A)]") && has_line("A = pi D^2/4") && memo_ok_noobs(),
               "AR-01: memoria con la formula y el area de la figura");
         /* AR-03b cubo de arista en agua: A = sqrt(2) D^2 */
-        T("4"); T("1"); T("2"); K(K_PGUP); K(K_RIGHT); K(K_DOWN); K(K_DOWN); K(K_DOWN);
+        T("1"); T("2"); K(K_PGUP); K(K_RIGHT); K(K_DOWN); K(K_DOWN); K(K_DOWN);
         TE("19.8"); TE("0.001"); K(K_DOWN); TE("10"); TE("0.1"); K(K_F5);
-        run();
+        runf();
         check(has_line("> v terminal = 1.3289") && starts(view_value("B"), "9.81"), "AR-03b: cubo de arista 1.329 m/s con empuje");
         /* AR-03a: A = D^2 tecleada */
-        T("4"); T("1"); T("2"); K(K_PGDN); K(K_UP); TE("0.01"); K(K_F5);
-        run();
+        T("1"); T("2"); K(K_PGDN); K(K_UP); TE("0.01"); K(K_F5);
+        runf();
         check(has_line("> v terminal = 1.5803"), "AR-03a: A = D^2 da 1.580 m/s");
-        T("4"); T("1"); T("2"); K(K_PGDN); K(K_UP); K(K_DEL); K(K_F5);
-        run();
+        T("1"); T("2"); K(K_PGDN); K(K_UP); K(K_DEL); K(K_F5);
+        runf();
         /* AR-02a torre y tanque: aire, 100 km/h */
-        T("4"); T("1"); T("3"); K(K_PGUP); K(K_DOWN); K(K_LEFT); K(K_DOWN); K(K_DOWN); K(K_DOWN);
+        T("1"); T("3"); K(K_PGUP); K(K_DOWN); K(K_LEFT); K(K_DOWN); K(K_DOWN); K(K_DOWN);
         TE("100"); K(K_RIGHT); K(K_DOWN);
         TE("0.9+5/30*0.1"); TE("11"); TE("2"); TE("30"); K(K_DOWN); TE("15"); K(K_DOWN);
         TE("0.5"); TE("1"); TE("12"); K(K_DOWN); K(K_DOWN); TE("36"); K(K_F5);
-        run();
+        runf();
         check(has_line("> M en la base = 1324.4") && has_line("> ycp = M/F = 25.64") &&
               has_line("crisis"), "AR-02a: M = 1324 kN m, ycp 25.65 m y aviso de crisis");
-        T("4"); T("1"); T("3"); K(K_F5); K(K_F1);
-        run();
+        T("1"); T("3"); K(K_F5); K(K_F1);
+        runf();
         check(has_line("F1 = CD q A = 25.46") && has_line("F2 = CD q A = 26.17") && memo_ok_noobs(),
               "AR-02a: memoria con un renglon por cuerpo");
-        T("4"); T("1"); T("3"); K(K_F5); K(K_F2);
-        run();
+        T("1"); T("3"); K(K_F5); K(K_F2);
+        runf();
         check(!gfx_bad_now(), "AR-02a: esquema de fuerzas dentro de la pantalla");
         /* AR-04 avion: paso 1 (CL) y paso 2 (lectura CD = 0.0088) */
-        T("4"); T("1"); T("4"); K(K_PGUP); TE("3.9E6"); TE("480"); K(K_RIGHT); K(K_DOWN);
+        T("1"); T("4"); K(K_PGUP); TE("3.9E6"); TE("480"); K(K_RIGHT); K(K_DOWN);
         TE("10675"); K(K_DOWN); TE("2"); TE("180.8"); TE("1"); TE("5.28"); K(K_F5);
-        run();
+        runf();
         check(has_line("> CL necesario = 0.8831") && has_line("Lea alfa y CD"), "AR-04 paso 1: CL = 0.8831");
-        T("4"); T("1"); T("4"); K(K_PGDN); K(K_UP); TE("0.0088"); K(K_F5);
-        run();
+        T("1"); T("4"); K(K_PGDN); K(K_UP); TE("0.0088"); K(K_F5);
+        runf();
         check(has_line("> Empuje T = 306.2") && has_line("D fuselaje      = 267.4"),
               "AR-04 paso 2: T = 306.27 kN, D fus 267.41 kN");
         /* AR-06 placa plana en aire: turbulento y mixto */
-        T("4"); T("1"); T("5"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_DOWN);
+        T("1"); T("5"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_DOWN);
         TE("10"); K(K_LEFT); K(K_LEFT); K(K_DOWN); TE("2"); TE("1"); K(K_DOWN); K(K_RIGHT); K(K_RIGHT);
         K(K_F5);
-        run();
+        runf();
         check(has_line("> FD = 0.5289") && has_line("Re > 5E5: Cf laminar no aplica"),
               "AR-06: FD turbulento 0.529 N y aviso laminar");
-        T("4"); T("1"); T("5"); K(K_PGDN); K(K_RIGHT); K(K_F5);
-        run();
+        T("1"); T("5"); K(K_PGDN); K(K_RIGHT); K(K_F5);
+        runf();
         check(has_line("> FD = 0.3721"), "AR-06: FD mixto 0.372 N");
         /* AR-05 Stokes: esfera de 1 mm a 1 mm/s en agua */
-        T("4"); T("1"); T("5"); K(K_PGUP); K(K_RIGHT); K(K_DOWN); K(K_RIGHT); K(K_DOWN); K(K_DOWN);
+        T("1"); T("5"); K(K_PGUP); K(K_RIGHT); K(K_DOWN); K(K_RIGHT); K(K_DOWN); K(K_DOWN);
         K(K_DOWN); TE("0.001"); K(K_DOWN); TE("0.001"); K(K_F5);
-        run();
+        runf();
         check(has_line("> FD = 9.42") && has_line("E-9") && has_line("Stokes valido"),
               "AR-05: Stokes FD = 9.425E-9 N");
         /* errores: cuerpo que flota */
-        T("4"); T("1"); T("2"); K(K_PGUP); K(K_RIGHT); K(K_DOWN); K(K_DOWN); K(K_DOWN);
+        T("1"); T("2"); K(K_PGUP); K(K_RIGHT); K(K_DOWN); K(K_DOWN); K(K_DOWN);
         TE("5"); TE("0.001"); K(K_F5);
-        run();
+        runf();
         check(starts(scr_msg, "W <= B"), "W < B: mensaje, sin cerrar");
         settings_default(&g_set);
     }
@@ -841,7 +855,7 @@ int main(int argc, char **argv)
             mock_fuzz((unsigned long)seed * 7919UL, 25000);
             while (mock_script_left() >= 0 && n_keys - keys0 < (long)seed * 25000) {
                 ui_quit = false;
-                scr_main();
+                if (seed & 1) scr_main(); else flujos_main();
                 if (!settings_valid(&g_set)) {
                     check(0, "el estres dejo ajustes invalidos");
                     break;

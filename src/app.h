@@ -8,7 +8,11 @@
 #include <stdbool.h>
 #include "hydro/hydro.h"
 
+#ifdef PROG_FLUJOS
+#define APP_NAME    "FLUJOS"     /* v2.0: segundo programa (flujos/makefile) */
+#else
 #define APP_NAME    "PERDIDAS"
+#endif
 #define APP_VERSION "2.0"
 #define CFG_APPVAR  "PERDCFG"
 #define TX_APPVAR   "PERDTXT"
@@ -48,6 +52,7 @@ bool settings_save(void);
 /* screens.c */
 void scr_main(void);
 void scr_settings(void);
+void scr_about(void);
 extern const char *const method_names[FM_COUNT];
 
 /* scr_pipe.c: tuberia simple. tipo: 0 A, 1 B, 2 D, 3 C, 4 F, 5 E, 6 I
@@ -80,6 +85,9 @@ void scr_fric(real *dest, uint8_t *dset);
  * devuelve la figura elegida (C_D en cat_sel_cd) o -1 */
 int scr_cat(uint8_t use);
 extern real cat_sel_cd, cat_sel_param;
+
+/* flujos.c (v2.0): menu principal del programa FLUJOS */
+void flujos_main(void);
 
 /* scr_drag.c (v2.0): arrastre y sustentacion. 0 AR-1, 1 AR-2, 2 AR-3,
  * 3 AR-4, 4 placa plana y Stokes */

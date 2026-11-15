@@ -214,3 +214,13 @@ void memo_show(uint8_t prog)
     }
     run_prog(prog, 0);
 }
+
+/* Ayuda: dibuja el tema i (programa de PERDTXT) en el visor */
+bool help_topic(uint8_t i)
+{
+    view_clear();
+    if (!memo_tx_open())
+        return false;
+    memo_run_prog(PROG_HELP(i));
+    return true;
+}

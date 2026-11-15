@@ -475,13 +475,86 @@
   "key|clear",
   "key|clear",
   "key|clear",
-  "key|clear",
+  "key|3",
   "delay|700",
   "hash|25",
+  "key|2nd",
+  "key|up",
+  "key|down",
+  "key|2",
+  "key|0",
+  "key|0",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|1",
+  "key|2nd",
+  "key|,",
+  "key|-",
+  "key|4",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|26",
+  "key|y=",
+  "delay|700",
+  "hash|27",
+  "key|right",
+  "delay|700",
+  "hash|28",
+  "key|right",
+  "delay|700",
+  "hash|29",
+  "key|clear",
+  "key|window",
+  "key|down",
+  "key|2",
+  "key|0",
+  "key|0",
+  "key|enter",
+  "key|down",
+  "key|2",
+  "key|8",
+  "key|5",
+  "key|.",
+  "key|7",
+  "key|5",
+  "key|enter",
+  "key|0",
+  "key|.",
+  "key|0",
+  "key|0",
+  "key|1",
+  "key|5",
+  "key|enter",
+  "key|1",
+  "key|2nd",
+  "key|,",
+  "key|-",
+  "key|6",
+  "key|enter",
+  "key|graph",
+  "delay|700",
+  "hash|30",
+  "key|clear",
+  "key|clear",
+  "key|4",
+  "delay|700",
+  "hash|31",
+  "key|clear",
+  "key|8",
+  "key|9",
+  "delay|700",
+  "hash|32",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "delay|700",
+  "hash|33",
   "key|enter",
   "delay|1500",
   "delay|700",
-  "hash|26"
+  "hash|34"
  ],
  "hashes": {
   "1": {
@@ -489,7 +562,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "A2EF1460"
+    "3ADDD062"
    ]
   },
   "2": {
@@ -497,7 +570,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "4EA45499"
+    "38AE53DC"
    ]
   },
   "3": {
@@ -505,7 +578,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "CE9C1E1C"
+    "24C0C77B"
    ]
   },
   "4": {
@@ -513,7 +586,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "C842E431"
+    "6FB52149"
    ]
   },
   "5": {
@@ -521,7 +594,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "1C3EFA5C"
+    "BBC93F24"
    ]
   },
   "6": {
@@ -529,7 +602,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "1C706F4F"
+    "BB87AA37"
    ]
   },
   "7": {
@@ -537,7 +610,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "655FD118"
+    "C6CC0E40"
    ]
   },
   "8": {
@@ -585,7 +658,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "2B1005B1"
+    "2F741F91"
    ]
   },
   "14": {
@@ -601,7 +674,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "254FE001"
+    "86DC3F59"
    ]
   },
   "16": {
@@ -641,7 +714,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "BA67BCA0"
+    "BE03A680"
    ]
   },
   "21": {
@@ -677,19 +750,83 @@
    ]
   },
   "25": {
-   "description": "25_confirmar_salida",
+   "description": "25_calc_f_form",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "52111381"
+    "877BED04"
    ]
   },
   "26": {
-   "description": "26_fuera_de_la_app",
+   "description": "26_calc_f_F01",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "708E5B24"
+    "61C36A77"
+   ]
+  },
+  "27": {
+   "description": "27_calc_f_memoria_p1",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "F6F47D7D"
+   ]
+  },
+  "28": {
+   "description": "28_calc_f_memoria_p2",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "5C1F816E"
+   ]
+  },
+  "29": {
+   "description": "29_calc_f_memoria_p3",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "20A366E"
+   ]
+  },
+  "30": {
+   "description": "30_calc_f_F03",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "64006620"
+   ]
+  },
+  "31": {
+   "description": "31_menu_flujos",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "11404EB7"
+   ]
+  },
+  "32": {
+   "description": "32_acerca_de_ram",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "132E0783"
+   ]
+  },
+  "33": {
+   "description": "33_confirmar_salida",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "7AD47FEC"
+   ]
+  },
+  "34": {
+   "description": "34_fuera_de_la_app",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "E2CDC558"
    ]
   }
  }

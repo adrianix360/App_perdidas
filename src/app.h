@@ -9,7 +9,7 @@
 #include "hydro/hydro.h"
 
 #define APP_NAME    "PERDIDAS"
-#define APP_VERSION "1.0"
+#define APP_VERSION "2.0"
 #define CFG_APPVAR  "PERDCFG"
 #define TX_APPVAR   "PERDTXT"
 #define CASES_APPVAR "PERDCAS"
@@ -55,6 +55,10 @@ void scr_cases(void);
 /* scr_net.c: sistemas serie/paralelo */
 void scr_net(void);
 void scr_net_example(uint8_t idx);
+
+/* scr_fric.c (v2.0): Calcular f. dest/dset: campo "f dado" del
+ * formulario que la abrio ([USAR f]); NULL desde el menu principal */
+void scr_fric(real *dest, uint8_t *dset);
 
 /* scr_lib.c: biblioteca */
 bool lib_pick_material(void);

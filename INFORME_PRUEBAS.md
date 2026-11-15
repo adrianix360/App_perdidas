@@ -811,3 +811,31 @@ Limitaciones conocidas: los sistemas no se guardan en Mis casos (solo la tuberí
 - `tools/cemu_golden.py` ahora envía también los AppVars `TGOLDEN0/1`, porque el programa de prueba pasó de 64 KiB.
 
 **Tamaño.** `PERDIDAS` sin pantallas nuevas: `PERDIDA1` pasa de 9 699 a 10 229 B (la tabla de 4 métodos y los textos de error). Los módulos `drag`, `weir` y `chan` todavía no se enlazan con ninguna pantalla.
+
+## v2.0, fase 1b: «Calcular f» (15 de noviembre de 2026)
+
+**Construido.**
+
+- Pantalla `src/scr_fric.c`, entrada 3 del menú principal y 8.ª del menú «Tubería simple». Dos modos que se alternan con F2 MODO: «Re y ks/D» (el campo $k_s/D$ acepta el valor directo, o bien $k_s$ y $D$ en mm) y «Datos tubería» ($Q$ o $v$, $D$, $k_s$, $\nu$, con los selectores MAT y FLUIDO). Los datos del modo 2 se comparten con la tubería simple.
+- Resultado: régimen, zona del turbulento por $k^+=(k_s/D)\,Re\sqrt{f/8}$ (lisa < 5, transición 5 a 70, rugosa > 70), $f$ con el método de Ajustes, $1/\sqrt f$ y la tabla de los 4 métodos con la diferencia porcentual respecto a CW y la marca de fuera de rango.
+- Memoria de cálculo en `PERDTXT` (programas `XP_FRIC_SUM` y `XP_FRIC_MEMO`): datos, cálculos con la fórmula del método elegido, tabla de iteraciones de Colebrook-White (columnas $i$ y $f_i$), resultado, comparación y avisos.
+- `[USAR f]` copia el $f$ al campo «f dado» del formulario que abrió la pantalla. En los tipos A, B, C y F la tecla F4 pasó de AJUSTES a **CALC f** (MODE sigue abriendo los Ajustes); en Sistemas, F1 **CALC f** actúa sobre el campo «f dado» donde esté el cursor.
+- Menú principal de 9 entradas (todas con tecla 1 a 9): Tubería simple, Sistemas, Calcular f, Flujos externos y medición (submenú; sus 3 módulos avisan «Disponible en la fase 3, 4 o 5»), Biblioteca, Mis casos, Ajustes, Ayuda, Salir.
+- El intérprete de la memoria de cálculo salió de `scr_pipe.c` a `src/memo_run.c`, para que lo usen todos los módulos nuevos. `TX_VERSION` sube a 2: **la app nueva necesita el `PERDTXT` nuevo** (con uno viejo muestra el aviso, sin cerrarse). Versión 2.0 en «Acerca de».
+
+**Pruebas.**
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada (`test_nav`), con 12 comprobaciones nuevas: F-01 a F-05, memoria con tabla de CW, modo tubería, laminar, transición, $Re=0$ rechazado, USAR f hacia el tipo A y hacia un sistema, aviso fuera de un campo f | 108 de 108; estrés de 1 000 005 teclas sin cierres |
+| Casos dorados PC y eZ80, aleatorios v1.0 y v2.0 | sin cambios, 0 fallas |
+| CEmu (`cemu_ui.py`): 34 pantallas | Las 12 pantallas de la v1.0 que cambiaron se revisaron una por una: el menú principal, el de tubería, la tecla F4 de los formularios A, B, C y F, y las que guardan en el segundo búfer la pantalla anterior. Se agregaron 8 pantallas nuevas (formulario, F-01, memoria en 3 páginas, F-03, submenú de flujos y «Acerca de»). Línea base nueva: 34 de 34 iguales |
+
+| Caso | Pantalla en CEmu | Esperado |
+|---|---|---|
+| F-01 | CW 0,026101; SJ 0,026064 (−0,1451 %); Haaland 0,025907; GS 0,026054; converge en 9 iteraciones | 0,026101 (sol. 0,0261015) |
+| F-03 (modo tubería) | $v=3{,}118658$; $Re=891\,156$; CW 0,011989; SJ 0,011958 (−0,2637 %) | 0,011989; SJ 0,011958 |
+
+**Tamaños y RAM.** `PERDIDA1` 15 305 B (antes 9 699), `PERDTXT` 15 626 B (antes 13 119). El motor de arrastre, vertedores y canales ya va dentro del programa. **RAM libre con la app abierta: 58 942 B** (v1.0: unos 64 KB; mínimo pedido: 30 KB). Quedan unos 29 KB de margen para las fases 2 a 6: las pantallas nuevas tendrán que ser compactas y los textos ir a `PERDTXT`.
+
+**Pendiente de esta pantalla.** `[GUARDAR]` en «Mis casos» queda para la fase 6, junto con el formato nuevo de `PERDCAS` y su migración.

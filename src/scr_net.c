@@ -430,6 +430,7 @@ static void net_run(uint8_t autocalc)
     }
     memset(&fm, 0, sizeof fm);
     fm.title = "SISTEMA SERIE/PARALELO (G)";
+    fm.fk[0] = "CALC f";
     fm.fk[3] = "AJUSTES";
     fm.fk[4] = "CALC";
     fm.hint = "Mismo tramo = paralelo; tramos en serie";
@@ -452,6 +453,21 @@ static void net_run(uint8_t autocalc)
             return;
         if (k == K_F4 || k == K_MODE) {
             scr_settings();
+            continue;
+        }
+        if (k == K_F1) {          /* v2.0: Calcular f hacia "f dado" */
+            uint8_t i;
+            for (i = 0; i < NP; i++)
+                if (ff[cur].val == &ni.p[i].f)
+                    break;
+            if (i < NP) {
+                scr_fric(&ni.p[i].f, &ni.p[i].sf);
+            } else {
+                fm.msg = "Ubique el cursor en un campo f dado";
+                fm.msg_color = C_WARN;
+            }
+            if (ui_quit)
+                return;
             continue;
         }
         if (k != K_F5 && k != K_ENTER)

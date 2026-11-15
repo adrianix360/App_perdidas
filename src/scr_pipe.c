@@ -107,171 +107,16 @@ static const uint8_t nforms[PT_COUNT] = {
 /* ------------------------------------------------------------------ */
 /* Memoria de calculo y resumen: interprete del AppVar PERDTXT          */
 /* ------------------------------------------------------------------ */
-#include "memo_defs.h"
+#include "memo_run.h"
 
-static real V[V_COUNT];
-static uint32_t FL;           /* banderas para las condiciones */
-static unsigned int W;        /* advertencias a mostrar        */
-
-/* PERDTXT: programas de la memoria de calculo en un AppVar (normalmente
- * archivado; se lee en su lugar, sin copiarlo a la RAM). El puntero se
- * vuelve a pedir en cada uso, porque archivar otra variable puede mover
- * los datos de la memoria flash. */
-static const uint8_t *TX;
-static uint16_t TXN;
-
-static bool tx_open(void)
-{
-    uint8_t h = ti_Open(TX_APPVAR, "r");
-    TX = 0;
-    if (!h)
-        return false;
-    TX = (const uint8_t *)ti_GetDataPtr(h);
-    TXN = (uint16_t)ti_GetSize(h);
-    ti_Close(h);
-    if (TXN < 5 + 2 * PROG_COUNT || TX[0] != 'P' || TX[1] != 'T' ||
-        TX[2] != 'X' || TX[3] != TX_VERSION || TX[4] != PROG_COUNT) {
-        TX = 0;
-        return false;
-    }
-    return true;
-}
-
-static uint16_t rd16(const uint8_t *p)
-{
-    return (uint16_t)(p[0] | p[1] << 8);
-}
-
-/* texto en el desplazamiento o, o NULL */
-static const char *txs(uint16_t o)
-{
-    return (o == TX_NONE || o >= TXN) ? 0 : (const char *)(TX + o);
-}
-
-static char tb[200], tb2[200];
-
-/* Expande los codigos de valor de una plantilla */
-static const char *tpl(const char *t, char *out, size_t n)
-{
-    size_t k = 0;
-    char num[NUMFMT_LEN];
-    const char *s;
-    uint8_t code, id;
-    if (!t)
-        return 0;
-    while (*t && k + 1 < n) {
-        code = (uint8_t)*t;
-        if (code != TX_FULL && code != TX_SHORT) {
-            out[k++] = *t++;
-            continue;
-        }
-        if (!t[1])
-            break;
-        id = (uint8_t)(t[1] - 1);       /* el generador guarda id + 1 */
-        t += 2;
-        if (id == V_METHOD)
-            s = method_names[C.method];
-        else if (id == V_LISTNAME)
-            s = pin.dset < DIAM_CHOICES ? diam_set_names[pin.dset] : "?";
-        else if (id < V_COUNT)
-            s = code == TX_SHORT ? fmt_w(V[id], 7, num)
-                                 : fmt_real(V[id], g_set.dec, num);
-        else
-            s = "?";
-        while (*s && k + 1 < n)
-            out[k++] = *s++;
-    }
-    out[k] = 0;
-    return out;
-}
-
-static const char *const hB_course[5] = { "i", "hf", "v", "hm", "hf+1" };
-static const char *const hB_bis[5] = { "i", "v min", "v max", "v", "hT-H" };
-static const char *const hD[5] = { "i", "D min", "D max", "D mm", "hT-H" };
-static const real m_one[5] = { 1, 1, 1, 1, 1 };
-static const real m_D[5] = { 1, 1000, 1000, 1000, 1 };
-
-static void run_prog(uint8_t prog, uint8_t depth)
-{
-    const uint8_t *p;
-    uint16_t o;
-    uint8_t skip = 0, i, op, id;
-    char num[NUMFMT_LEN];
-    if (!TX || prog >= PROG_COUNT)
-        return;
-    o = rd16(TX + 5 + 2 * prog);
-    for (; o + TX_STEP <= TXN; o += TX_STEP) {
-        p = TX + o;
-        op = p[0];
-        id = p[1];
-        if (op == M_END)
-            break;
-        if (skip) {                       /* dentro de un IF falso */
-            if (op == M_IF || op == M_IFN)
-                skip++;
-            else if (op == M_ENDIF)
-                skip--;
-            continue;
-        }
-        switch (op) {
-        case M_SEC: memo_sec(txs(rd16(p + 2))); break;
-        case M_SEP: view_add_sep(); break;
-        case M_DATA: view_add_val(txs(rd16(p + 2)), V[id], txs(rd16(p + 8))); break;
-        case M_RES: memo_res(txs(rd16(p + 2)), V[id], txs(rd16(p + 8))); break;
-        case M_EQ:
-            memo_eq(txs(rd16(p + 2)), txs(rd16(p + 4)),
-                    tpl(txs(rd16(p + 6)), tb, sizeof tb), V[id], txs(rd16(p + 8)));
-            break;
-        case M_LINE: memo_line(tpl(txs(rd16(p + 2)), tb2, sizeof tb2), id); break;
-        case M_IF:
-            if (!(FL & ((uint32_t)1 << id)))
-                skip = 1;
-            break;
-        case M_IFN:
-            if (FL & ((uint32_t)1 << id))
-                skip = 1;
-            break;
-        case M_CALL:
-            if (depth < 3)
-                run_prog(id, depth + 1);
-            break;
-        case M_TABLE:
-            if (id == 0)
-                memo_table(hB_course, 5, &LG, m_one);
-            else if (id == 1)
-                memo_table(hB_bis, 5, &LG, m_one);
-            else
-                memo_table(hD, 5, &LG, m_D);
-            break;
-        case M_WARN: memo_warn(W, &C); break;
-        case M_DLIST:
-            tb2[0] = ' ';
-            tb2[1] = 0;
-            for (i = 0; i < dlist_n; i++) {
-                if (strlen(tb2) > 30) {
-                    memo_line(tb2, C_GRAY);
-                    tb2[0] = ' ';
-                    tb2[1] = 0;
-                }
-                strcat(tb2, fmt_w(dlist[i] * 1000, 7, num));
-                strcat(tb2, " ");
-            }
-            memo_line(tb2, C_GRAY);
-            break;
-        default: break;
-        }
-    }
-}
-
-#define SETF(g, cond) do { if (cond) FL |= (uint32_t)1 << (g); } while (0)
+#define SETF MSETF
 
 /* Llena V[] y FL con el resultado del ultimo calculo */
 static void fill_values(void)
 {
     const hydro_state *s = 0;
     real D = P.D;
-    memset(V, 0, sizeof V);
-    FL = 0;
+    memo_reset();
     switch (tipo) {
     case PT_A: case PT_F: s = &R.st; break;      /* v.st y st coinciden */
     case PT_C: s = &R.m.st; break;
@@ -280,18 +125,18 @@ static void fill_values(void)
     case PT_I: s = pin.modeI ? &R.q.st : &R.st; break;
     default: break;
     }
-    V[V_D] = D; V[V_L] = P.L; V[V_KS] = P.ks; V[V_K] = P.sumK;
-    V[V_NU] = C.nu; V[V_G] = C.g; V[V_GAM] = C.gamma; V[V_TOL] = C.tol;
-    V[V_H] = pin.H; V[V_QD] = pin.Q / 1000; V[V_KSMM] = P.ks * 1000;
+    memo_V[V_D] = D; memo_V[V_L] = P.L; memo_V[V_KS] = P.ks; memo_V[V_K] = P.sumK;
+    memo_V[V_NU] = C.nu; memo_V[V_G] = C.g; memo_V[V_GAM] = C.gamma; memo_V[V_TOL] = C.tol;
+    memo_V[V_H] = pin.H; memo_V[V_QD] = pin.Q / 1000; memo_V[V_KSMM] = P.ks * 1000;
     if (s) {
-        V[V_Q] = s->Q; V[V_QLS] = s->Q * 1000; V[V_A] = s->A; V[V_V] = s->v;
-        V[V_RE] = s->Re; V[V_KSD] = s->ksD; V[V_F] = s->f;
-        V[V_INVSF] = 1 / R_SQRT(s->f); V[V_HV2G] = s->hv2g;
-        V[V_HF] = s->hf; V[V_HM] = s->hm; V[V_HT] = s->hT; V[V_LD] = s->LD;
-        V[V_HMHF] = s->hf > 0 ? 100 * s->hm / s->hf : 0;
-        V[V_FIT] = s->f_iters;
-        V[V_A37] = D > 0 ? P.ks / (3.7 * D) : 0;
-        W = s->warn;
+        memo_V[V_Q] = s->Q; memo_V[V_QLS] = s->Q * 1000; memo_V[V_A] = s->A; memo_V[V_V] = s->v;
+        memo_V[V_RE] = s->Re; memo_V[V_KSD] = s->ksD; memo_V[V_F] = s->f;
+        memo_V[V_INVSF] = 1 / R_SQRT(s->f); memo_V[V_HV2G] = s->hv2g;
+        memo_V[V_HF] = s->hf; memo_V[V_HM] = s->hm; memo_V[V_HT] = s->hT; memo_V[V_LD] = s->LD;
+        memo_V[V_HMHF] = s->hf > 0 ? 100 * s->hm / s->hf : 0;
+        memo_V[V_FIT] = s->f_iters;
+        memo_V[V_A37] = D > 0 ? P.ks / (3.7 * D) : 0;
+        memo_W = s->warn;
         SETF(G_LAM, s->regime == REG_LAMINAR);
         SETF(G_TRANS, s->regime == REG_TRANSITION);
     }
@@ -306,57 +151,57 @@ static void fill_values(void)
     SETF(G_HASD, tipo != PT_D);
     switch (tipo) {
     case PT_A:
-        V[V_HP] = pin.Hp; V[V_PH] = X.ph; V[V_PKPA] = X.ph * C.gamma / 1000;
+        memo_V[V_HP] = pin.Hp; memo_V[V_PH] = X.ph; memo_V[V_PKPA] = X.ph * C.gamma / 1000;
         SETF(G_HP, pin.sHp);
         break;
     case PT_B: case PT_I:
-        V[V_ITER] = R.q.iters;
+        memo_V[V_ITER] = R.q.iters;
         SETF(G_COURSE, R.q.solver == SOLV_COURSE);
         SETF(G_BIS, R.q.solver == SOLV_BISECTION);
         SETF(G_DIRECT, R.q.solver == SOLV_DIRECT);
         SETF(G_FB, R.q.st.warn & W_FALLBACK);
         if (tipo == PT_I) {
-            V[V_CH] = pin.CH; V[V_HW] = X.hw; V[V_ERR] = X.err;
-            V[V_QHW] = X.Qhw; V[V_QHWLS] = X.Qhw * 1000;
+            memo_V[V_CH] = pin.CH; memo_V[V_HW] = X.hw; memo_V[V_ERR] = X.err;
+            memo_V[V_QHW] = X.Qhw; memo_V[V_QHWLS] = X.Qhw * 1000;
             SETF(G_MODEQ, pin.modeI);
             if (!pin.modeI)
-                FL &= ~(((uint32_t)1 << G_COURSE) | ((uint32_t)1 << G_BIS));
+                memo_FL &= ~(((uint32_t)1 << G_COURSE) | ((uint32_t)1 << G_BIS));
         }
         break;
     case PT_C:
-        V[V_HS] = pin.Hs; V[V_ETA] = pin.eta; V[V_HMACH] = R.m.Hm;
-        V[V_PN] = R.m.Pn; V[V_PB] = R.m.Pb; V[V_PNKW] = R.m.Pn / 1000;
-        V[V_PBKW] = R.m.Pb / 1000; V[V_PBHP] = R.m.Pb / 745.7;
-        V[V_ZB] = pin.zb;
-        V[V_COTA] = pin.zb + (pin.mach == 0 ? R.m.Hm : -R.m.Hm);
+        memo_V[V_HS] = pin.Hs; memo_V[V_ETA] = pin.eta; memo_V[V_HMACH] = R.m.Hm;
+        memo_V[V_PN] = R.m.Pn; memo_V[V_PB] = R.m.Pb; memo_V[V_PNKW] = R.m.Pn / 1000;
+        memo_V[V_PBKW] = R.m.Pb / 1000; memo_V[V_PBHP] = R.m.Pb / 745.7;
+        memo_V[V_ZB] = pin.zb;
+        memo_V[V_COTA] = pin.zb + (pin.mach == 0 ? R.m.Hm : -R.m.Hm);
         SETF(G_PUMP, pin.mach == 0);
         SETF(G_ZB, pin.szb);
         break;
     case PT_F:
-        V[V_HV] = R.v.hv; V[V_KV] = R.v.Kv;
+        memo_V[V_HV] = R.v.hv; memo_V[V_KV] = R.v.Kv;
         break;
     case PT_D:
-        V[V_ITER] = R.d.iters; V[V_DEX] = R.d.D_exact * 1000;
-        V[V_DCOM] = R.d.D_com * 1000; V[V_VP] = R.d.vp;
-        V[V_HFCQ] = R.d.st_com_qd.hf; V[V_VCQ] = R.d.st_com_qd.v;
-        V[V_EXV] = R.d.st_exact.v; V[V_EXRE] = R.d.st_exact.Re;
-        V[V_EXF] = R.d.st_exact.f; V[V_EXHF] = R.d.st_exact.hf;
-        V[V_EXHM] = R.d.st_exact.hm; V[V_EXHT] = R.d.st_exact.hT;
-        V[V_VALHT] = X.val.st.hT; V[V_VALHV] = X.val.hv;
-        V[V_VALKV] = X.val.Kv; V[V_VALV] = X.val.st.v;
-        W |= R.d.warn;
+        memo_V[V_ITER] = R.d.iters; memo_V[V_DEX] = R.d.D_exact * 1000;
+        memo_V[V_DCOM] = R.d.D_com * 1000; memo_V[V_VP] = R.d.vp;
+        memo_V[V_HFCQ] = R.d.st_com_qd.hf; memo_V[V_VCQ] = R.d.st_com_qd.v;
+        memo_V[V_EXV] = R.d.st_exact.v; memo_V[V_EXRE] = R.d.st_exact.Re;
+        memo_V[V_EXF] = R.d.st_exact.f; memo_V[V_EXHF] = R.d.st_exact.hf;
+        memo_V[V_EXHM] = R.d.st_exact.hm; memo_V[V_EXHT] = R.d.st_exact.hT;
+        memo_V[V_VALHT] = X.val.st.hT; memo_V[V_VALHV] = X.val.hv;
+        memo_V[V_VALKV] = X.val.Kv; memo_V[V_VALV] = X.val.st.v;
+        memo_W |= R.d.warn;
         SETF(G_COURSE, R.d.qmax.solver == SOLV_COURSE);
         SETF(G_VP, R.d.vp > 0);
         SETF(G_VAL, X.has_val);
         break;
     case PT_E:
-        V[V_D] = pin.D / 1000; V[V_Q] = pin.Q / 1000;
-        V[V_Z1] = pin.z1; V[V_Z2] = pin.z2; V[V_P1] = pin.p1; V[V_P2] = pin.p2;
-        V[V_A] = R.k.A; V[V_V] = R.k.v; V[V_HTOT] = R.k.htot;
-        V[V_HM] = R.k.hm; V[V_HF] = R.k.hf; V[V_F] = R.k.f; V[V_RE] = R.k.Re;
-        V[V_SF] = R_SQRT(R.k.f); V[V_KS] = R.k.ks; V[V_KSMM] = R.k.ks * 1000;
-        V[V_KSD] = R.k.ksD;
-        W = R.k.warn;
+        memo_V[V_D] = pin.D / 1000; memo_V[V_Q] = pin.Q / 1000;
+        memo_V[V_Z1] = pin.z1; memo_V[V_Z2] = pin.z2; memo_V[V_P1] = pin.p1; memo_V[V_P2] = pin.p2;
+        memo_V[V_A] = R.k.A; memo_V[V_V] = R.k.v; memo_V[V_HTOT] = R.k.htot;
+        memo_V[V_HM] = R.k.hm; memo_V[V_HF] = R.k.hf; memo_V[V_F] = R.k.f; memo_V[V_RE] = R.k.Re;
+        memo_V[V_SF] = R_SQRT(R.k.f); memo_V[V_KS] = R.k.ks; memo_V[V_KSMM] = R.k.ks * 1000;
+        memo_V[V_KSD] = R.k.ksD;
+        memo_W = R.k.warn;
         break;
     default:
         break;
@@ -394,23 +239,20 @@ void pipe_load_example(uint8_t t, const real *v, uint8_t n)
 bool help_topic(uint8_t i)
 {
     view_clear();
-    if (!tx_open())
+    if (!memo_tx_open())
         return false;
-    run_prog(PROG_HELP(i), 0);
+    memo_run_prog(PROG_HELP(i));
     return true;
 }
 
 static void show(bool memo)
 {
     fill_values();
-    view_clear();
-    if (!tx_open()) {
-        view_add("Falta el archivo " TX_APPVAR " (textos", C_ERR);
-        view_add("de la memoria de calculo). Envielo", C_ERR);
-        view_add("con TI Connect CE y vuelva a entrar.", C_ERR);
-        return;
-    }
-    run_prog(memo ? PROG_MEMO(tipo) : PROG_SUM(tipo), 0);
+    memo_cfg = &C;
+    memo_log = &LG;
+    memo_dlist = dlist;
+    memo_dlist_n = dlist_n;
+    memo_show(memo ? PROG_MEMO(tipo) : PROG_SUM(tipo));
 }
 
 /* ------------------------------------------------------------------ */
@@ -592,6 +434,11 @@ static void result_loop(void)
     }
 }
 
+static bool has_f(uint8_t t)
+{
+    return t == PT_A || t == PT_B || t == PT_C || t == PT_F;
+}
+
 void scr_pipe(uint8_t t)
 {
     scr_pipe_run(t, 0);
@@ -623,7 +470,9 @@ void scr_pipe_run(uint8_t t, uint8_t autocalc)
     fm.fk[0] = "MAT";
     fm.fk[1] = "SUMA K";
     fm.fk[2] = "FLUIDO";
-    fm.fk[3] = "AJUSTES";
+    /* v2.0: los formularios con "f dado" abren Calcular f con F4 (MODE
+     * sigue abriendo los Ajustes) */
+    fm.fk[3] = has_f(t) ? "CALC f" : "AJUSTES";
     fm.fk[4] = "CALC";
     if (t == PT_C)
         fm.hint = "Hs = z2-z1 (bomba); Ha = z1-z2 (turb.)";
@@ -640,6 +489,7 @@ void scr_pipe_run(uint8_t t, uint8_t autocalc)
         if (k == K_F1) { lib_pick_material(); continue; }
         if (k == K_F2) { lib_sumador(); continue; }
         if (k == K_F3) { lib_pick_fluid(0); continue; }
+        if (k == K_F4 && has_f(t)) { scr_fric(&pin.f, &pin.sf); continue; }
         if (k == K_F4 || k == K_MODE) { scr_settings(); continue; }
         if (k == K_F5 || k == K_ENTER) {
             if (!form_check(&fm))

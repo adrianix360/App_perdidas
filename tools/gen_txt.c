@@ -98,6 +98,8 @@ int main(int argc, char **argv)
     }
     for (i = 0; i < HELP_COUNT; i++)
         progs[PROG_HELP(i)] = help_p[i];
+    for (i = 0; i < XP_COUNT; i++)
+        progs[PROG_X(i)] = x_p[i];
     for (p = 0; p < PROG_COUNT; p++) {
         int depth = 0;
         const mstep *s = progs[p];
@@ -112,7 +114,7 @@ int main(int argc, char **argv)
             if (s[i].op == M_CALL && s[i].id >= S_COUNT) {
                 fprintf(stderr, "ERROR: CALL invalido en %s\n", where); errors++;
             }
-            if (s[i].op == M_TABLE && s[i].id > 2) {
+            if (s[i].op == M_TABLE && s[i].id >= TB_COUNT) {
                 fprintf(stderr, "ERROR: TABLE invalida en %s\n", where); errors++;
             }
             if ((s[i].op == M_DATA || s[i].op == M_RES || s[i].op == M_EQ) &&

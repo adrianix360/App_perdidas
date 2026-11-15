@@ -183,8 +183,9 @@ static void scr_pipe_menu(void)
         "Valvula de control           (F)",
         "Calibrar rugosidad           (E)",
         "Darcy-W. vs Hazen-Williams   (I)",
+        "f: factor de friccion",
     };
-    static menu_t m = { "TUBERIA SIMPLE", items, 7, 0 };
+    static menu_t m = { "TUBERIA SIMPLE", items, 8, 0 };
     int r;
     while (!ui_quit) {
         r = menu_run(&m);
@@ -194,7 +195,32 @@ static void scr_pipe_menu(void)
             scr_settings();
             continue;
         }
-        scr_pipe((uint8_t)r);
+        if (r == PT_COUNT)
+            scr_fric(0, 0);
+        else
+            scr_pipe((uint8_t)r);
+    }
+}
+
+/* v2.0: arrastre, vertedores y canales (fases 3 a 5) */
+static void scr_ext_menu(void)
+{
+    static const char *const items[] = {
+        "Arrastre y sustentacion",
+        "Vertedores y orificios",
+        "Canales y medicion",
+    };
+    static menu_t m = { "FLUJOS EXTERNOS Y MEDICION", items, 3, 0 };
+    int r;
+    while (!ui_quit) {
+        r = menu_run(&m);
+        if (r == MENU_BACK || r == MENU_QUIT)
+            return;
+        if (r == MENU_MODE) {
+            scr_settings();
+            continue;
+        }
+        todo_alert(items[r], (uint8_t)(3 + r));
     }
 }
 
@@ -203,13 +229,15 @@ void scr_main(void)
     static const char *const items[] = {
         "Tuberia simple",
         "Sistemas (serie / paralelo)",
+        "Calcular f (solo f)",
+        "Flujos externos y medicion",
         "Biblioteca",
         "Mis casos",
         "Ajustes",
         "Ayuda / Acerca de",
         "Salir",
     };
-    static menu_t m = { "MENU PRINCIPAL", items, 7, 0 };
+    static menu_t m = { "MENU PRINCIPAL", items, 9, 0 };
     int r;
     while (!ui_quit) {
         r = menu_run(&m);
@@ -222,13 +250,15 @@ void scr_main(void)
         }
         switch (r) {
         case MENU_MODE:
-        case 4: scr_settings(); break;
+        case 6: scr_settings(); break;
         case 0: scr_pipe_menu(); break;
         case 1: scr_net(); break;
-        case 2: scr_library(); break;
-        case 3: scr_cases(); break;
-        case 5: scr_help(); break;
-        case 6: return;
+        case 2: scr_fric(0, 0); break;
+        case 3: scr_ext_menu(); break;
+        case 4: scr_library(); break;
+        case 5: scr_cases(); break;
+        case 7: scr_help(); break;
+        case 8: return;
         default: break;
         }
     }

@@ -12,7 +12,7 @@
 #ifndef MEMO_DEFS_H
 #define MEMO_DEFS_H
 
-#define TX_VERSION 1
+#define TX_VERSION 2
 #define TX_NONE 0xFFFFu
 #define TX_FULL 0x01
 #define TX_SHORT 0x02
@@ -29,6 +29,9 @@ enum {
     V_Z1, V_Z2, V_P1, V_P2, V_HTOT, V_SF, V_KSMM,
     V_CH, V_HW, V_ERR, V_QHW, V_QHWLS,
     V_VALHT, V_VALHV, V_VALKV, V_VALV,
+    /* v2.0: Calcular f */
+    V_FCW, V_FSJ, V_FHA, V_FGO, V_DSJ, V_DHA, V_DGO, V_FSEL, V_KPLUS,
+    V_DMM,
     V_COUNT
 };
 
@@ -39,8 +42,22 @@ enum { V_METHOD = V_COUNT, V_LISTNAME };
 enum {
     G_FIX, G_LAM, G_TRANS, G_CW, G_SJ, G_HA, G_GO, G_HP, G_PUMP, G_ZB,
     G_COURSE, G_BIS, G_DIRECT, G_FB, G_VP, G_VAL, G_MODEQ, G_KPOS,
-    G_WITHQ, G_HASD
+    G_WITHQ, G_HASD,
+    /* v2.0: banderas libres por modulo (cada pantalla llena FL de cero) */
+    G_X0, G_X1, G_X2, G_X3, G_X4, G_X5, G_X6, G_X7, G_X8, G_X9, G_X10,
+    G_X11
 };
+/* Calcular f */
+#define G_FMODE2  G_X0   /* datos de tuberia (modo 2)          */
+#define G_FHASV   G_X1   /* se dio v en lugar de Q             */
+#define G_FKSDIN  G_X2   /* ks/D calculado desde ks y D (modo 1)*/
+#define G_ZSMOOTH G_X3   /* zona hidraulicamente lisa          */
+#define G_ZTRANS  G_X4   /* zona de transicion                 */
+#define G_ZROUGH  G_X5   /* zona rugosa                        */
+#define G_OCW     G_X6   /* fuera de rango: Colebrook-White    */
+#define G_OSJ     G_X7   /* fuera de rango: Swamee-Jain        */
+#define G_OHA     G_X8   /* fuera de rango: Haaland            */
+#define G_OGO     G_X9   /* fuera de rango: Goudar-Sonnad      */
 
 enum { M_END = 0, M_SEC, M_DATA, M_EQ, M_RES, M_LINE, M_IF, M_IFN, M_ENDIF,
        M_CALL, M_TABLE, M_WARN, M_DLIST, M_SEP };
@@ -52,6 +69,11 @@ enum { S_DATA, S_CALC, S_OBS, S_STATE, S_COUNT };
 #define PROG_MEMO(t) (S_COUNT + PT_COUNT + (t))
 #define HELP_COUNT   7
 #define PROG_HELP(i) (S_COUNT + 2 * PT_COUNT + (i))
-#define PROG_COUNT   (S_COUNT + 2 * PT_COUNT + HELP_COUNT)
+/* v2.0: programas de los modulos nuevos, despues de la ayuda */
+enum { XP_FRIC_SUM, XP_FRIC_MEMO, XP_COUNT };
+#define PROG_X(i)    (S_COUNT + 2 * PT_COUNT + HELP_COUNT + (i))
+#define PROG_COUNT   (S_COUNT + 2 * PT_COUNT + HELP_COUNT + XP_COUNT)
+/* tablas de iteraciones (M_TABLE id) */
+enum { TB_B_COURSE = 0, TB_B_BIS, TB_D, TB_CW, TB_COUNT };
 
 #endif

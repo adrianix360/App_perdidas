@@ -17,6 +17,7 @@
 #include "../src/ui/numfmt.h"
 #include "mock/fileioc.h"
 #include "../src/data/data.h"
+#include "../src/pipe.h"
 
 extern char scr[UI_ROWS + 2][UI_COLS + 1];
 extern char scr_msg[];
@@ -179,16 +180,18 @@ int main(int argc, char **argv)
     a0 = n_alerts;
     T("1");
     T("1"); K(K_CLEAR); T("2"); K(K_CLEAR); T("3"); K(K_CLEAR); T("4"); K(K_CLEAR);
-    T("5"); K(K_CLEAR); T("6"); K(K_CLEAR); T("7"); K(K_CLEAR);
+    T("5"); K(K_CLEAR); T("6"); K(K_CLEAR); T("7"); K(K_CLEAR); T("8"); K(K_CLEAR);
     K(K_CLEAR);
     T("2"); K(K_CLEAR);
-    T("3"); T("1"); K(K_CLEAR); T("2"); K(K_CLEAR); T("3"); K(K_CLEAR);
+    T("3"); K(K_CLEAR);                  /* v2.0: Calcular f */
+    T("4"); K(K_CLEAR);                  /* v2.0: flujos externos */
+    T("5"); T("1"); K(K_CLEAR); T("2"); K(K_CLEAR); T("3"); K(K_CLEAR);
     T("4"); K(K_CLEAR); K(K_CLEAR);
-    T("4"); K(K_CLEAR);
-    T("6"); T("1"); { int i; for (i = 0; i < 40; i++) K(K_DOWN); } K(K_RIGHT); K(K_LEFT); K(K_F5);
+    T("6"); K(K_CLEAR);
+    T("8"); T("1"); { int i; for (i = 0; i < 40; i++) K(K_DOWN); } K(K_RIGHT); K(K_LEFT); K(K_F5);
     T("9"); K(K_F5); K(K_CLEAR);
     K(K_DOWN); K(K_DOWN); K(K_UP); K(K_UP);   /* menu con flechas */
-    T("7");
+    T("9");
     run();
     check(n_alerts - a0 == 0, "ningun aviso de modulo pendiente");
     check(!ui_quit && mock_script_left() == 0, "sale por la opcion Salir sin teclas de sobra");
@@ -379,14 +382,14 @@ int main(int argc, char **argv)
         run();
         check(scr_has("1.004E-6"), "FLUIDO: agua 20 C da nu = 1,004E-6");
         /* fluido por defecto desde la biblioteca: 5 C */
-        T("3"); T("3"); K(K_PGUP); K(K_ENTER); K(K_ENTER);
+        T("5"); T("3"); K(K_PGUP); K(K_ENTER); K(K_ENTER);
         run();
         check(g_set.h.nu > 1.51e-6 && g_set.h.nu < 1.53e-6 && g_set.h.gamma > 9809 &&
               g_set.h.gamma < 9811 && g_set.h.pv > 871 && g_set.h.pv < 873,
               "FLUIDO por defecto: nu, gamma y pv a 5 C");
         settings_default(&g_set);
         /* lista propia de diametros: 250, 300, 350 */
-        T("3"); T("4"); K(K_UP); K(K_ENTER); TE("250"); TE("300"); TE("350"); K(K_F5);
+        T("5"); T("4"); K(K_UP); K(K_ENTER); TE("250"); TE("300"); TE("350"); K(K_F5);
         run();
         cv = mock_find("PERDCAS", 0);
         check(diam_custom[0] == 250 && diam_custom[1] == 300 && diam_custom[2] == 350 &&
@@ -407,7 +410,7 @@ int main(int argc, char **argv)
         /* cambiar datos y cargar P17: vuelve a 300 mm y Qd 200 */
         T("1"); T("3"); K(K_PGUP); TE("999");
         run();
-        T("4"); K(K_ENTER);
+        T("6"); K(K_ENTER);
         run();
         check(starts(view_value("D comercial"), "300 ") && has_line("Diametro de diseno"),
               "cargar P17 recalcula el resultado");
@@ -420,7 +423,7 @@ int main(int argc, char **argv)
         check(cases_load() == 0 && cases_count() == 2 && diam_custom[1] == 300,
               "casos y lista propia se recuperan del AppVar");
         /* borrar PRUEBA (segundo de la lista) */
-        T("4"); K(K_DOWN); K(K_F3); K(K_ENTER);
+        T("6"); K(K_DOWN); K(K_F3); K(K_ENTER);
         run();
         check(cases_count() == 1, "borrar caso");
         /* lista llena */
@@ -531,7 +534,7 @@ int main(int argc, char **argv)
         char t[2] = { 0, 0 };
         for (i = 0; i < 7; i++) {
             t[0] = (char)('1' + i);
-            T("6"); T(t);
+            T("8"); T(t);
             run();
             if (view_n < 8 || !memo_ok_noobs()) {
                 ok = 0;
@@ -542,7 +545,7 @@ int main(int argc, char **argv)
         ok = 1;
         for (i = 0; i < EXAMPLES; i++) {
             int j;
-            T("6"); T("8");
+            T("8"); T("8");
             K(K_PGUP); K(K_PGUP);   /* primer caso */
             for (j = 0; j < i; j++) K(K_DOWN);
             K(K_ENTER);
@@ -554,24 +557,84 @@ int main(int argc, char **argv)
             }
         }
         check(ok, "los 21 casos del curso cargan y calculan");
-        T("6"); T("8"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 10; i++) K(K_DOWN); K(K_ENTER);
+        T("8"); T("8"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 10; i++) K(K_DOWN); K(K_ENTER);
         run();
         check(starts(view_value("D comercial"), "285.75") && starts(view_value("Qmax con D com."), "262.38"),
               "caso del curso P-17 da 285,75 mm y 262,38 l/s");
-        T("6"); T("8"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 19; i++) K(K_DOWN); K(K_ENTER);
+        T("8"); T("8"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 19; i++) K(K_DOWN); K(K_ENTER);
         run();
         check(starts(view_value("H necesaria"), "12.66"), "caso del curso S-04 (hacia atras) da 12,67 m");
         settings_default(&g_set);
     }
 
+    /* 5f. v2.0: Calcular f (prompt v2, sec. 8.5) */
+    {
+        char num[24];
+        settings_default(&g_set);
+        /* F-01, modo Re y ks/D */
+        T("3"); K(K_PGUP); K(K_DOWN); TE("20000"); TE("1E-4"); K(K_F5);
+        run();
+        check(has_line("> f (Colebrook-White) = 0.026101") && has_line("0.026064") &&
+              has_line("0.025907") && has_line("0.026054"), "F-01: f CW y tabla de 4 metodos");
+        T("3"); K(K_F5); K(K_F1);
+        run();
+        check(has_line("ITERACIONES (COLEBROOK-WHITE)") && has_line("f_i") &&
+              has_line("RESULTADO") && memo_ok_noobs(), "F-01: memoria con tabla de iteraciones de CW");
+        /* F-02 */
+        T("3"); K(K_PGUP); K(K_DOWN); TE("200000"); TE("1.5E-4"); K(K_F5);
+        run();
+        check(has_line("= 0.016763") && has_line("0.016773"), "F-02: f CW 0,016763 y SJ 0,016773");
+        /* F-04, ks/D desde ks y D en mm */
+        T("3"); K(K_PGUP); K(K_DOWN); TE("455180"); K(K_DEL); K(K_DOWN); TE("0.0015"); TE("200"); K(K_F5);
+        run();
+        check(has_line("= 0.013487"), "F-04: ks/D desde ks y D (mm)");
+        /* F-03, modo datos de tuberia */
+        T("3"); K(K_F2); K(K_DOWN); TE("200"); K(K_DOWN); TE("285.75"); TE("0.0015"); TE("1E-6"); K(K_F5);
+        run();
+        check(has_line("= 0.011989") && has_line("0.011958") && starts(view_value("v"), "3.11"),
+              "F-03: modo tuberia, v, Re y f");
+        T("3"); K(K_F5); K(K_F1);
+        run();
+        check(has_line("pi D^2/4") && has_line("v D/nu") && memo_ok_noobs(), "F-03: memoria con A, v y Re");
+        /* F-05a laminar */
+        T("3"); K(K_PGUP); K(K_DOWN); TE("0.02"); K(K_DOWN); TE("20"); TE("0"); TE("1E-6"); K(K_F5);
+        run();
+        check(has_line("laminar") && has_line("= 0.050265"), "F-05a: laminar f = 64/Re");
+        /* F-05b transicion (vuelve al modo 1) */
+        T("3"); K(K_F2); K(K_DOWN); TE("3000"); TE("1E-4"); K(K_F5);
+        run();
+        check(has_line("transicion"), "F-05b: aviso de transicion");
+        /* F-05c Re = 0: mensaje, sin cerrar */
+        T("3"); K(K_PGUP); K(K_DOWN); TE("0");
+        run();
+        check(starts(scr_msg, "Debe ser mayor que 0"), "F-05c: Re = 0 rechazado");
+        /* USAR f hacia el tipo A (F4 CALC f) */
+        pin.sf = 0;
+        T("1"); T("1"); K(K_F4); K(K_PGUP); K(K_DOWN); TE("20000"); K(K_F5); K(K_F2); K(K_ENTER);
+        run();
+        fmt_real(pin.f, g_set.dec, num);
+        check(pin.sf && !strcmp(num, "0.026101") && scr_has("0.026101"),
+              "USAR f copia el valor mostrado al tipo A");
+        /* USAR f hacia el campo f del tubo A de un sistema (F1 CALC f) */
+        T("2"); K(K_PGUP); { int i; for (i = 0; i < 11; i++) K(K_DOWN); }
+        K(K_F1); K(K_F5); K(K_F2); K(K_ENTER);
+        run();
+        check(scr_has("0.026101") && !strcmp(alert_title, "USAR f"), "USAR f llega al f dado del sistema");
+        T("2"); K(K_PGUP); K(K_F1);
+        run();
+        check(starts(scr_msg, "Ubique el cursor"), "CALC f fuera de un campo f: aviso");
+        pin.sf = 0;
+        settings_default(&g_set);
+    }
+
     /* 6. Ajustes: decimales, validaciones y archivo */
-    T("5"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("3"); K(K_F5);
+    T("7"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("3"); K(K_F5);
     run();
     check(g_set.dec == 3 && g_set_dirty, "decimales = 3 y ajustes por guardar");
-    T("5"); K(K_PGUP); K(K_DOWN); TE("50");
+    T("7"); K(K_PGUP); K(K_DOWN); TE("50");
     run();
     check(!strcmp(scr_msg, "Fuera del rango permitido"), "g = 50 rechazado");
-    T("5"); K(K_PGUP); { int i; for (i = 0; i < 8; i++) K(K_DOWN); } TE("0.1"); K(K_F5);
+    T("7"); K(K_PGUP); { int i; for (i = 0; i < 8; i++) K(K_DOWN); } TE("0.1"); K(K_F5);
     run();
     check(starts(scr_msg, "Revise"), "v max < v min rechazado al salir");
     check(settings_valid(&g_set), "ajustes siguen validos tras QUIT");
@@ -585,7 +648,7 @@ int main(int argc, char **argv)
     check(settings_load() == 2, "AppVar truncado: valores por defecto");
     mock_file_exists = 0;
     check(settings_load() == 1 && g_set.dec == 6, "sin AppVar: valores por defecto");
-    T("5"); K(K_PGUP); K(K_F1); K(K_ENTER); K(K_F5);
+    T("7"); K(K_PGUP); K(K_F1); K(K_ENTER); K(K_F5);
     g_set.dec = 2;
     run();
     check(g_set.dec == 6 && g_set.h.method == FM_CW, "F1 restaura los valores por defecto");

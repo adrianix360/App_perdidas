@@ -22,6 +22,8 @@ static const char *const vname[V_COUNT] = {
     "Z1", "Z2", "P1", "P2", "HTOT", "SF", "KSMM",
     "CH", "HW", "ERR", "QHW", "QHWLS",
     "VALHT", "VALHV", "VALKV", "VALV",
+    "FCW", "FSJ", "FHA", "FGO", "DSJ", "DHA", "DGO", "FSEL", "KPLUS",
+    "DMM",
 };
 
 typedef struct {
@@ -532,3 +534,106 @@ static const mstep h_err[] = {
 static const mstep *const help_p[HELP_COUNT] = {
     h_keys, h_types, h_form, h_power, h_lib, h_warn, h_err
 };
+
+/* ================================================================== */
+/* v2.0: Calcular f                                                    */
+/* ================================================================== */
+#define FTAB \
+    LN("Metodo           f          dif. CW", C_TITLE), \
+    LN(" Colebrook-W.  {FCW}", C_FG), \
+    IF(G_OCW), LN("   ! fuera de rango: ks/D > 0.05", C_WARN), ENDIF, \
+    LN(" Swamee-Jain   {FSJ}  {DSJ!} %", C_FG), \
+    IF(G_OSJ), LN("   ! fuera de rango (Re 4E3-1E8,", C_WARN), \
+               LN("     ks/D 1E-6 a 1E-2)", C_WARN), ENDIF, \
+    LN(" Haaland       {FHA}  {DHA!} %", C_FG), \
+    IF(G_OHA), LN("   ! fuera de rango (Re 4E3-1E8)", C_WARN), ENDIF, \
+    LN(" Goudar-Sonnad {FGO}  {DGO!} %", C_FG), \
+    IF(G_OGO), LN("   ! fuera de rango (Re < 4000)", C_WARN), ENDIF
+
+#define FREG \
+    IF(G_LAM), LN(" Re < Re lam: laminar, f = 64/Re", C_WARN), ENDIF, \
+    IF(G_TRANS), LN(" Re en transicion: f de CW indicativo", C_WARN), ENDIF, \
+    IFN(G_LAM), IFN(G_TRANS), LN(" Re > Re turb: turbulento", C_GRAY), ENDIF, \
+      LN(" k+ = (ks/D) Re sqrt(f/8) = {KPLUS!}", C_GRAY), \
+      IF(G_ZSMOOTH), LN(" Zona: hidraulicamente lisa (k+ < 5)", C_GRAY), ENDIF, \
+      IF(G_ZTRANS), LN(" Zona: transicion (5 <= k+ <= 70)", C_GRAY), ENDIF, \
+      IF(G_ZROUGH), LN(" Zona: rugosa, f casi no depende de Re", C_GRAY), \
+                    LN("   (k+ > 70)", C_GRAY), ENDIF, \
+    ENDIF
+
+static const mstep x_fric_sum[] = {
+    IF(G_FMODE2), DAT("v", V_V, "m/s"), ENDIF,
+    DAT("Re", V_RE, 0),
+    DAT("ks/D", V_KSD, 0),
+    FREG,
+    SEP,
+    LN("> f ({METHOD}) = {FSEL}", C_OK),
+    DAT("1/sqrt(f)", V_INVSF, 0),
+    IFN(G_LAM), SEP, FTAB, ENDIF,
+    STOP
+};
+
+static const mstep x_fric_memo[] = {
+    SEC("DATOS"),
+    IF(G_FMODE2),
+      IFN(G_FHASV), DAT("Q", V_Q, "m3/s"), ENDIF,
+      IF(G_FHASV), DAT("v", V_V, "m/s"), ENDIF,
+      DAT("D", V_D, "m"),
+      DAT("ks", V_KS, "m"),
+      DAT("nu", V_NU, "m2/s"),
+    ENDIF,
+    IFN(G_FMODE2),
+      DAT("Re", V_RE, 0),
+      IF(G_FKSDIN), DAT("ks", V_KSMM, "mm"), DAT("D", V_DMM, "mm"), ENDIF,
+      IFN(G_FKSDIN), DAT("ks/D", V_KSD, 0), ENDIF,
+    ENDIF,
+    LN(" Metodo de f (Ajustes): {METHOD}", C_GRAY),
+    SEC("CALCULOS"),
+    IF(G_FMODE2),
+      EQ("A", "pi D^2/4", "pi({D})^2/4", V_A, "m2"),
+      IFN(G_FHASV), EQ("v", "Q/A", "{Q}/{A}", V_V, "m/s"), ENDIF,
+      EQ("Re", "v D/nu", "{V}({D})/{NU}", V_RE, 0),
+      EQ("ks/D", 0, "{KS}/{D}", V_KSD, 0),
+    ENDIF,
+    IFN(G_FMODE2), IF(G_FKSDIN),
+      EQ("ks/D", 0, "{KSMM}/{DMM}", V_KSD, 0),
+    ENDIF, ENDIF,
+    FREG,
+    IF(G_LAM), EQ("f", "64/Re", "64/{RE}", V_FSEL, "(laminar)"), ENDIF,
+    IFN(G_LAM),
+      EQ("ks/3.7D", 0, "{KSD}/3.7", V_A37, 0),
+      IF(G_SJ),
+        EQ("f", "0.25/[log(ks/3.7D + 5.74/Re^0.9)]^2",
+           "0.25/[log({A37} + 5.74/{RE}^0.9)]^2", V_FSJ, "(Swamee-Jain)"),
+      ENDIF,
+      IF(G_HA),
+        EQ("1/sqrt(f)", "-1.8 log[(ks/3.7D)^1.11 + 6.9/Re]",
+           "-1.8 log[({A37})^1.11 + 6.9/{RE}]", V_INVSF, 0),
+        RES("f (Haaland)", V_FHA, 0),
+      ENDIF,
+      IF(G_GO),
+        LN("1/sqrt(f) = 0.8686 ln(0.4587 Re/(C-0.31)^(C/(C+1)))", C_FG),
+        LN("C = 0.124 Re ks/D + ln(0.4587 Re)", C_FG),
+        RES("f (Goudar-Sonnad)", V_FGO, 0),
+      ENDIF,
+      SEC("ITERACIONES (COLEBROOK-WHITE)"),
+      LN("1/sqrt(f) = -2 log(ks/3.7D + 2.51/(Re sqrt(f)))", C_FG),
+      LN("      = -2 log({A37} + 2.51/({RE} sqrt(f)))", C_GRAY),
+      LN(" Sustitucion sucesiva desde f1 = 0.0001", C_GRAY),
+      TAB(TB_CW),
+      LN(" Converge en {FIT!} iteraciones", C_GRAY),
+      LN(" (|cambio de 1/sqrt f| < 4E-7 relativo)", C_GRAY),
+      RES("f (Colebrook-White)", V_FCW, 0),
+    ENDIF,
+    SEC("RESULTADO"),
+    LN("> f ({METHOD}) = {FSEL}", C_OK),
+    DAT("1/sqrt(f)", V_INVSF, 0),
+    SEC("COMPARACION Y AVISOS"),
+    IFN(G_LAM), FTAB, ENDIF,
+    IF(G_LAM), LN(" Laminar: f no depende de ks/D", C_GRAY), ENDIF,
+    IF(G_TRANS), LN("! Re en transicion: resultado indicativo", C_WARN), ENDIF,
+    IF(G_OCW), LN("! ks/D > 0.05: fuera de Colebrook-White", C_WARN), ENDIF,
+    STOP
+};
+
+static const mstep *const x_p[XP_COUNT] = { x_fric_sum, x_fric_memo };

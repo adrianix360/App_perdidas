@@ -80,8 +80,18 @@ STEPS = [
      + te("200", "1000", "0.0015", "0", "1.007E-6", "150") + ["graph"]),
     ("24_resultado_I_P10", ["clear"] + TOP + ["right", "enter", "enter"]
      + te("100", "300", "4500", "0.045", "5", "1E-6", "130") + ["graph"]),
-    ("25_confirmar_salida", ["clear", "clear", "clear", "clear"]),
-    ("26_fuera_de_la_app", ["enter", "delay"]),
+    # v2.0: Calcular f (F-01 y F-03) y submenu de flujos externos
+    ("25_calc_f_form", ["clear", "clear", "clear", "3"]),
+    ("26_calc_f_F01", TOP + ["down"] + te("20000", "1E-4") + ["graph"]),
+    ("27_calc_f_memoria_p1", ["y="]),
+    ("28_calc_f_memoria_p2", ["right"]),
+    ("29_calc_f_memoria_p3", ["right"]),
+    ("30_calc_f_F03", ["clear", "window", "down"] + te("200") + ["down"]
+     + te("285.75", "0.0015", "1E-6") + ["graph"]),
+    ("31_menu_flujos", ["clear", "clear", "4"]),
+    ("32_acerca_de_ram", ["clear", "8", "9"]),
+    ("33_confirmar_salida", ["clear", "clear", "clear"]),
+    ("34_fuera_de_la_app", ["enter", "delay"]),
 ]
 
 

@@ -90,8 +90,19 @@ STEPS = [
      + te("285.75", "0.0015", "1E-6") + ["graph"]),
     ("31_menu_flujos", ["clear", "clear", "4"]),
     ("32_acerca_de_ram", ["clear", "8", "9"]),
-    ("33_confirmar_salida", ["clear", "clear", "clear"]),
-    ("34_fuera_de_la_app", ["enter", "delay"]),
+    # v2.0 fase 2: catalogo de CD (Biblioteca 5)
+    ("33_cat_lista_p1", ["clear", "clear", "5", "5"]),
+    ("34_cat_lista_p2", ["2nd", "down"]),
+] + [("%d_cat_detalle_%02d" % (35 + k, k + 1),
+      (["2nd", "up", "2nd", "up", "enter"] if k == 0 else ["down"])) for k in range(17)] + [
+    ("52_cat_comparar", ["clear", "2nd", "up", "2nd", "up", "window", "down", "down",
+                         "window", "down", "down", "down", "down", "down", "down", "down",
+                         "window", "zoom"]),
+    ("53_cat_ranking", ["clear", "trace"]),
+    ("54_cat_tabla_LD15", ["clear", "2nd", "down", "up", "up", "up", "up", "up", "up",
+                           "enter", "trace"] + te("15")),
+    ("55_confirmar_salida", ["clear", "clear", "clear", "clear", "clear"]),
+    ("56_fuera_de_la_app", ["enter", "delay"]),
 ]
 
 
@@ -105,7 +116,7 @@ def build_cfg(crcs=None):
         hashes[str(i)] = {"description": name, "start": "vram_start",
                           "size": "vram_16_size",
                           "expected_CRCs": [crcs[name]] if crcs else ["00000000"]}
-    return {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp", "PERDIDAS.8xp.0.8xv", "PERDIDAS.8xp.1.8xv", "PERDTXT.8xv", "PERDIDAS.8xp"],
+    return {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp", "PERDIDAS.8xp.0.8xv", "PERDIDAS.8xp.1.8xv", "PERDTXT.8xv", "PERDGFX.8xv", "PERDIDAS.8xp"],
             "target": {"name": "A", "isASM": False}, "delay_after_key": 150,
             "sequence": seq, "hashes": hashes}
 
@@ -119,6 +130,7 @@ def main():
     for f in ("bin/PERDIDAS.8xp", "bin/PERDIDAS.8xp.0.8xv", "bin/PERDIDAS.8xp.1.8xv"):
         shutil.copy(os.path.join(ROOT, f), RUN)
     shutil.copy(os.path.join(ROOT, "bin/PERDTXT.8xv"), RUN)
+    shutil.copy(os.path.join(ROOT, "bin/PERDGFX.8xv"), RUN)
     crcs = None
     if check:
         crcs = {}

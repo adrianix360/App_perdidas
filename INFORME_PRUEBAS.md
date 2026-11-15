@@ -839,3 +839,36 @@ Limitaciones conocidas: los sistemas no se guardan en Mis casos (solo la tuberí
 **Tamaños y RAM.** `PERDIDA1` 15 305 B (antes 9 699), `PERDTXT` 15 626 B (antes 13 119). El motor de arrastre, vertedores y canales ya va dentro del programa. **RAM libre con la app abierta: 58 942 B** (v1.0: unos 64 KB; mínimo pedido: 30 KB). Quedan unos 29 KB de margen para las fases 2 a 6: las pantallas nuevas tendrán que ser compactas y los textos ir a `PERDTXT`.
 
 **Pendiente de esta pantalla.** `[GUARDAR]` en «Mis casos» queda para la fase 6, junto con el formato nuevo de `PERDCAS` y su migración.
+
+## v2.0, fase 2: catálogo de $C_D$, aire e ilustraciones 3D (15 de noviembre de 2026)
+
+**Construido.**
+
+- **Catálogo** (`src/data/dragcat.c`): las 17 figuras de la sección 4.3 del prompt, cada una con su orientación, $C_D$, área de referencia, tipo de cuerpo para los avisos por $Re$, fuente y nota. Tiene tablas para el cilindro finito perpendicular ($L/D$, con ∞ = 1,2), el cilindro axial ($L/D$), la placa rectangular ($b/h$, con ∞ = 1,98) y el cono (ángulo, según White). Para usar el valor «infinito» se escribe un parámetro de 1000 o más. La esfera y el disco traen su fórmula de Stokes.
+- **Pantallas** (`src/scr_cat.c`), en Biblioteca › 5 «Coeficientes de arrastre (CD)»:
+  - lista con miniatura 3D, número, nombre, orientación y $C_D$;
+  - detalle con la ilustración ×2 y la flecha del flujo, $C_D$, área de referencia, validez, fuente, tabla y nota;
+  - MARCAR y COMPAR. (hasta 3 figuras con su barra y la razón de fuerzas);
+  - RANKING de menor a mayor $C_D$ con barras;
+  - EDITAR ($C_D$ propio, que se guarda en `PERDCFG`; DEFECTO restaura el del catálogo);
+  - TABLA (interpola el parámetro y muestra los dos vecinos);
+  - USAR, que devuelve $C_D$ al formulario que la abrió (lo usarán las fases 3 a 5).
+- **Ilustraciones**: `tools/gen_gfx.py` traza con rayos la función de distancia de cada figura (numpy, vista tres cuartos, supermuestreo 3×3), cuantiza a una rampa de 12 tonos gris azulado más naranja para la flecha y comprime con RLE de 4 bits en el AppVar archivado `PERDGFX`, de **15 297 B** (límite: 60 KB). La app dibuja tramo a tramo desde el archivo, sin búfer: **0 B de RAM**. Imagen grande de 96×80 (se muestra ×2) y miniatura de 32×18; paleta en las entradas 32 a 47, sin tocar los colores de la interfaz. Si falta `PERDGFX`, la app avisa y sigue funcionando. Para que los dos cubos se distingan se ven desde arriba: el de cara es un cuadrado con un lado hacia la flecha y el de arista, un rombo con la punta hacia la flecha.
+- **Aire** en la lista de fluidos: curso (1,2 y 1,5E-5), 15 °C estándar (1,225 y 1,46E-5) y 20 °C (1,204 y 1,516E-5). Como fluido por defecto, el aire va a «rho del aire» y «nu del aire», sin tocar el $\gamma$ del agua.
+- **Ajustes nuevos**: rho y nu del aire, empuje con aire, Cd de vertedores (0,6), km/h por nudo (1,85) y convención del manómetro.
+- **`PERDCFG` 2.0**: lee el formato 1.0 conservando los ajustes de la v1.0 (decimales, método, $g$, $\gamma$, $\nu$, tolerancias…), pone lo nuevo por defecto y lo guarda en el formato nuevo al salir.
+- **RAM**: el catálogo escrito a la primera ocupaba 15 KB de código. Se compactó (el formulario de Ajustes pasó a datos estáticos, las líneas se arman con `mfmt` y se comparte un solo registro de iteraciones entre pantallas): `PERDIDA1` quedó en 25 083 B.
+
+**Pruebas.**
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada: 14 comprobaciones nuevas (lista con 10 miniaturas sin salirse de la pantalla, detalle, TABLA L/D = 15 da 0,91667 con vecinos 10 y 40, L/D ≥ 1000 da 1,2, EDITAR y DEFECTO, COMPAR. da 2,34 veces, RANKING, USAR devuelve el paracaídas con 1,3, sin `PERDGFX`, aire por defecto, migración de `PERDCFG` 1.0 y vuelta a leer en 2.0) | 122 de 122; estrés sin cierres |
+| Dorados, aleatorios v1.0 y v2.0, eZ80 | sin cambios, 0 fallas |
+| CEmu: 56 pantallas (22 nuevas: dos páginas de la lista, las 17 fichas, comparar, ranking y tabla) | revisadas una por una; línea base nueva, 56 de 56 iguales. `tools/vram8png.py` ahora lee la paleta de `PERDGFX` |
+
+**Hoja de contacto** capturada de CEmu: `tests/cemu/hoja_contacto_cemu.png`, con las 17 fichas (`tools/cemu_sheet.py`); versión del generador: `tests/cemu/hoja_contacto_cd.png`. **Pendiente de la aprobación de Adrián.**
+
+**Tamaños y RAM.** `PERDIDA1` 25 083 B, `PERDGFX` 15 373 B (el .8xv). **RAM libre con la app abierta: 49 159 B** (fase 1b: 58 942). Para las fases 3 a 6 quedan unos 19 KB sobre el mínimo de 30 KB. Las pantallas de arrastre, vertedores y canales se harán con un motor común de formulario y memoria en `PERDTXT`.
+
+**Valores del catálogo sin verificar con el libro** (no hay foto de las tablas): todos traen su fuente. Diferencia interna que conviene revisar: el cono de 30° vale 0,5 en Çengel, pero la tabla por ángulo de White da 0,55 a 30°.

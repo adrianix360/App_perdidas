@@ -627,6 +627,96 @@ int main(int argc, char **argv)
         settings_default(&g_set);
     }
 
+    /* 5g. v2.0 fase 2: catalogo de CD, aire y PERDCFG 1.0 -> 2.0 */
+    {
+        extern int gfx_draws, gfx_bad, gfx_missing;
+        extern real cat_sel_cd;
+        int d0;
+        settings_default(&g_set);
+        d0 = gfx_draws;
+        T("5"); T("5");
+        run();
+        check(scr_has("COEFICIENTES DE ARRASTRE") && scr_has("Esfera lisa") &&
+              gfx_draws - d0 >= 10 && !gfx_bad, "catalogo: lista con 10 miniaturas por pagina");
+        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER);
+        run();
+        check(scr_has("CD = 0.5") && scr_has("pi D^2/4") && !gfx_bad, "detalle de la esfera");
+        /* cilindro finito: tabla L/D, L/D = 15 interpola 0,9167 */
+        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER); { int i; for (i = 0; i < 10; i++) K(K_DOWN); }
+        K(K_F4); TE("15");
+        run();
+        check(starts(alert_l1, "CD = 0.91667") && strstr(alert_l1, "interpolado") != 0,
+              "TABLA: L/D = 15 interpola 0.9167 (vecinos 10 y 40)");
+        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER); { int i; for (i = 0; i < 10; i++) K(K_DOWN); }
+        K(K_F4); TE("1000");
+        run();
+        check(starts(alert_l1, "CD = 1.2"), "TABLA: L/D >= 1000 usa el valor infinito 1.2");
+        /* EDITAR y restaurar */
+        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER); K(K_F3); TE("0.47");
+        run();
+        check(g_set.cd_user[0] > 0.469 && g_set.cd_user[0] < 0.471 && g_set_dirty,
+              "EDITAR guarda un CD propio (esfera 0.47)");
+        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER);
+        run();
+        check(scr_has("(catal. 0.5)"), "el detalle muestra el valor del catalogo");
+        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER); K(K_F3); K(K_F1);
+        run();
+        check(g_set.cd_user[0] == 0, "F1 CATALOGO restaura el valor");
+        /* comparar y ranking */
+        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_F2); K(K_DOWN); K(K_DOWN); K(K_F2); K(K_F3);
+        run();
+        check(scr_has("COMPARAR FIGURAS") && scr_has("Fig 2 / fig 1: 2.34") && !gfx_bad,
+              "COMPARAR: hemisferio plano 2.34 veces la esfera");
+        T("5"); T("5"); K(K_F1); K(K_F4);
+        run();
+        check(scr_has("13 Cuerpo aerodinamico") && scr_has("16 Barra cuadrada"),
+              "RANKING de menor a mayor CD");
+        /* USAR desde un formulario */
+        mock_script(S, 0);
+        K(K_PGUP); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_ENTER); K(K_F1);
+        mock_script(S, sn);
+        ui_quit = false;
+        check(scr_cat(1) == 4 && cat_sel_cd > 1.29 && cat_sel_cd < 1.31,
+              "USAR devuelve el paracaidas con CD 1.3");
+        sn = 0;
+        /* sin PERDGFX: aviso y sin cierre */
+        gfx_missing = 1;
+        T("5"); T("5"); K(K_PGUP); K(K_PGUP); K(K_ENTER);
+        run();
+        check(!strcmp(scr_msg, "Falta PERDGFX: sin ilustraciones"), "sin PERDGFX: aviso, sin cierre");
+        gfx_missing = 0;
+        /* aire por defecto desde la biblioteca */
+        T("5"); T("3"); K(K_PGDN); K(K_UP); K(K_ENTER); K(K_ENTER);
+        run();
+        check(g_set.rho_air > 1.2249 && g_set.rho_air < 1.2251 && g_set.nu_air > 1.459e-5 &&
+              g_set.h.gamma > 9809, "fluido: aire 15 C va a rho y nu del aire, gamma intacto");
+        /* PERDCFG en formato 1.0: se conservan los ajustes */
+        {
+            app_settings_v1 v1;
+            uint8_t c = 0x5A, *p = (uint8_t *)&v1;
+            size_t i;
+            settings_default(&g_set);
+            v1.h = g_set.h;
+            v1.dec = 4;
+            v1.h.method = FM_SJ;
+            mock_file[0] = 'P'; mock_file[1] = 'R'; mock_file[2] = 'D';
+            mock_file[3] = 1; mock_file[4] = (uint8_t)sizeof v1;
+            memcpy(mock_file + 5, &v1, sizeof v1);
+            for (i = 0; i < sizeof v1; i++)
+                c = (uint8_t)((c << 1 | c >> 7) ^ p[i]);
+            mock_file[5 + sizeof v1] = c;
+            mock_file_len = 6 + sizeof v1;
+            mock_file_exists = 1;
+            g_set_dirty = false;
+            check(settings_load() == 0 && g_set.dec == 4 && g_set.h.method == FM_SJ &&
+                  g_set.rho_air > 1.19 && g_set.cd_weir > 0.59 && g_set_dirty,
+                  "PERDCFG 1.0 migra: dec y metodo se conservan, lo nuevo por defecto");
+            check(settings_save() && settings_load() == 0 && g_set.dec == 4 &&
+                  mock_file[3] == 2, "se guarda y relee en formato 2.0");
+        }
+        settings_default(&g_set);
+    }
+
     /* 6. Ajustes: decimales, validaciones y archivo */
     T("7"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("3"); K(K_F5);
     run();

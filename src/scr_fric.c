@@ -63,7 +63,7 @@ static void mode_changed(void)
 }
 
 static hydro_cfg C;
-static hydro_log LG;
+#define LG memo_lg      /* registro compartido (memo_run.c) */
 static hydro_fric_tab T;
 
 /* 0 si todo bien, o un texto de error */

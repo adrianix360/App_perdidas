@@ -15,9 +15,25 @@
 #define CASES_APPVAR "PERDCAS"
 #define DEC_MAX     9
 
+/* Formato 1.0 de PERDCFG (se sigue leyendo y se migra) */
+typedef struct {
+    hydro_cfg h;
+    uint8_t dec;
+} app_settings_v1;
+
+#define CAT_N 17          /* figuras del catalogo de C_D (data/dragcat.c) */
+
 typedef struct {
     hydro_cfg h;          /* metodo de f, g, gamma, nu, tolerancias...  */
     uint8_t dec;          /* decimales en pantalla (6 por defecto)      */
+    /* v2.0 */
+    real rho_air;         /* kg/m3 (1,2 del curso)                      */
+    real nu_air;          /* m2/s (1,5e-5)                              */
+    real cd_weir;         /* C_d por defecto de vertedores y orificios  */
+    real knot;            /* km/h por nudo (1,85 del examen 2017)       */
+    uint8_t mano;         /* convencion del manometro: MANO_*           */
+    uint8_t buoy;         /* aplicar empuje con aire en AR-2            */
+    real cd_user[CAT_N];  /* C_D propio de cada figura (0 = catalogo)   */
 } app_settings;
 
 extern app_settings g_set;
@@ -59,6 +75,11 @@ void scr_net_example(uint8_t idx);
 /* scr_fric.c (v2.0): Calcular f. dest/dset: campo "f dado" del
  * formulario que la abrio ([USAR f]); NULL desde el menu principal */
 void scr_fric(real *dest, uint8_t *dset);
+
+/* scr_cat.c (v2.0): catalogo de C_D. use = 1: selector con [USAR];
+ * devuelve la figura elegida (C_D en cat_sel_cd) o -1 */
+int scr_cat(uint8_t use);
+extern real cat_sel_cd, cat_sel_param;
 
 /* scr_lib.c: biblioteca */
 bool lib_pick_material(void);

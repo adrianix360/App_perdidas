@@ -54,7 +54,7 @@ typedef struct {
 extern const k_preset k_presets[K_PRESETS];
 
 /* ---- agua ---- */
-#define WATERS 12
+#define WATERS 15
 typedef struct {
     const char *name;
     real T;          /* C; 0 = valor del curso sin temperatura */

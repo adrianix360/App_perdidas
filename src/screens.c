@@ -21,12 +21,15 @@ const char *const method_names[FM_COUNT] = {
 /* ================================================================== */
 /* Ajustes (MODE desde cualquier pantalla)                             */
 /* ================================================================== */
+static const char *const yesno2[2] = { "No", "Si" };
+static const char *const mano_names[2] = { "(S-1) g h fisico", "S g h examen" };
+
 void scr_settings(void)
 {
     static uint8_t cur;
-    app_settings old = g_set;
-    real dec = g_set.dec;
-    form_field f[] = {
+    static app_settings old;
+    static real dec;
+    static form_field f[] = {
         { "Metodo de f", 0, 0, &g_set.h.method, 0, FF_CHOICE, method_names, FM_COUNT, 0, 0 },
         { "g", "m/s2", &g_set.h.g, 0, 0, FF_RANGE, 0, 0, 1, 20 },
         { "gamma", "N/m3", &g_set.h.gamma, 0, 0, FF_RANGE, 0, 0, 1000, 20000 },
@@ -40,10 +43,19 @@ void scr_settings(void)
         { "Aviso hm/hf", 0, &g_set.h.hm_ratio, 0, 0, FF_RANGE, 0, 0, 0, 100 },
         { "Re laminar <", 0, &g_set.h.re_lam, 0, 0, FF_RANGE, 0, 0, 100, 10000 },
         { "Re turbulento >", 0, &g_set.h.re_turb, 0, 0, FF_RANGE, 0, 0, 100, 100000 },
+        /* v2.0 */
+        { "rho del aire", "kg/m3", &g_set.rho_air, 0, 0, FF_RANGE, 0, 0, 0.05, 5 },
+        { "nu del aire", "m2/s", &g_set.nu_air, 0, 0, FF_RANGE, 0, 0, 1e-7, 1e-3 },
+        { "Empuje con aire", 0, 0, &g_set.buoy, 0, FF_CHOICE, yesno2, 2, 0, 0 },
+        { "Cd vertedores", 0, &g_set.cd_weir, 0, 0, FF_RANGE, 0, 0, 0.1, 1.5 },
+        { "km/h por nudo", 0, &g_set.knot, 0, 0, FF_RANGE, 0, 0, 1, 3 },
+        { "Manometro", 0, 0, &g_set.mano, 0, FF_CHOICE, mano_names, 2, 0, 0 },
     };
     form_t fm;
     uint8_t k;
 
+    old = g_set;
+    dec = g_set.dec;
     memset(&fm, 0, sizeof fm);
     fm.title = "AJUSTES";
     fm.f = f;
@@ -98,8 +110,8 @@ static void about(void)
     view_add("v15.0). En OS 5.5 a 5.8.4 se lanza", C_GRAY);
     view_add("con arTIfiCE v2.1.", C_GRAY);
     view_add("Archivos: PERDIDAS, PERDIDA0,", C_GRAY);
-    view_add("PERDIDA1, PERDTXT; crea PERDCFG", C_GRAY);
-    view_add("(ajustes) y PERDCAS (casos).", C_GRAY);
+    view_add("PERDIDA1, PERDTXT, PERDGFX; crea", C_GRAY);
+    view_add("PERDCFG (ajustes) y PERDCAS (casos).", C_GRAY);
     view_add_sep();
     strcpy(num, " RAM libre: ");
     fmt_int((long)ui_free_ram(), num + strlen(num));

@@ -108,4 +108,8 @@ const water waters[WATERS] = {
     { "Curso: 2024 P1",   0, 0, 1.02e-6, 0 },
     { "Curso: ej. 4",     0, 0, 1.14e-6, 0 },
     { "Curso: hojas",     0, 0, 1.17e-6, 0 },
+    /* v2.0: aire (rho < 10 lo distingue del agua) */
+    { "Aire (curso)",      0, 1.2, 1.5e-5, 0 },
+    { "Aire 15 C (std)",  15, 1.225, 1.46e-5, 0 },
+    { "Aire 20 C (std)",  20, 1.204, 1.516e-5, 0 },
 };

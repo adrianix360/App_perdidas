@@ -5,6 +5,7 @@
   "PERDIDAS.8xp.0.8xv",
   "PERDIDAS.8xp.1.8xv",
   "PERDTXT.8xv",
+  "PERDGFX.8xv",
   "PERDIDAS.8xp"
  ],
  "target": {
@@ -548,13 +549,120 @@
   "hash|32",
   "key|clear",
   "key|clear",
-  "key|clear",
+  "key|5",
+  "key|5",
   "delay|700",
   "hash|33",
+  "key|2nd",
+  "key|down",
+  "delay|700",
+  "hash|34",
+  "key|2nd",
+  "key|up",
+  "key|2nd",
+  "key|up",
+  "key|enter",
+  "delay|700",
+  "hash|35",
+  "key|down",
+  "delay|700",
+  "hash|36",
+  "key|down",
+  "delay|700",
+  "hash|37",
+  "key|down",
+  "delay|700",
+  "hash|38",
+  "key|down",
+  "delay|700",
+  "hash|39",
+  "key|down",
+  "delay|700",
+  "hash|40",
+  "key|down",
+  "delay|700",
+  "hash|41",
+  "key|down",
+  "delay|700",
+  "hash|42",
+  "key|down",
+  "delay|700",
+  "hash|43",
+  "key|down",
+  "delay|700",
+  "hash|44",
+  "key|down",
+  "delay|700",
+  "hash|45",
+  "key|down",
+  "delay|700",
+  "hash|46",
+  "key|down",
+  "delay|700",
+  "hash|47",
+  "key|down",
+  "delay|700",
+  "hash|48",
+  "key|down",
+  "delay|700",
+  "hash|49",
+  "key|down",
+  "delay|700",
+  "hash|50",
+  "key|down",
+  "delay|700",
+  "hash|51",
+  "key|clear",
+  "key|2nd",
+  "key|up",
+  "key|2nd",
+  "key|up",
+  "key|window",
+  "key|down",
+  "key|down",
+  "key|window",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|window",
+  "key|zoom",
+  "delay|700",
+  "hash|52",
+  "key|clear",
+  "key|trace",
+  "delay|700",
+  "hash|53",
+  "key|clear",
+  "key|2nd",
+  "key|down",
+  "key|up",
+  "key|up",
+  "key|up",
+  "key|up",
+  "key|up",
+  "key|up",
+  "key|enter",
+  "key|trace",
+  "key|1",
+  "key|5",
+  "key|enter",
+  "delay|700",
+  "hash|54",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "delay|700",
+  "hash|55",
   "key|enter",
   "delay|1500",
   "delay|700",
-  "hash|34"
+  "hash|56"
  ],
  "hashes": {
   "1": {
@@ -642,7 +750,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "84BAD6B3"
+    "8ABCCEB5"
    ]
   },
   "12": {
@@ -650,7 +758,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "4CC80207"
+    "71619A45"
    ]
   },
   "13": {
@@ -810,23 +918,199 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "132E0783"
+    "BA951899"
    ]
   },
   "33": {
-   "description": "33_confirmar_salida",
+   "description": "33_cat_lista_p1",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "7AD47FEC"
+    "19825D23"
    ]
   },
   "34": {
-   "description": "34_fuera_de_la_app",
+   "description": "34_cat_lista_p2",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "E2CDC558"
+    "40BB3ABD"
+   ]
+  },
+  "35": {
+   "description": "35_cat_detalle_01",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "D2752EEA"
+   ]
+  },
+  "36": {
+   "description": "36_cat_detalle_02",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "33E9D5C3"
+   ]
+  },
+  "37": {
+   "description": "37_cat_detalle_03",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "9A3FDCD9"
+   ]
+  },
+  "38": {
+   "description": "38_cat_detalle_04",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "73AD91FB"
+   ]
+  },
+  "39": {
+   "description": "39_cat_detalle_05",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "84E34B22"
+   ]
+  },
+  "40": {
+   "description": "40_cat_detalle_06",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "E014B89A"
+   ]
+  },
+  "41": {
+   "description": "41_cat_detalle_07",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "3BD04E8B"
+   ]
+  },
+  "42": {
+   "description": "42_cat_detalle_08",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "1748F28F"
+   ]
+  },
+  "43": {
+   "description": "43_cat_detalle_09",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "E30AA74C"
+   ]
+  },
+  "44": {
+   "description": "44_cat_detalle_10",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "9112CF02"
+   ]
+  },
+  "45": {
+   "description": "45_cat_detalle_11",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "64B00DDA"
+   ]
+  },
+  "46": {
+   "description": "46_cat_detalle_12",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "76E67742"
+   ]
+  },
+  "47": {
+   "description": "47_cat_detalle_13",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "64C4FE2E"
+   ]
+  },
+  "48": {
+   "description": "48_cat_detalle_14",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "99356793"
+   ]
+  },
+  "49": {
+   "description": "49_cat_detalle_15",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "B3B948A7"
+   ]
+  },
+  "50": {
+   "description": "50_cat_detalle_16",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "4FB7CD86"
+   ]
+  },
+  "51": {
+   "description": "51_cat_detalle_17",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "859A91BB"
+   ]
+  },
+  "52": {
+   "description": "52_cat_comparar",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "C7A1B69E"
+   ]
+  },
+  "53": {
+   "description": "53_cat_ranking",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "40FD66E2"
+   ]
+  },
+  "54": {
+   "description": "54_cat_tabla_LD15",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "3A62384F"
+   ]
+  },
+  "55": {
+   "description": "55_confirmar_salida",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "809F65E2"
+   ]
+  },
+  "56": {
+   "description": "56_fuera_de_la_app",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "708E5B24"
    ]
   }
  }

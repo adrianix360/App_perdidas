@@ -20,6 +20,7 @@ extern uint32_t memo_FL;
 extern unsigned int memo_W;          /* advertencias de M_WARN           */
 extern const hydro_cfg *memo_cfg;    /* metodo ({METHOD}) y avisos       */
 extern const hydro_log *memo_log;    /* tablas de iteraciones            */
+extern hydro_log memo_lg;            /* registro comun de las pantallas  */
 extern const real *memo_dlist;       /* lista de diametros (m), M_DLIST  */
 extern uint8_t memo_dlist_n;
 

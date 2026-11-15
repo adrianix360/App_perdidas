@@ -243,13 +243,21 @@ bool lib_pick_fluid(uint8_t to_settings)
         strcat(list_line[i], fmt_real(waters[i].nu, 6, num));
     }
     r = list_pick(to_settings ? "FLUIDO POR DEFECTO" : "FLUIDO",
-                  "(std) tabla estandar, no del curso", WATERS, cur, 0, &k);
+                  "(std) tabla estandar; aire: arrastre", WATERS, cur, 0, &k);
     if (r < 0 || k != K_ENTER)
         return false;
     cur = (uint8_t)r;
     if (!to_settings) {
         pin.nu = waters[r].nu;
         pin.snu = 1;
+        return true;
+    }
+    if (waters[r].rho > 0 && waters[r].rho < 10) {      /* v2.0: aire */
+        g_set.rho_air = waters[r].rho;
+        g_set.nu_air = waters[r].nu;
+        g_set_dirty = true;
+        ui_alert("Aire por defecto", "rho y nu del aire quedan en",
+                 "Ajustes (arrastre y sustentacion)", C_OK);
         return true;
     }
     {
@@ -367,8 +375,9 @@ void scr_library(void)
         "Accesorios (K) y sumador",
         "Fluido por defecto (T, nu, gamma)",
         "Diametros comerciales",
+        "Coeficientes de arrastre (CD)",
     };
-    static menu_t m = { "BIBLIOTECA", items, 4, 0 };
+    static menu_t m = { "BIBLIOTECA", items, 5, 0 };
     int r;
     while (!ui_quit) {
         r = menu_run(&m);
@@ -389,6 +398,7 @@ void scr_library(void)
             break;
         case 2: lib_pick_fluid(1); break;
         case 3: lib_diams(); break;
+        case 4: scr_cat(0); break;
         default: break;
         }
     }

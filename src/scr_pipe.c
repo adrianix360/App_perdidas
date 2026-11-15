@@ -28,7 +28,7 @@ static const char *const modeI_names[2] = { "hf dado Q", "Q dado H" };
 /* Resultados del ultimo calculo */
 static hydro_cfg C;
 static hydro_pipe P;
-static hydro_log LG;
+#define LG memo_lg      /* registro compartido (memo_run.c) */
 static union {
     hydro_state st;
     hydro_qmax_res q;

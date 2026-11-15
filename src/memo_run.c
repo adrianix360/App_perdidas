@@ -17,6 +17,7 @@ uint32_t memo_FL;
 unsigned int memo_W;
 const hydro_cfg *memo_cfg;
 const hydro_log *memo_log;
+hydro_log memo_lg;
 const real *memo_dlist;
 uint8_t memo_dlist_n;
 

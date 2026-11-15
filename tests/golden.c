@@ -624,6 +624,8 @@ static void case_R(void)
     end();
 }
 
+#include "golden_v2.c"
+
 int golden_counts(int *pass, int *pass_r, int *fail, int *missing)
 {
     *pass = n_pass;
@@ -647,6 +649,7 @@ int golden_run(int verb)
     case_E();
     case_S();
     case_R();
+    golden_v2();
     OUT("\nTotal: %d pasan (0,1 %%), %d pasan por redondeo (r), "
            "%d fallan, %d sin dato\n", n_pass, n_pass_r, n_fail, n_missing);
     return (n_fail || n_missing) ? 1 : 0;

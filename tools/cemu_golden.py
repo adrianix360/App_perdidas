@@ -33,13 +33,17 @@ def main():
             os.remove(os.path.join(RUN, f))
     for f in ("arTIfiCE_v2.1.8xp",):
         open(os.path.join(RUN, f), "wb").write(open(os.path.join(ROOT, "instalacion", f), "rb").read())
-    open(os.path.join(RUN, "TGOLDEN.8xp"), "wb").write(
-        open(os.path.join(ROOT, "tests/cemu/golden/bin/TGOLDEN.8xp"), "rb").read())
+    # v2.0: el programa pasa de 64 KiB y CEdev lo parte en lanzador + AppVars
+    gold = [f for f in sorted(os.listdir(os.path.join(ROOT, "tests/cemu/golden/bin")))
+            if f.startswith("TGOLDEN.8xp")]
+    for f in gold:
+        open(os.path.join(RUN, f), "wb").write(
+            open(os.path.join(ROOT, "tests/cemu/golden/bin", f), "rb").read())
     cfg = {
         "rom": ROM,
-        "transfer_files": ["arTIfiCE_v2.1.8xp", "TGOLDEN.8xp"],
+        "transfer_files": ["arTIfiCE_v2.1.8xp"] + gold,
         "target": {"name": "A", "isASM": False},
-        "sequence": ["action|launch", "delay|3000", "key|enter", "delay|60000",
+        "sequence": ["action|launch", "delay|3000", "key|enter", "delay|90000",
                      "hash|1", "hash|2"],
         "hashes": {
             "1": {"description": "pantalla resumen", "start": "vram_start",

@@ -62,11 +62,33 @@ real hydro_area(real D)
 /* ------------------------------------------------------------------ */
 /* Factor de friccion                                                  */
 /* ------------------------------------------------------------------ */
+/* Colebrook-White por sustitucion sucesiva sobre x = 1/sqrt(f),
+ * partiendo de f1 = 0,0001 como la hoja del ejemplo 4 de la
+ * presentacion (diapositiva 25). Si lg, guarda (i, f_i): la fila 1 es
+ * el valor inicial. */
+static real cw_iter(real Re, real a, unsigned char *iters, hydro_log *lg)
+{
+    real x = 100.0, xn;
+    unsigned char i;
+    hydro_log_clear(lg);
+    log_row(lg, 1, 1.0 / (x * x), 0, 0, 0);
+    for (i = 1; i <= 60; i++) {
+        xn = -2.0 * R_LOG10(a + 2.51 * x / Re);
+        *iters = i;
+        log_row(lg, (real)(i + 1), 1.0 / (xn * xn), 0, 0, 0);
+        if (R_FABS(xn - x) <= HYDRO_EPS_REL * xn) {
+            x = xn;
+            break;
+        }
+        x = xn;
+    }
+    return 1.0 / (x * x);
+}
+
 int hydro_friction(real Re, real ksD, unsigned char method,
                    const hydro_cfg *c, hydro_fric *o)
 {
-    real a, x, xn, t, C;
-    unsigned char i;
+    real a, x, t, C;
 
     o->iters = 0;
     o->f = 0;
@@ -98,22 +120,38 @@ int hydro_friction(real Re, real ksD, unsigned char method,
         o->f = 1.0 / (x * x);
         break;
     default:
-        /* Colebrook-White por sustitucion sucesiva sobre x = 1/sqrt(f),
-         * partiendo de f1 = 0,0001 como la hoja del ejemplo 4 de la
-         * presentacion (diapositiva 25). */
-        x = 100.0;
-        for (i = 1; i <= 60; i++) {
-            xn = -2.0 * R_LOG10(a + 2.51 * x / Re);
-            o->iters = i;
-            if (R_FABS(xn - x) <= HYDRO_EPS_REL * xn) {
-                x = xn;
-                break;
-            }
-            x = xn;
-        }
-        o->f = 1.0 / (x * x);
+        o->f = cw_iter(Re, a, &o->iters, 0);
         break;
     }
+    return H_OK;
+}
+
+int hydro_fric_all(real Re, real ksD, const hydro_cfg *c,
+                   hydro_fric_tab *t, hydro_log *lg)
+{
+    hydro_fric fr;
+    unsigned char m;
+    int e;
+    hydro_log_clear(lg);
+    for (m = 0; m < FM_COUNT; m++) {
+        e = hydro_friction(Re, ksD, m, c, &fr);
+        if (e)
+            return e;
+        t->f[m] = fr.f;
+        t->out[m] = 0;
+    }
+    t->regime = fr.regime;
+    t->iters = 0;
+    if (fr.regime != REG_LAMINAR) {
+        t->f[FM_CW] = cw_iter(Re, ksD / 3.7, &t->iters, lg);
+        t->out[FM_CW] = ksD > 0.05;
+        t->out[FM_SJ] = Re < 4000.0 || Re > 1.0e8 || ksD < 1.0e-6 ||
+                        ksD > 1.0e-2;
+        t->out[FM_HAALAND] = Re < 4000.0 || Re > 1.0e8 || ksD > 0.05;
+        t->out[FM_GOUDAR] = Re < 4000.0 || ksD > 0.05;
+    }
+    for (m = 0; m < FM_COUNT; m++)
+        t->dpct[m] = 100.0 * (t->f[m] - t->f[FM_CW]) / t->f[FM_CW];
     return H_OK;
 }
 
@@ -786,6 +824,9 @@ static const char *const err_txt[H_ERR_COUNT] = {
     "Ningun diametro de la lista alcanza",
     "Sistema mal definido",
     "C_H debe ser mayor que 0",
+    "Dato invalido: revise los valores",
+    "W <= B: el cuerpo flota, no cae",
+    "Fr1 <= 1: no hay salto hidraulico",
 };
 
 const char *hydro_err_text(int err)

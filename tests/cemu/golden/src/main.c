@@ -12,6 +12,9 @@
 #define GOLDEN_NO_MAIN
 #include "../../../golden.c"
 #include "../../../../src/hydro/hydro.c"
+#include "../../../../src/hydro/drag.c"
+#include "../../../../src/hydro/weir.c"
+#include "../../../../src/hydro/chan.c"
 
 int main(void)
 {

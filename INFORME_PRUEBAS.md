@@ -788,3 +788,26 @@ Limitaciones conocidas: los sistemas no se guardan en Mis casos (solo la tuberí
 | Chorro | $\sum K=0$ por defecto (como la solución); «+1 por energía cinética de salida» opcional |
 | Menú | Submenú «Flujos externos y medición» (arrastre, vertedores, canales); el principal queda con 9 entradas, todas con tecla 1 a 9 |
 | Material faltante | No hay foto de las tablas de $C_D$, ni enunciado del chorro, ni solución del examen 2017: el catálogo usa los valores del prompt, cada uno con su fuente |
+
+## v2.0, fase 1: motor nuevo (15 de noviembre de 2026)
+
+**Construido.** Tres módulos en C puro, separados de `hydro.c`: `src/hydro/drag.c` (arrastre, velocidad terminal con empuje, estructura con varios cuerpos, vuelo nivelado con $\rho(h)$, Stokes, placa plana, interpolación de tablas de $C_D$ y avisos por $Re$), `src/hydro/weir.c` (vertedero triangular y rectangular con Francis opcional, orificio circular y rectangular, estructura compuesta $Q(h)$ y $h(Q)$ por bisección, perfil de velocidades $v=k\,y^n$ y por puntos con Simpson o trapecios, sección aguas abajo) y `src/hydro/chan.c` (Venturi con las dos convenciones del manómetro, salto hidráulico desde $y_1$ o desde $y_2$, chorro). En `hydro.c`, `hydro_fric_all` da los 4 métodos de $f$ con su diferencia respecto a Colebrook-White, la marca de fuera de rango y la tabla de iteraciones de CW; la iteración de CW se movió a una función `cw_iter` que también usa `hydro_friction` (los resultados de la v1.0 no cambian). Tres códigos de error nuevos, al final de la lista: `H_ERR_ARG` (18), `H_ERR_FLOATS` (19) y `H_ERR_NOJUMP` (20).
+
+**Pruebas.**
+
+| Prueba | Resultado |
+|---|---|
+| Casos dorados en el PC (`float` y `double`), con los nuevos AR-01 a AR-07, VE-01 a VE-09, EX-01 a EX-03 y F-01 a F-05 | 302 pasan, 8 por redondeo, 0 fallan (eran 191 + 7) |
+| Casos dorados dentro del eZ80 (CEmu) | 302 pasan, 8 por redondeo, 0 fallan; mayor diferencia eZ80 frente a PC 1,99e-5 |
+| Aleatorios v2.0: 625 casos contra el oráculo independiente `tools/oracle2.py` | 0 fallas en `float` (peor 2,2e-5, salto hidráulico) y en `double` (peor 3,1e-11) |
+| Aleatorios v1.0, interfaz simulada (96) e interfaz pura (53) | sin cambios, 0 fallas |
+
+**Diferencias con el prompt.**
+
+- **Haaland:** el motor de la v1.0 usa $1/\sqrt f=-1{,}8\log_{10}[\dots]$ («según el material del curso», `HAALAND_COEF`); el prompt tabula F-01 a F-04 con 1,81. Se respetó el código: los casos dorados de Haaland usan 1,8 (F-01: 0,025907 en vez de 0,025621). Si el curso usa 1,81, se cambia una constante.
+- **Valor inicial de Colebrook-White:** el motor parte de $f_1=0{,}0001$ (diapositiva 25 de la presentación), no de 0,001. El resultado final no cambia; la tabla de iteraciones de la memoria lo mostrará así.
+- **VE-08:** $h_0=0{,}02417$ m frente a 0,0242 del prompt (redondeo de una resta; pasa por redondeo).
+- **EX-01a:** $\Delta p=32\,660$ Pa con los diámetros exactos; el prompt (32 667) y la solución (32 668) usan $v_1$ y $v_2$ redondeados. Diferencia 0,02 %.
+- `tools/cemu_golden.py` ahora envía también los AppVars `TGOLDEN0/1`, porque el programa de prueba pasó de 64 KiB.
+
+**Tamaño.** `PERDIDAS` sin pantallas nuevas: `PERDIDA1` pasa de 9 699 a 10 229 B (la tabla de 4 métodos y los textos de error). Los módulos `drag`, `weir` y `chan` todavía no se enlazan con ninguna pantalla.

@@ -21,6 +21,9 @@ typedef double real;
 #define R_SQRT  sqrt
 #define R_POW   pow
 #define R_FABS  fabs
+#define R_TAN   tan
+#define R_SIN   sin
+#define R_COS   cos
 #define HYDRO_EPS_REL 1e-12      /* convergencia relativa de iteraciones */
 #define HYDRO_BIS_REL 1e-12      /* ancho relativo final de biseccion    */
 #else
@@ -30,6 +33,9 @@ typedef float real;
 #define R_SQRT  sqrtf
 #define R_POW   powf
 #define R_FABS  fabsf
+#define R_TAN   tanf
+#define R_SIN   sinf
+#define R_COS   cosf
 #define HYDRO_EPS_REL 4e-7f
 #define HYDRO_BIS_REL 1e-6f
 #endif
@@ -75,6 +81,9 @@ enum {
     H_ERR_LIST,       /* ningun diametro comercial alcanza             */
     H_ERR_NET,        /* red mal definida                              */
     H_ERR_CH,         /* C_H debe ser > 0                              */
+    H_ERR_ARG,        /* v2.0: dato invalido (<= 0 o fuera de rango)   */
+    H_ERR_FLOATS,     /* v2.0: W <= B, el cuerpo no cae: flota         */
+    H_ERR_NOJUMP,     /* v2.0: Fr1 <= 1, no hay salto hidraulico       */
     H_ERR_COUNT
 };
 
@@ -159,6 +168,19 @@ typedef struct {
 } hydro_fric;
 int hydro_friction(real Re, real ksD, unsigned char method,
                    const hydro_cfg *c, hydro_fric *out);
+
+/* v2.0 "Calcular f": los 4 metodos a la vez, con la diferencia
+ * porcentual respecto a Colebrook-White, marca de fuera de rango por
+ * metodo y (si lg) las iteraciones de CW: columnas (i, f_i). */
+typedef struct {
+    real f[FM_COUNT];
+    real dpct[FM_COUNT];
+    unsigned char out[FM_COUNT];
+    unsigned char regime;
+    unsigned char iters;
+} hydro_fric_tab;
+int hydro_fric_all(real Re, real ksD, const hydro_cfg *c,
+                   hydro_fric_tab *t, hydro_log *lg);
 
 /* Validacion de una tuberia */
 int hydro_check_pipe(const hydro_pipe *p, const hydro_cfg *c);

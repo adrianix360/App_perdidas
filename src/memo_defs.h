@@ -45,6 +45,13 @@ enum {
     V_PRK, V_PRN, V_PRB, V_PRH, V_PRQ, V_PRVM, V_PRNP,
     V_SQ, V_SB, V_SH1, V_SV1, V_SE1, V_SQQ, V_SFR1, V_SDZ, V_SE2, V_SHS,
     V_SHP, V_SHC, V_SVS, V_SVP,
+    /* v2.0: canales y medicion */
+    V_VD1, V_VD2, V_VBETA, V_VA1, V_VA2, V_VV1, V_VV2, V_VDP, V_VH, V_VS,
+    V_VCV, V_VQ, V_VQLS, V_VDPK, V_VSF, V_VB4,
+    V_JQ, V_JB, V_JQQ, V_JY1, V_JY2, V_JV1, V_JV2, V_JFR1, V_JFR2, V_JE1,
+    V_JE2, V_JDE, V_JP, V_JEFF,
+    V_EH, V_EL, V_ED, V_EKS, V_EK, V_EQ, V_EQLS, V_EV, V_ERE, V_EF, V_ETH,
+    V_EVX, V_EVY, V_EHM, V_ER, V_ET, V_EIT, V_ELD,
     V_COUNT
 };
 
@@ -106,6 +113,14 @@ enum {
 #define G_WSIMP   G_X11  /* Simpson (si no, trapecios)         */
 #define G_SBER    G_X10  /* aguas abajo: tirante por Bernoulli */
 #define G_SNOE    G_X11  /* E < Emin: no hay tirante            */
+/* Canales y medicion */
+#define G_VMANO   G_X0   /* Venturi con manometro              */
+#define G_VEXAM   G_X1   /* convencion del examen: S g h       */
+#define G_VCV     G_X2   /* Cv distinto de 1                   */
+#define G_VV1     G_X3   /* se dio v1 (no Q)                   */
+#define G_JY2     G_X4   /* salto: dado y2                     */
+#define G_EK1     G_X5   /* chorro: con energia de salida      */
+#define G_EBIS    G_X6   /* chorro: Q por biseccion            */
 
 enum { M_END = 0, M_SEC, M_DATA, M_EQ, M_RES, M_LINE, M_IF, M_IFN, M_ENDIF,
        M_CALL, M_TABLE, M_WARN, M_DLIST, M_SEP };
@@ -123,6 +138,8 @@ enum { XP_FRIC_SUM, XP_FRIC_MEMO,
        XP_AR3_MEMO, XP_AR4_SUM, XP_AR4_MEMO, XP_PL_SUM, XP_PL_MEMO,
        XP_VE1_SUM, XP_VE1_MEMO, XP_VE4_SUM, XP_VE4_MEMO, XP_VE6_SUM,
        XP_VE6_MEMO, XP_VE7_SUM, XP_VE7_MEMO,
+       XP_EX1_SUM, XP_EX1_MEMO, XP_EX2_SUM, XP_EX2_MEMO, XP_EX3_SUM,
+       XP_EX3_MEMO,
        XP_COUNT };
 #define PROG_X(i)    (S_COUNT + 2 * PT_COUNT + HELP_COUNT + (i))
 #define PROG_COUNT   (S_COUNT + 2 * PT_COUNT + HELP_COUNT + XP_COUNT)

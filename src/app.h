@@ -97,6 +97,9 @@ void scr_drag(uint8_t t);
  * VE-5), 1 compuesta (VE-4), 2 perfil (VE-6), 3 aguas abajo (VE-7) */
 void scr_weir(uint8_t t);
 
+/* scr_chan.c (v2.0): canales y medicion. 0 Venturi, 1 salto, 2 chorro */
+void scr_chan(uint8_t t);
+
 /* scr_lib.c: biblioteca */
 bool lib_pick_material(void);
 bool lib_sumador(void);

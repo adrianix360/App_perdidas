@@ -975,3 +975,32 @@ Los dos superan con holgura los 30 KB pedidos. FLUJOS tiene más de 50 KB de mar
 | VE-08 | $H=0{,}97583$ m; $h_0=0{,}02417$ m | 0,9758; 0,0242 |
 
 **Tamaños y RAM.** FLUJOS: lanzador 591 B + `FLUJOS0` 60 076 B + `FLUJOS1` 5 980 B (`-m 60000`, para que sean 2 AppVars). `PERDTXT` 26 340 B. **RAM libre con FLUJOS abierto: 73 483 B.** PERDIDAS no cambió (58 420 B).
+
+## v2.0, fase 5: canales y medición, en FLUJOS (15 de noviembre de 2026)
+
+**Construido** (`src/scr_chan.c`, FLUJOS › 3):
+
+- **Venturi y manómetro** (EX-1): $D_1$ y $D_2$ en mm (o la razón $D_2/D_1$), $Q$ en l/s o m³/s (o $v_1$), $C_v$, y $S$ del manómetro con la convención física $(S-1)\gamma h$ (por defecto, de Ajustes) o la de la solución 2025 $S\gamma h$, que avisa que la relación física es la otra. La memoria recuerda usar el caudal que pide el enunciado.
+- **Salto hidráulico** (EX-2): canal rectangular, dado $y_1$ (con $Fr_1$ y la conjugada por cantidad de movimiento) o dado $y_2$; $E_1$, $E_2$, $\Delta E$, potencia disipada y $E_2/E_1$. Si $Fr_1\le 1$ avisa que no hay salto.
+- **Chorro desde un tubo** (EX-3): caudal con el motor de tubería tipo B (iteración del curso o bisección, con su tabla en la memoria). La opción «energía de salida» suma 1 a $\sum K$ y por defecto está apagada, como en la solución. Luego $v_x$, $v_y$, $h_{\max}$, alcance y tiempo de vuelo.
+- La entrada 4 abre «Placa plana y Stokes» (EX-4), hecha en la fase 3.
+- Memorias en `PERDTXT` (6 programas nuevos, `tools/memo_chan.c`).
+- `tools/cemu_golden.py` ahora recompila `TGOLDEN` antes de correr. Al agregar VE-10 sin recompilar, los valores del eZ80 habían quedado desalineados.
+
+**Pruebas.**
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada: 12 comprobaciones nuevas (EX-01a con las dos convenciones, EX-01b, EX-02 dado $y_1$ y dado $y_2$, sin salto, EX-03a, EX-03b, memorias, acceso a EX-4) | 162 de 162; estrés sin cierres |
+| Dorados en el PC y en el eZ80 | 308 pasan, 8 por redondeo, 0 fallan; mayor diferencia eZ80 frente a PC 1,99e-5 |
+| CEmu: FLUJOS 55 pantallas (6 nuevas); PERDIDAS 34 | 55 de 55 y 34 de 34 |
+
+| Caso | En CEmu | Esperado |
+|---|---|---|
+| EX-01a | $v_1=3{,}118658$; $v_2=8{,}662938$; $\Delta p=32\,660{,}24$ Pa; $h=1{,}10976$ m $(S-1)$; 0,8323 m $(S)$ | 32 667 (sol. 32 668); 1,110; 0,833 |
+| EX-01b | $\Delta p=55\,468$ Pa; $h=1{,}4135$ m $(S)$ (interfaz simulada) | 55 468; 1,414 |
+| EX-02 | $Fr_1=7{,}572282$; $y_2=4{,}088196$; $E_1=11{,}86789$; $E_2=4{,}19798$; $\Delta E=7{,}66991$ m; $P=902{,}90$ kW | 4,088; 7,670; 902,9 |
+| EX-03a | $Q=4{,}390695$ l/s; $v=6{,}211563$; $Re=185\,051$; $f=0{,}022883$; $h_{\max}=0{,}491635$; $R=3{,}406149$ m | 4,391; 0,492; 3,406 |
+| EX-03b | $Q=3{,}899$ l/s; $h_{\max}=0{,}3877$ m (interfaz simulada) | 3,899; 0,3877 |
+
+**Tamaños y RAM.** FLUJOS: lanzador 591 B + `FLUJOS0` 60 076 B + `FLUJOS1` 17 913 B (el chorro trae el motor de tuberías). `PERDTXT` 29 546 B. **RAM libre con FLUJOS abierto: 61 546 B**; PERDIDAS sin cambios (58 420 B).

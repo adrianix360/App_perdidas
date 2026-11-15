@@ -1,0 +1,145 @@
+/*
+ * memo_chan.c - Memorias de calculo de canales y medicion (v2.0).
+ * Lo incluye tools/memo_tables.c (no se compila para la calculadora).
+ */
+
+/* ---- EX-1 Venturi ---- */
+static const mstep x_ex1_sum[] = {
+    DAT("Q", V_VQLS, "l/s"),
+    DAT("v1", V_VV1, "m/s"),
+    DAT("v2", V_VV2, "m/s"),
+    RES("dp = p1 - p2", V_VDP, "Pa"),
+    IF(G_VMANO), RES("h manometro", V_VH, "m"), ENDIF,
+    IF(G_VMANO), IF(G_VEXAM), LN(" Convencion del examen: dp = S g h", C_WARN), ENDIF, ENDIF,
+    STOP
+};
+static const mstep x_ex1_memo[] = {
+    SEC("DATOS"),
+    DAT("D1", V_VD1, "m"), DAT("D2", V_VD2, "m"),
+    IFN(G_VV1), DAT("Q", V_VQ, "m3/s"), ENDIF,
+    IF(G_VV1), DAT("v1", V_VV1, "m/s"), ENDIF,
+    IF(G_VCV), DAT("Cv", V_VCV, 0), ENDIF,
+    IF(G_VMANO), DAT("S manometro", V_VS, 0), ENDIF,
+    DAT("gamma", V_GAM, "N/m3"),
+    SEC("CALCULOS"),
+    EQ("A1", "pi D1^2/4", "pi({VD1})^2/4", V_VA1, "m2"),
+    EQ("A2", "pi D2^2/4", "pi({VD2})^2/4", V_VA2, "m2"),
+    IFN(G_VV1), EQ("v1", "Q/A1", "{VQ}/{VA1}", V_VV1, "m/s"), ENDIF,
+    IF(G_VV1), EQ("Q", "v1 A1", "{VV1}({VA1})", V_VQ, "m3/s"), ENDIF,
+    EQ("v2", "Q/A2", "{VQ}/{VA2}", V_VV2, "m/s"),
+    IFN(G_VCV),
+      LN("Bernoulli 1-2 (z1 = z2):", C_FG),
+      EQ("dp", "gamma (v2^2 - v1^2)/(2g)",
+         "{GAM}(({VV2})^2 - ({VV1})^2)/(2({G}))", V_VDP, "Pa"),
+    ENDIF,
+    IF(G_VCV),
+      EQ("beta^4", "(D2/D1)^4", "({VD2}/{VD1})^4", V_VB4, 0),
+      EQ("dp", "rho/2 (Q/(Cv A2))^2 (1 - beta^4)",
+         "({GAM}/{G})/2 ({VQ}/({VCV}({VA2})))^2 (1 - {VB4})", V_VDP, "Pa"),
+    ENDIF,
+    IF(G_VMANO),
+      IFN(G_VEXAM),
+        LN("Manometro diferencial: dp = (S - 1) gamma h", C_FG),
+        EQ("h", "dp/((S - 1) gamma)", "{VDP}/(({VSF})({GAM}))", V_VH, "m"),
+      ENDIF,
+      IF(G_VEXAM),
+        LN("Convencion de la solucion 2025: dp = S gamma h", C_FG),
+        EQ("h", "dp/(S gamma)", "{VDP}/({VSF}({GAM}))", V_VH, "m"),
+      ENDIF,
+    ENDIF,
+    SEC("RESULTADO"),
+    RES("dp", V_VDP, "Pa"), RES("dp", V_VDPK, "kPa"),
+    IF(G_VMANO), RES("h", V_VH, "m"), ENDIF,
+    SEC("OBSERVACIONES"),
+    LN(" Use el Q que pide el enunciado (maximo o", C_GRAY),
+    LN(" de diseno); la solucion 2025 uso 200 l/s", C_GRAY),
+    IF(G_VEXAM), LN("! La relacion fisica es (S - 1) gamma h", C_WARN), ENDIF,
+    STOP
+};
+
+/* ---- EX-2 salto hidraulico ---- */
+static const mstep x_ex2_sum[] = {
+    DAT("q = Q/b", V_JQQ, "m2/s"),
+    DAT("Fr1", V_JFR1, 0),
+    IFN(G_JY2), RES("y2", V_JY2, "m"), ENDIF,
+    IF(G_JY2), RES("y1", V_JY1, "m"), ENDIF,
+    DAT("E1", V_JE1, "m"), DAT("E2", V_JE2, "m"),
+    RES("dE = E1 - E2", V_JDE, "m"),
+    RES("P disipada", V_JP, "kW"),
+    STOP
+};
+static const mstep x_ex2_memo[] = {
+    SEC("DATOS"),
+    DAT("Q", V_JQ, "m3/s"), DAT("b", V_JB, "m"),
+    IFN(G_JY2), DAT("y1", V_JY1, "m"), ENDIF,
+    IF(G_JY2), DAT("y2", V_JY2, "m"), ENDIF,
+    SEC("CALCULOS"),
+    EQ("q", "Q/b", "{JQ}/{JB}", V_JQQ, "m2/s"),
+    IFN(G_JY2),
+      EQ("v1", "q/y1", "{JQQ}/{JY1}", V_JV1, "m/s"),
+      EQ("Fr1", "v1/sqrt(g y1)", "{JV1}/sqrt({G}({JY1}))", V_JFR1, 0),
+      LN("Cantidad de movimiento: q^2/(g y1) + y1^2/2", C_FG),
+      LN("   = q^2/(g y2) + y2^2/2", C_FG),
+      EQ("y2", "y1/2 (sqrt(1 + 8 Fr1^2) - 1)",
+         "{JY1}/2 (sqrt(1 + 8({JFR1})^2) - 1)", V_JY2, "m"),
+      EQ("v2", "q/y2", "{JQQ}/{JY2}", V_JV2, "m/s"),
+    ENDIF,
+    IF(G_JY2),
+      EQ("v2", "q/y2", "{JQQ}/{JY2}", V_JV2, "m/s"),
+      EQ("Fr2", "v2/sqrt(g y2)", "{JV2}/sqrt({G}({JY2}))", V_JFR2, 0),
+      EQ("y1", "y2/2 (sqrt(1 + 8 Fr2^2) - 1)",
+         "{JY2}/2 (sqrt(1 + 8({JFR2})^2) - 1)", V_JY1, "m"),
+      EQ("v1", "q/y1", "{JQQ}/{JY1}", V_JV1, "m/s"),
+      DAT("Fr1", V_JFR1, 0),
+    ENDIF,
+    EQ("E1", "y1 + v1^2/2g", "{JY1} + ({JV1})^2/(2({G}))", V_JE1, "m"),
+    EQ("E2", "y2 + v2^2/2g", "{JY2} + ({JV2})^2/(2({G}))", V_JE2, "m"),
+    EQ("dE", "E1 - E2", "{JE1} - {JE2}", V_JDE, "m"),
+    LN(" Comprobacion: (y2 - y1)^3/(4 y1 y2)", C_GRAY),
+    EQ("P", "gamma Q dE", "{GAM}({JQ})({JDE})/1000", V_JP, "kW"),
+    EQ("E2/E1", 0, "100({JE2})/{JE1}", V_JEFF, "%"),
+    SEC("RESULTADO"),
+    IFN(G_JY2), RES("y2", V_JY2, "m"), ENDIF,
+    IF(G_JY2), RES("y1", V_JY1, "m"), ENDIF,
+    RES("dE", V_JDE, "m"), RES("P disipada", V_JP, "kW"),
+    STOP
+};
+
+/* ---- EX-3 chorro ---- */
+static const mstep x_ex3_sum[] = {
+    RES("Q", V_EQLS, "l/s"),
+    DAT("v salida", V_EV, "m/s"),
+    DAT("f", V_EF, 0),
+    DAT("vx", V_EVX, "m/s"), DAT("vy", V_EVY, "m/s"),
+    RES("h max", V_EHM, "m"),
+    RES("Alcance R", V_ER, "m"),
+    DAT("t de vuelo", V_ET, "s"),
+    STOP
+};
+static const mstep x_ex3_memo[] = {
+    SEC("DATOS"),
+    DAT("H", V_EH, "m"), DAT("L", V_EL, "m"), DAT("D", V_ED, "m"),
+    DAT("ks", V_EKS, "m"), DAT("nu", V_NU, "m2/s"), DAT("Suma K", V_EK, 0),
+    IF(G_EK1), LN(" Incluye la energia cinetica de salida (+1)", C_GRAY), ENDIF,
+    IFN(G_EK1), LN(" Sin energia de salida (como la solucion)", C_GRAY), ENDIF,
+    DAT("theta", V_ETH, "grad"),
+    SEC("CALCULOS"),
+    LN("Caudal maximo (tuberia tipo B):", C_FG),
+    LN(" H = (f L/D + Suma K) v^2/2g", C_FG),
+    LN(" v = sqrt[2 g H/(f L/D + Suma K)]", C_FG),
+    IFN(G_EBIS), TAB(TB_B_COURSE), ENDIF,
+    IF(G_EBIS), TAB(TB_B_BIS), ENDIF,
+    DAT("f", V_EF, 0), DAT("Re", V_ERE, 0),
+    RES("v", V_EV, "m/s"),
+    RES("Q", V_EQLS, "l/s"),
+    LN("Trayectoria (mismo nivel de salida):", C_FG),
+    EQ("vx", "v cos(theta)", 0, V_EVX, "m/s"),
+    EQ("vy", "v sin(theta)", 0, V_EVY, "m/s"),
+    EQ("h max", "vy^2/2g", "({EVY})^2/(2({G}))", V_EHM, "m"),
+    EQ("R", "v^2 sin(2 theta)/g", 0, V_ER, "m"),
+    EQ("t", "2 vy/g", "2({EVY})/{G}", V_ET, "s"),
+    SEC("RESULTADO"),
+    RES("Q", V_EQLS, "l/s"), RES("h max", V_EHM, "m"), RES("R", V_ER, "m"),
+    SEC("OBSERVACIONES"), WARNS,
+    STOP
+};

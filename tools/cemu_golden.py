@@ -19,6 +19,11 @@ AUT = "C:/CEdev/bin/cemu-autotester.exe"
 
 def main():
     os.makedirs(RUN, exist_ok=True)
+    # v2.0: recompilar TGOLDEN siempre (si cambia la tabla de casos y no se
+    # recompila, los valores del eZ80 quedan desalineados con el PC)
+    env_make = dict(os.environ, PATH="C:/CEdev/bin;" + os.environ.get("PATH", ""))
+    subprocess.run(["make", "debug"], cwd=os.path.join(ROOT, "tests/cemu/golden"),
+                   env=env_make, capture_output=True)
     mp = open(os.path.join(ROOT, "tests/cemu/golden/bin/TGOLDEN.map")).read()
     m = re.search(r"0x00(d[0-9a-f]{5})\s+_golden_got\b", mp)
     if not m:

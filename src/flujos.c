@@ -36,6 +36,14 @@ static void weir_item(uint8_t r)
     scr_weir(r);
 }
 
+static void chan_item(uint8_t r)
+{
+    if (r == 3)
+        scr_drag(4);              /* placa plana y Stokes (EX-4) */
+    else
+        scr_chan(r);
+}
+
 static void help_item(uint8_t r)
 {
     (void)r;
@@ -68,11 +76,18 @@ void flujos_main(void)
         "Perfil de velocidades     (VE-6)",
         "Aguas abajo: energia      (VE-7)",
     };
+    static const char *const ch_items[] = {
+        "Venturi y manometro       (EX-1)",
+        "Salto hidraulico          (EX-2)",
+        "Chorro desde un tubo      (EX-3)",
+        "Placa plana y Stokes      (EX-4)",
+    };
     static const char *const help_items[] = { "Acerca de" };
     static menu_t m = { "FLUJOS EXTERNOS Y MEDICION", items, 8, 0 };
     static menu_t mar = { "ARRASTRE Y SUSTENTACION", ar_items, 6, 0 };
     static menu_t mh = { "AYUDA", help_items, 1, 0 };
     static menu_t mve = { "VERTEDORES Y ORIFICIOS", ve_items, 4, 0 };
+    static menu_t mch = { "CANALES Y MEDICION", ch_items, 4, 0 };
     int r;
     while (!ui_quit) {
         r = menu_run(&m);
@@ -88,7 +103,7 @@ void flujos_main(void)
         case 5: scr_settings(); break;
         case 0: sub_menu(&mar, drag_item); break;
         case 1: sub_menu(&mve, weir_item); break;
-        case 2: todo_alert(items[2], 5); break;
+        case 2: sub_menu(&mch, chan_item); break;
         case 3: scr_cat(0); break;
         case 4: todo_alert(items[4], 6); break;
         case 6: sub_menu(&mh, help_item); break;

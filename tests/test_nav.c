@@ -877,6 +877,61 @@ int main(int argc, char **argv)
         settings_default(&g_set);
     }
 
+    /* 5j. v2.0 fase 5: canales y medicion (EX-01 a EX-03) en FLUJOS */
+    {
+        settings_default(&g_set);
+        /* EX-01a: Venturi 285.75 mm, D2/D1 = 0.6, Q = 200 l/s, S = 4 */
+        T("3"); T("1"); K(K_PGUP); TE("285.75"); K(K_DOWN); TE("0.6"); TE("200");
+        K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("4"); K(K_F5);
+        runf();
+        check(has_line("> dp = p1 - p2 = 3266") && has_line("> h manometro = 1.1097"),
+              "EX-01a: dp = 32 660 Pa y h = 1.110 m (S - 1)");
+        T("3"); T("1"); K(K_PGDN); K(K_RIGHT); K(K_F5);
+        runf();
+        check(has_line("> h manometro = 0.8323") && has_line("examen"),
+              "EX-01a: h = 0.8323 m con la convencion del examen");
+        T("3"); T("1"); K(K_F5); K(K_F1);
+        runf();
+        check(has_line("gamma (v2^2 - v1^2)/(2g)") && has_line("dp/(S gamma)") && memo_ok_noobs(),
+              "EX-01: memoria con Bernoulli y el manometro");
+        /* EX-01b: Q = 260.64 l/s */
+        T("3"); T("1"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("260.64"); K(K_F5);
+        runf();
+        check(has_line("> dp = p1 - p2 = 5546") && has_line("> h manometro = 1.4135"),
+              "EX-01b: dp = 55 468 Pa, h = 1.414 m (S)");
+        /* EX-02: salto, Q = 12, b = 2, y1 = 0.4 */
+        T("3"); T("2"); K(K_PGUP); TE("12"); TE("2"); K(K_DOWN); TE("0.4");
+        runf();
+        check(has_line("> y2 = 4.0881") && has_line("> dE = E1 - E2 = 7.669") &&
+              has_line("> P disipada = 902.9"), "EX-02: y2 = 4.088 m, dE = 7.670 m, P = 902.9 kW");
+        T("3"); T("2"); K(K_F5); K(K_F1);
+        runf();
+        check(has_line("sqrt(1 + 8 Fr1^2)") && memo_ok_noobs(), "EX-02: memoria con cantidad de movimiento");
+        T("3"); T("2"); K(K_PGDN); TE("2");
+        runf();
+        check(starts(scr_msg, "Fr1 <= 1"), "EX-02: Fr1 <= 1, sin salto: mensaje");
+        T("3"); T("2"); K(K_PGDN); K(K_UP); K(K_RIGHT); K(K_DOWN); TE("4.0881958");
+        runf();
+        check(has_line("> y1 = 0.4 m") || has_line("> y1 = 0.3999"), "EX-02: dado y2 vuelve y1 = 0.4 m");
+        /* EX-03a: chorro, H = 7.5, L = 5, D = 30 mm, ks = 0.045 mm, SumK = 0 */
+        T("3"); T("3"); K(K_PGUP); TE("7.5"); TE("5"); TE("30"); TE("0.045"); TE("1.007E-6");
+        K(K_F5);
+        runf();
+        check(has_line("> Q = 4.3906") && has_line("> h max = 0.4916") && has_line("> Alcance R = 3.40"),
+              "EX-03a: Q = 4.391 l/s, h max = 0.4916 m, R = 3.406 m");
+        T("3"); T("3"); K(K_PGDN); K(K_UP); K(K_RIGHT); K(K_F5);
+        runf();
+        check(has_line("> Q = 3.89") && has_line("> h max = 0.387"), "EX-03b: con salida Q = 3.899 l/s");
+        T("3"); T("3"); K(K_F5); K(K_F1);
+        runf();
+        check(has_line("Caudal maximo (tuberia tipo B)") && memo_ok_noobs(), "EX-03: memoria con el tipo B");
+        /* EX-4 desde el menu de canales */
+        T("3"); T("4");
+        runf();
+        check(scr_has("PLACA PLANA Y STOKES"), "Canales 4: placa plana y Stokes");
+        settings_default(&g_set);
+    }
+
     /* 6. Ajustes: decimales, validaciones y archivo */
     T("7"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("3"); K(K_F5);
     run();

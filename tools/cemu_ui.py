@@ -145,10 +145,19 @@ STEPS_FLUJOS = [
     ("77_ve_aguas_abajo", ["clear", "clear", "4"] + TOP + ["right", "down"]
      + te("1.3333333") + ["right", "down"] + te("2", "1") + ["graph"]),
     ("78_ve_aguas_abajo_mem", ["y="]),
-    ("79_menu_vertedores", ["clear", "clear"]),
-    ("80_acerca_de_ram", ["clear", "7", "1"]),
-    ("81_confirmar_salida", ["clear", "clear", "clear"]),
-    ("82_fuera_de_la_app", ["enter", "delay"]),
+    # v2.0 fase 5: canales y medicion
+    ("79_ex01_venturi", ["clear", "clear", "clear", "3", "1"] + TOP + te("285.75")
+     + ["down"] + te("0.6", "200") + ["down", "down", "down"] + te("4") + ["graph"]),
+    ("80_ex01_memoria_p2", ["y=", "right"]),
+    ("81_ex02_salto", ["clear", "clear", "2"] + TOP + te("12", "2") + ["down"] + te("0.4")),
+    ("82_ex02_memoria", ["y="]),
+    ("83_ex03_chorro", ["clear", "clear", "3"] + TOP
+     + te("7.5", "5", "30", "0.045", "1.007E-6") + ["graph"]),
+    ("84_ex03_memoria_p2", ["y=", "right"]),
+    ("85_menu_canales", ["clear", "clear"]),
+    ("86_acerca_de_ram", ["clear", "7", "1"]),
+    ("87_confirmar_salida", ["clear", "clear", "clear"]),
+    ("88_fuera_de_la_app", ["enter", "delay"]),
 ]
 
 

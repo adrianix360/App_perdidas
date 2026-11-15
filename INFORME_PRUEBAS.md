@@ -757,3 +757,34 @@ Limitaciones conocidas: los sistemas no se guardan en Mis casos (solo la tuberí
 4. Los símbolos se escriben en ASCII (`nu`, `gamma`, `SumK`), sin fuente propia, como se acordó con Adrián.
 5. La app ocupa 4 archivos (lanzador, 2 AppVars y `PERDTXT`) y necesita unos 75 KB de RAM libre al ejecutar.
 6. arTIfiCE v2.1 se pierde con un reinicio de la RAM si no está archivado (recomendación en el README).
+
+---
+
+# Versión 2.0: sustentación y arrastre, vertedores y orificios, «Calcular f»
+
+## v2.0, fase 0: entorno, respaldo y decisiones (15 de noviembre de 2026)
+
+**Entorno.** CEdev v15.0 (`C:\CEdev`), gcc 16.2.0 (WinLibs), Python, CEmu con el ROM 5.8.4 y TI Connect CE 6.1.0.712: todo presente, no se instaló nada. La calculadora (OS 5.8.4) está conectada por USB.
+
+**Respaldo.** Etiqueta Git `v1.0-estable` (commit `c05f4bf`). Desde la calculadora se descargaron `PERDCAS` (170 B, 1 caso guardado, formato versión 1) y `PERDCFG` (55 B) a `respaldo_calc/2026-11-15/`.
+
+**Regresión de la v1.0 (antes de tocar el código).**
+
+| Prueba | Resultado |
+|---|---|
+| `tools/run_pc_tests.sh` (dorados `float` y `double`, aleatorios, interfaz simulada) | 191 pasan, 7 pasan por redondeo, 0 fallan; 96 de 96 comprobaciones de interfaz |
+| `tools/cemu_golden.py` (eZ80) | 191 pasan, 7 (r), 0 fallan; mayor diferencia eZ80 frente a PC 1,99e-5 |
+| `tools/cemu_ui.py --check` | 26 de 26 pantallas iguales |
+
+**Decisiones de Adrián (dudas de la sección 11 del prompt).**
+
+| Duda | Respuesta |
+|---|---|
+| Paracaídas (AR-01) | $C_D=1{,}3$ por defecto; 1,42 (copa) en el catálogo |
+| Cubo en agua (AR-03) | Área de referencia por defecto $A=\sqrt2\,D^2$ (proyectada); $D^2$ elegible. El caso del curso usa $\sqrt2D^2$ ($v_t=1{,}329$ m/s) |
+| Torre y tanque (AR-02) | Tabla de $Re>10^4$ (cilindro interpolado $L/D=15$, esfera 0,5) con aviso de crisis de arrastre |
+| Tarea 4-2 P2b | $Q=36$ l/s; cresta del rectangular a la altura $H$ de la parte a sobre el vértice; $C_d=0{,}6$ |
+| Venturi | Convención física $\Delta p=(S-1)\gamma h$ por defecto; la del examen 2025 queda como ajuste. Se usa el caudal que se teclee y la memoria advierte la diferencia con el caudal de diseño |
+| Chorro | $\sum K=0$ por defecto (como la solución); «+1 por energía cinética de salida» opcional |
+| Menú | Submenú «Flujos externos y medición» (arrastre, vertedores, canales); el principal queda con 9 entradas, todas con tecla 1 a 9 |
+| Material faltante | No hay foto de las tablas de $C_D$, ni enunciado del chorro, ni solución del examen 2017: el catálogo usa los valores del prompt, cada uno con su fuente |

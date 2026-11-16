@@ -130,7 +130,7 @@ enum { M_END = 0, M_SEC, M_DATA, M_EQ, M_RES, M_LINE, M_IF, M_IFN, M_ENDIF,
 enum { S_DATA, S_CALC, S_OBS, S_STATE, S_COUNT };
 #define PROG_SUM(t)  (S_COUNT + (t))
 #define PROG_MEMO(t) (S_COUNT + PT_COUNT + (t))
-#define HELP_COUNT   7
+#define HELP_COUNT   11  /* v2.0: + f, arrastre, vertedores, canales */
 #define PROG_HELP(i) (S_COUNT + 2 * PT_COUNT + (i))
 /* v2.0: programas de los modulos nuevos, despues de la ayuda */
 enum { XP_FRIC_SUM, XP_FRIC_MEMO,

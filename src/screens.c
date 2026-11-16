@@ -12,7 +12,7 @@
 #include "data/data.h"
 #include "pipe.h"
 
-#define HELP_COUNT_UI 7   /* temas en PERDTXT (memo_defs.h: HELP_COUNT) */
+#define HELP_COUNT_UI 7   /* temas de tuberias en PERDTXT (0..6)          */
 
 const char *const method_names[FM_COUNT] = {
     "Colebrook-White", "Swamee-Jain", "Haaland", "Goudar-Sonnad"
@@ -126,18 +126,30 @@ void scr_about(void)
 
 static void course_cases(void)
 {
+    static const char *const fnames[5] = {
+        "F-01 f: Re 20000, ks/D 1E-4 (ej. 3a)",
+        "F-02 f: Re 2E5, ks/D 1.5E-4 (ej. 3b)",
+        "F-03 f: 200 l/s, 285.75 mm (2025 P2)",
+        "F-04 f: Re 455180, PVC 200 mm",
+        "F-05 f: laminar, 20 mm, 0.02 l/s",
+    };
     static uint8_t cur;
     uint8_t i, k;
     int r;
     for (;;) {
         for (i = 0; i < EXAMPLES; i++)
             strcpy(list_line[i], examples[i].name);
+        for (i = 0; i < 5; i++)
+            strcpy(list_line[EXAMPLES + i], fnames[i]);
         r = list_pick("CASOS DEL CURSO", "ENTER carga los datos y calcula",
-                      EXAMPLES, cur, 0, &k);
+                      EXAMPLES + 5, cur, 0, &k);
         if (r < 0 || k != K_ENTER)
             return;
         cur = (uint8_t)r;
-        if (examples[r].tipo == PT_COUNT) {
+        if (r >= EXAMPLES) {
+            fric_preset((uint8_t)(r - EXAMPLES));
+            scr_fric_run(0, 0, 1);
+        } else if (examples[r].tipo == PT_COUNT) {
             scr_net_example(examples[r].n);
         } else {
             pipe_load_example(examples[r].tipo, examples[r].vals, examples[r].n);
@@ -158,11 +170,12 @@ static void scr_help(void)
         "Suma K y fuentes de datos",
         "Advertencias",
         "Erratas del material",
+        "Factor de friccion f",
         "Casos del curso (cargar)",
         "Acerca de",
     };
     static const char *const fk[5] = { "", "", "", "", "VOLVER" };
-    static menu_t m = { "AYUDA", items, 9, 0 };
+    static menu_t m = { "AYUDA", items, 10, 0 };
     int r;
     while (!ui_quit) {
         r = menu_run(&m);
@@ -172,13 +185,13 @@ static void scr_help(void)
             scr_settings();
             continue;
         }
-        if (r < HELP_COUNT_UI) {
+        if (r <= HELP_COUNT_UI) {          /* 7: Factor de friccion f */
             if (!help_topic((uint8_t)r)) {
                 ui_alert("Ayuda", "Falta el archivo PERDTXT.", "Envielo con TI Connect CE", C_ERR);
                 continue;
             }
             view_run("AYUDA", fk);
-        } else if (r == HELP_COUNT_UI) {
+        } else if (r == HELP_COUNT_UI + 1) {
             course_cases();
         } else {
             scr_about();

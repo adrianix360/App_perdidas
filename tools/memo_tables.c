@@ -545,11 +545,29 @@ static const mstep h_err[] = {
     TX("  l/s (la solucion uso 285.00 mm)"),
     TX("2024 y 2025: D exacto con Swamee-Jain"),
     TG("  (CW difiere 0.04 %: ver Ajustes)"),
+    LN("v2.0 (flujos externos y medicion):", C_TITLE),
+    TX("2017 P2: sin solucion; alfa y CD se"),
+    TX("  leen de la grafica (entrada manual)"),
+    TX("T4-2 P1: no da CD; paracaidas 1.3"),
+    TG("  (copa hueca 1.42 en el catalogo)"),
+    TX("T4-2 P4: Re sobre la crisis de"),
+    TX("  arrastre; se usa la tabla Re > 1E4"),
+    TX("T4-2 P5: cubo de arista, A = sqrt(2)D^2"),
+    TG("  (las tablas usan D^2: 1.580 m/s)"),
+    TX("T4-2 P2b: Q = 16 + 20 = 36 l/s y cresta"),
+    TX("  a la H de la parte a; Cd 0.6"),
+    TX("2025 P4c: la solucion uso Q de diseno"),
+    TX("  (200 l/s) y dp = S gamma h"),
+    TX("2025 chorro: Suma K = 0, sin energia"),
+    TX("  de salida (con ella, 3.899 l/s)"),
     STOP
 };
 
+#include "memo_help2.c"
+
 static const mstep *const help_p[HELP_COUNT] = {
-    h_keys, h_types, h_form, h_power, h_lib, h_warn, h_err
+    h_keys, h_types, h_form, h_power, h_lib, h_warn, h_err,
+    h_fric, h_drag, h_weir, h_chan
 };
 
 /* ================================================================== */

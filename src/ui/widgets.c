@@ -25,8 +25,8 @@ int menu_run(menu_t *m)
         ui_begin(m->title, APP_NAME);
         for (i = 0; i < m->n && i < UI_ROWS - 2; i++) {
             bool sel = (i == m->cur);
-            line[0] = ' ';
-            line[1] = (char)('1' + i);
+            line[0] = i >= 9 ? '1' : ' ';         /* 10, 11...: sin tecla */
+            line[1] = (char)(i >= 9 ? '0' + (i - 9) : '1' + i);
             line[2] = ' ';
             strncpy(line + 3, m->items[i], UI_COLS - 4);
             line[UI_COLS - 1] = 0;

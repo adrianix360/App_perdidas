@@ -60,11 +60,15 @@ extern const char *const method_names[FM_COUNT];
 enum { PT_A = 0, PT_B, PT_D, PT_C, PT_F, PT_E, PT_I, PT_COUNT };
 void scr_pipe(uint8_t tipo);
 void pipe_load_example(uint8_t tipo, const real *v, uint8_t n);
-bool help_topic(uint8_t i);
+bool help_topic(uint8_t i);        /* memo_run.c */
 
 /* cases.c: casos guardados (AppVar PERDCAS) */
 #define CASES_MAX 20
 #define CASE_NAME 8
+/* v2.0: tipos de caso (PT_* son 0..6) y tamano maximo de sus datos */
+enum { KT_FRIC = PT_COUNT, KT_DRAG, KT_WEIR = KT_DRAG + 5, KT_CHAN = KT_WEIR + 4,
+       KT_COUNT = KT_CHAN + 3 };
+#define CASE_BLOB 424
 extern bool cases_dirty;
 uint8_t cases_load(void);      /* 0 ok, 1 no existe, 2 danado */
 bool cases_write(void);
@@ -80,6 +84,22 @@ void scr_net_example(uint8_t idx);
 /* scr_fric.c (v2.0): Calcular f. dest/dset: campo "f dado" del
  * formulario que la abrio ([USAR f]); NULL desde el menu principal */
 void scr_fric(real *dest, uint8_t *dset);
+void scr_fric_run(real *dest, uint8_t *dset, uint8_t autocalc);
+/* datos de cada modulo para Mis casos: guardar (devuelve el largo) y
+ * cargar (false si el largo no coincide) */
+/* casos del curso: llenan los datos del modulo; devuelven su tipo */
+void fric_preset(uint8_t k);
+uint8_t drag_preset(uint8_t k);
+uint8_t weir_preset(uint8_t k);
+uint8_t chan_preset(uint8_t k);
+uint16_t fric_save(uint8_t *b);
+bool fric_load(const uint8_t *b, uint16_t n);
+uint16_t drag_save(uint8_t *b);
+bool drag_load(const uint8_t *b, uint16_t n);
+uint16_t weir_save(uint8_t *b);
+bool weir_load(const uint8_t *b, uint16_t n);
+uint16_t chan_save(uint8_t *b);
+bool chan_load(const uint8_t *b, uint16_t n);
 
 /* scr_cat.c (v2.0): catalogo de C_D. use = 1: selector con [USAR];
  * devuelve la figura elegida (C_D en cat_sel_cd) o -1 */
@@ -92,13 +112,16 @@ void flujos_main(void);
 /* scr_drag.c (v2.0): arrastre y sustentacion. 0 AR-1, 1 AR-2, 2 AR-3,
  * 3 AR-4, 4 placa plana y Stokes */
 void scr_drag(uint8_t t);
+void scr_drag_run(uint8_t t, uint8_t autocalc);
 
 /* scr_weir.c (v2.0): vertedores y orificios. 0 simple (VE-1, VE-2,
  * VE-5), 1 compuesta (VE-4), 2 perfil (VE-6), 3 aguas abajo (VE-7) */
 void scr_weir(uint8_t t);
+void scr_weir_run(uint8_t t, uint8_t autocalc);
 
 /* scr_chan.c (v2.0): canales y medicion. 0 Venturi, 1 salto, 2 chorro */
 void scr_chan(uint8_t t);
+void scr_chan_run(uint8_t t, uint8_t autocalc);
 
 /* scr_lib.c: biblioteca */
 bool lib_pick_material(void);

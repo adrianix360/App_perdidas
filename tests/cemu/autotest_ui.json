@@ -544,7 +544,8 @@
   "hash|31",
   "key|enter",
   "key|8",
-  "key|9",
+  "key|up",
+  "key|enter",
   "delay|700",
   "hash|32",
   "key|clear",
@@ -763,7 +764,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "61C36A77"
+    "3AE2A277"
    ]
   },
   "27": {
@@ -771,7 +772,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "F6F47D7D"
+    "ADD5B57D"
    ]
   },
   "28": {
@@ -795,7 +796,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "64006620"
+    "3F21AE20"
    ]
   },
   "31": {
@@ -811,7 +812,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "6E391169"
+    "CEE01DDC"
    ]
   },
   "33": {
@@ -819,7 +820,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "177FDF6F"
+    "190129EC"
    ]
   },
   "34": {
@@ -827,7 +828,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "E2CDC558"
+    "708E5B24"
    ]
   }
  }

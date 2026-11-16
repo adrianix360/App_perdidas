@@ -456,7 +456,7 @@ static void sketch(void)
 
 static void result_loop(void)
 {
-    static const char *fk_sum[5] = { "MEMORIA", "", "", "", "VOLVER" };
+    static const char *fk_sum[5] = { "MEMORIA", "", "GUARDAR", "", "VOLVER" };
     static const char *const fk_memo[5] = { "RESUMEN", "", "", "", "VOLVER" };
     bool memo = false;
     uint8_t k;
@@ -466,6 +466,8 @@ static void result_loop(void)
         k = view_run(titles[tipo], memo ? fk_memo : fk_sum);
         if (k == K_F1)
             memo = !memo;
+        else if (k == K_F3 && !memo)
+            case_save_ui((uint8_t)(KT_WEIR + tipo));
         else if (k == K_F2 && tipo == WT_COMP)
             sketch();
         else if (k == K_MODE)
@@ -478,6 +480,11 @@ static void result_loop(void)
 }
 
 void scr_weir(uint8_t t)
+{
+    scr_weir_run(t, 0);
+}
+
+void scr_weir_run(uint8_t t, uint8_t autocalc)
 {
     static uint8_t cur[WT_COUNT];
     form_t fm;
@@ -512,7 +519,12 @@ void scr_weir(uint8_t t)
                            : "Bernoulli: E2 = E1 - dz";
     for (;;) {
         fm_now = &fm;
-        k = form_run(&fm);
+        if (autocalc) {
+            autocalc = 0;
+            k = K_F5;
+        } else {
+            k = form_run(&fm);
+        }
         fm_now = 0;
         if (k == K_QUIT || k == K_CLEAR)
             break;
@@ -535,4 +547,80 @@ void scr_weir(uint8_t t)
         }
     }
     cur[t] = fm.cur;
+}
+
+/* ---- Mis casos ---- */
+uint16_t weir_save(uint8_t *b)
+{
+    memcpy(b, &wi, sizeof wi);
+    return sizeof wi;
+}
+
+bool weir_load(const uint8_t *b, uint16_t n)
+{
+    if (n != sizeof wi)
+        return false;
+    memcpy(&wi, b, n);
+    uint8_t i;
+    if (wi.etype >= WE_COUNT) wi.etype = 0;
+    wi.mode &= 1; wi.qunit &= 1; wi.cmode &= 1; wi.pmode &= 1; wi.smode &= 1;
+    if (!(wi.ne >= 1 && wi.ne <= NE)) wi.ne = 2;
+    if (!(wi.np >= 2 && wi.np <= NP)) wi.np = 5;
+    for (i = 0; i < NE; i++)
+        if (wi.e[i].type >= WE_COUNT) wi.e[i].type = 0;
+    wi.init = 1;
+    return true;
+}
+
+/* ---- Casos del curso (prompt v2, sec. 8.2). Devuelve el tipo ---- */
+#define SW(v, x) do { wi.v = (x); wi.s##v = 1; } while (0)
+static void el(uint8_t i, uint8_t type, real n, real d1, real z)
+{
+    wi.e[i].type = type;
+    wi.e[i].n = n;
+    wi.e[i].d1 = d1;
+    wi.e[i].z = z;
+    wi.e[i].sn = wi.e[i].sd1 = wi.e[i].sz = 1;
+}
+
+uint8_t weir_preset(uint8_t k)
+{
+    static const uint8_t tipo_of[8] = { WT_COMP, WT_COMP, WT_SIMPLE, WT_SIMPLE,
+                                        WT_SIMPLE, WT_COMP, WT_PROF, WT_SIMPLE };
+    memset(&wi, 0, sizeof wi);
+    wi.init = 1;
+    SW(cd, g_set.cd_weir);
+    SW(ne, 2);
+    SW(np, 5);
+    switch (k) {
+    case 0: case 1:                          /* examen 2024 P5 */
+        el(0, WE_TRI, 1, 90, (real)1.4);
+        el(1, WE_ORC, 3, (real)0.2, (real)0.1);
+        if (k == 0) {
+            SW(h, 2);
+        } else {
+            wi.cmode = 1; wi.qunit = 1; SW(Q, (real)0.5);
+        }
+        break;
+    case 2: case 3: case 4: case 7:          /* triangular simple */
+        wi.etype = WE_TRI; wi.mode = 1;
+        SW(d1, k == 4 ? 60 : 90);
+        SW(Q, k == 2 ? 200 : k == 3 ? (real)260.64 : k == 4 ? 16 : (real)1.3333333);
+        if (k == 7) {
+            wi.qunit = 1; SW(hup, 1);
+        }
+        break;
+    case 5:                                  /* T4-2 P2b: reparto */
+        wi.cmode = 1; SW(Q, 36);
+        el(0, WE_TRI, 1, 60, 0);
+        el(1, WE_RECT, 1, (real)1.3, (real)0.20724);
+        break;
+    default:                                 /* T4-2 P3a: perfil */
+        wi.b = 2; wi.sb_ = 1;
+        wi.ph = 1; wi.sph = 1;
+        SW(k, 2);
+        wi.pn = 2; wi.spn = 1;
+        break;
+    }
+    return tipo_of[k < 8 ? k : 7];
 }

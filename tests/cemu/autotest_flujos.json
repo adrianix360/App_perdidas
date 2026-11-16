@@ -538,18 +538,38 @@
   "hash|52",
   "key|clear",
   "key|7",
-  "key|1",
+  "key|5",
   "delay|700",
   "hash|53",
+  "key|2nd",
+  "key|up",
+  "key|2nd",
+  "key|up",
+  "key|down",
+  "key|down",
+  "key|down",
+  "key|enter",
+  "delay|700",
+  "hash|54",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "key|1",
+  "delay|700",
+  "hash|55",
+  "key|clear",
+  "key|6",
+  "delay|700",
+  "hash|56",
   "key|clear",
   "key|clear",
   "key|clear",
   "delay|700",
-  "hash|54",
+  "hash|57",
   "key|enter",
   "delay|1500",
   "delay|700",
-  "hash|55"
+  "hash|58"
  ],
  "hashes": {
   "1": {
@@ -749,7 +769,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "88F10EDB"
+    "D3D0C6DB"
    ]
   },
   "26": {
@@ -757,7 +777,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "D9520586"
+    "8273CD86"
    ]
   },
   "27": {
@@ -773,7 +793,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "3002A62F"
+    "85138C2"
    ]
   },
   "29": {
@@ -789,7 +809,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "1CF27829"
+    "47D3B029"
    ]
   },
   "31": {
@@ -797,7 +817,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "23715A45"
+    "1B22C4A8"
    ]
   },
   "32": {
@@ -805,7 +825,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "FA1C53A2"
+    "C24FCD4F"
    ]
   },
   "33": {
@@ -821,7 +841,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "C2C4381B"
+    "99E5F01B"
    ]
   },
   "35": {
@@ -829,7 +849,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "A55D06ED"
+    "FE7CCEED"
    ]
   },
   "36": {
@@ -845,7 +865,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "7C9D60E3"
+    "44CEFE0E"
    ]
   },
   "38": {
@@ -853,7 +873,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "2CE74567"
+    "14B4DB8A"
    ]
   },
   "39": {
@@ -861,7 +881,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "4C885922"
+    "74DBC7CF"
    ]
   },
   "40": {
@@ -869,7 +889,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "9CAC786F"
+    "A4FFE682"
    ]
   },
   "41": {
@@ -877,7 +897,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "D36F97C8"
+    "EB3C0925"
    ]
   },
   "42": {
@@ -885,7 +905,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "FC76596D"
+    "C425C780"
    ]
   },
   "43": {
@@ -893,7 +913,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "FAD5A1E"
+    "37FEC4F3"
    ]
   },
   "44": {
@@ -901,7 +921,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "AEC8B2E8"
+    "969B2C05"
    ]
   },
   "45": {
@@ -909,7 +929,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "7A2C4E18"
+    "427FD0F5"
    ]
   },
   "46": {
@@ -917,7 +937,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "DF83C23F"
+    "E7D05CD2"
    ]
   },
   "47": {
@@ -933,7 +953,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "C7064D6E"
+    "9C27856E"
    ]
   },
   "49": {
@@ -941,7 +961,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "8D90B83"
+    "53F8C383"
    ]
   },
   "50": {
@@ -949,7 +969,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "F6F0E855"
+    "ADD12055"
    ]
   },
   "51": {
@@ -969,23 +989,47 @@
    ]
   },
   "53": {
-   "description": "86_acerca_de_ram",
+   "description": "86_casos_del_curso",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "BE0BE332"
+    "95D5D728"
    ]
   },
   "54": {
-   "description": "87_confirmar_salida",
+   "description": "87_caso_ar04",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "343B2162"
+    "6B380C47"
    ]
   },
   "55": {
-   "description": "88_fuera_de_la_app",
+   "description": "88_ayuda_arrastre",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "BBF41824"
+   ]
+  },
+  "56": {
+   "description": "89_acerca_de_ram",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "49281CA1"
+   ]
+  },
+  "57": {
+   "description": "90_confirmar_salida",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "806E88C4"
+   ]
+  },
+  "58": {
+   "description": "91_fuera_de_la_app",
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [

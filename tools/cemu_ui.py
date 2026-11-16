@@ -13,11 +13,17 @@ import json, os, re, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FLUJOS = "--flujos" in sys.argv
-RUN = "C:/dev/build/cemu_flujos" if FLUJOS else "C:/dev/build/cemu_ui"
+# v2.0: migracion con los archivos 1.0 reales de la calculadora (respaldo)
+MIGR = "--migr" in sys.argv
+BACKUP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                      "respaldo_calc", "2026-11-15")
+RUN = ("C:/dev/build/cemu_migr" if MIGR else "C:/dev/build/cemu_flujos" if FLUJOS
+       else "C:/dev/build/cemu_ui")
 ROM = "C:/dev/tools/CEmu/ti84ce.rom"
 LIBS = "C:/dev/tools/clibs/clibs"
 AUT = "C:/CEdev/bin/cemu-autotester.exe"
-SAVED = os.path.join(ROOT, "tests/cemu/autotest_flujos.json" if "--flujos" in sys.argv
+SAVED = os.path.join(ROOT, "tests/cemu/autotest_migr.json" if "--migr" in sys.argv
+                     else "tests/cemu/autotest_flujos.json" if "--flujos" in sys.argv
                      else "tests/cemu/autotest_ui.json")
 
 # El autotester de CEdev v15.0 solo acepta los simbolos (no "dot", "add"...)
@@ -91,7 +97,7 @@ STEPS = [
     ("30_calc_f_F03", ["clear", "window", "down"] + te("200") + ["down"]
      + te("285.75", "0.0015", "1E-6") + ["graph"]),
     ("31_aviso_flujos", ["clear", "clear", "4"]),
-    ("32_acerca_de_ram", ["enter", "8", "9"]),
+    ("32_acerca_de_ram", ["enter", "8", "up", "enter"]),
     ("33_confirmar_salida", ["clear", "clear", "clear"]),
     ("34_fuera_de_la_app", ["enter", "delay"]),
 ]
@@ -155,14 +161,29 @@ STEPS_FLUJOS = [
      + te("7.5", "5", "30", "0.045", "1.007E-6") + ["graph"]),
     ("84_ex03_memoria_p2", ["y=", "right"]),
     ("85_menu_canales", ["clear", "clear"]),
-    ("86_acerca_de_ram", ["clear", "7", "1"]),
-    ("87_confirmar_salida", ["clear", "clear", "clear"]),
-    ("88_fuera_de_la_app", ["enter", "delay"]),
+    # v2.0 fase 6: casos del curso y ayuda
+    ("86_casos_del_curso", ["clear", "7", "5"]),
+    ("87_caso_ar04", ["2nd", "up", "2nd", "up", "down", "down", "down", "enter"]),
+    ("88_ayuda_arrastre", ["clear", "clear", "clear", "1"]),
+    ("89_acerca_de_ram", ["clear", "6"]),
+    ("90_confirmar_salida", ["clear", "clear", "clear"]),
+    ("91_fuera_de_la_app", ["enter", "delay"]),
 ]
 
 
+STEPS_MIGR = [
+    ("01_menu_principal", ["enter"]),
+    ("02_mis_casos_migrados", ["6"]),
+    ("03_caso_v1_cargado", ["enter"]),
+    ("04_ajustes_migrados", ["mode"]),
+    ("05_confirmar_salida", ["clear", "clear", "clear", "clear", "clear"]),
+    ("06_fuera_de_la_app", ["enter", "delay"]),
+]
+
 if FLUJOS:
     STEPS = STEPS_FLUJOS
+if MIGR:
+    STEPS = STEPS_MIGR
 # lanzador y AppVars de codigo (PERDIDA0/1, FLUJOS0/1...), el .8xp al final
 _P = "FLUJOS" if FLUJOS else "PERDIDAS"
 PROG_FILES = sorted(f for f in os.listdir(os.path.join(ROOT, "bin"))
@@ -179,7 +200,8 @@ def build_cfg(crcs=None):
         hashes[str(i)] = {"description": name, "start": "vram_start",
                           "size": "vram_16_size",
                           "expected_CRCs": [crcs[name]] if crcs else ["00000000"]}
-    return {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp"] + PROG_FILES + ["PERDTXT.8xv", "PERDGFX.8xv"],
+    extra = ["PERDCAS.8xv", "PERDCFG.8xv"] if MIGR else []
+    return {"rom": ROM, "transfer_files": ["arTIfiCE_v2.1.8xp"] + PROG_FILES + ["PERDTXT.8xv", "PERDGFX.8xv"] + extra,
             "target": {"name": "A", "isASM": False}, "delay_after_key": 150,
             "sequence": seq, "hashes": hashes}
 
@@ -194,6 +216,9 @@ def main():
         shutil.copy(os.path.join(ROOT, "bin", f), RUN)
     shutil.copy(os.path.join(ROOT, "bin/PERDTXT.8xv"), RUN)
     shutil.copy(os.path.join(ROOT, "bin/PERDGFX.8xv"), RUN)
+    if MIGR:
+        for f in ("PERDCAS.8xv", "PERDCFG.8xv"):
+            shutil.copy(os.path.join(BACKUP, f), RUN)
     crcs = None
     if check:
         crcs = {}

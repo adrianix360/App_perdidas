@@ -180,7 +180,7 @@ static const char *area_of(uint8_t sfig, real fig, uint8_t sA, real A, uint8_t s
         *out = A;
         return 0;
     }
-    if (!sfig)
+    if (!sfig || !(fig >= 1 && fig <= CAT_N))
         return "Falta el area A (o la figura)";
     ar = drag_shapes[(uint8_t)fig - 1].area;
     if (!sD || ((ar == AR_LD || ar == AR_BH) && !sL))
@@ -191,6 +191,8 @@ static const char *area_of(uint8_t sfig, real fig, uint8_t sA, real A, uint8_t s
 
 static uint8_t kind_of(uint8_t sfig, real fig)
 {
+    if (!(fig >= 1 && fig <= CAT_N))
+        sfig = 0;
     return sfig ? drag_shapes[(uint8_t)fig - 1].kind : DK_GENERIC;
 }
 
@@ -251,8 +253,8 @@ static const char *compute(void)
         memo_V[V_LREF] = Lr;
         MSETF(G_DFIG, di.sfig);
         MSETF(G_DACALC, !di.sA);
-        memo_txt = di.sfig ? area_txt[drag_shapes[(uint8_t)di.fig - 1].area] : "";
-        memo_V[V_KST] = di.sfig ? drag_shapes[(uint8_t)di.fig - 1].stokes : 0;
+        memo_txt = (di.sfig && di.fig >= 1 && di.fig <= CAT_N) ? area_txt[drag_shapes[(uint8_t)di.fig - 1].area] : "";
+        memo_V[V_KST] = (di.sfig && di.fig >= 1 && di.fig <= CAT_N) ? drag_shapes[(uint8_t)di.fig - 1].stokes : 0;
         if (tipo == DT_AR1) {
             memo_V[V_QDYN] = drag_q(rho, v);
             memo_V[V_FD] = drag_force(rho, cd, A, v);
@@ -415,7 +417,7 @@ static void sketch(void)
 /* ------------------------------------------------------------------ */
 static void result_loop(void)
 {
-    static const char *fk_sum[5] = { "MEMORIA", "", "", "", "VOLVER" };
+    static const char *fk_sum[5] = { "MEMORIA", "", "GUARDAR", "", "VOLVER" };
     static const char *const fk_memo[5] = { "RESUMEN", "", "", "", "VOLVER" };
     bool memo = false;
     uint8_t k;
@@ -425,6 +427,8 @@ static void result_loop(void)
         k = view_run(titles[tipo], memo ? fk_memo : fk_sum);
         if (k == K_F1)
             memo = !memo;
+        else if (k == K_F3 && !memo)
+            case_save_ui((uint8_t)(KT_DRAG + tipo));
         else if (k == K_F2 && tipo == DT_AR3)
             sketch();
         else if (k == K_MODE)
@@ -467,6 +471,11 @@ static void pick_cd(form_t *fm)
 
 void scr_drag(uint8_t t)
 {
+    scr_drag_run(t, 0);
+}
+
+void scr_drag_run(uint8_t t, uint8_t autocalc)
+{
     static uint8_t cur[DT_COUNT];
     form_t fm;
     uint8_t k;
@@ -495,7 +504,12 @@ void scr_drag(uint8_t t)
                           : "Fluido Aire o Agua llena rho y nu";
     for (;;) {
         fm_now = &fm;
-        k = form_run(&fm);
+        if (autocalc) {
+            autocalc = 0;
+            k = K_F5;
+        } else {
+            k = form_run(&fm);
+        }
         fm_now = 0;
         if (k == K_QUIT || k == K_CLEAR)
             break;
@@ -522,4 +536,71 @@ void scr_drag(uint8_t t)
         }
     }
     cur[t] = fm.cur;
+}
+
+/* ---- Mis casos ---- */
+uint16_t drag_save(uint8_t *b)
+{
+    memcpy(b, &di, sizeof di);
+    return sizeof di;
+}
+
+bool drag_load(const uint8_t *b, uint16_t n)
+{
+    if (n != sizeof di)
+        return false;
+    memcpy(&di, b, n);
+    if (di.fluid > 2) di.fluid = 0;
+    if (di.vunit > 2) di.vunit = 0;
+    di.lift &= 1; di.kase &= 1; di.faces &= 1;
+    if (di.regime > 3) di.regime = 0;
+    if (!(di.nb >= 1 && di.nb <= NB)) di.nb = 2;
+    if (!(di.nw >= 1 && di.nw <= 4)) di.nw = 2;
+    di.init = 1;
+    return true;
+}
+
+/* ---- Casos del curso (prompt v2, sec. 8.1). Devuelve el tipo ---- */
+#define SD(v, x) do { di.v = (x); di.s##v = 1; } while (0)
+uint8_t drag_preset(uint8_t k)
+{
+    static const uint8_t tipo_of[6] = { DT_AR2, DT_AR3, DT_AR2, DT_AR4, DT_PL, DT_PL };
+    memset(&di, 0, sizeof di);
+    di.init = 1;
+    SD(nw, 2);
+    SD(nb, 2);
+    SD(rho, (real)1.2);
+    SD(nu, (real)1.5e-5);
+    switch (k) {
+    case 0:                                  /* paracaidista, T4-2 P1 */
+        SD(W, 950); SD(cd, (real)1.3); SD(fig, 5); SD(D, 8);
+        break;
+    case 1:                                  /* torre y tanque, T4-2 P4 */
+        SD(V, 100); di.vunit = 1;
+        di.b[0].cd = (real)0.9166667; di.b[0].fig = 11; di.b[0].D = 2;
+        di.b[0].L = 30; di.b[0].y = 15;
+        di.b[1].cd = (real)0.5; di.b[1].fig = 1; di.b[1].D = 12; di.b[1].y = 36;
+        di.b[0].scd = di.b[0].sfig = di.b[0].sD = di.b[0].sL = di.b[0].sy = 1;
+        di.b[1].scd = di.b[1].sfig = di.b[1].sD = di.b[1].sy = 1;
+        break;
+    case 2:                                  /* cubo en agua, T4-2 P5 */
+        di.fluid = 1; SD(rho, 1000); SD(nu, (real)1e-6);
+        SD(W, (real)19.8); SD(vol, (real)0.001); SD(cd, (real)0.8); SD(fig, 10);
+        SD(D, (real)0.1);
+        break;
+    case 3:                                  /* A-330, examen 2017 P2 */
+        SD(W, (real)3.9e6); SD(V, 480); di.vunit = 2; SD(h, 10675);
+        SD(Aw, (real)180.8); SD(cdf, 1); SD(Df, (real)5.28);
+        break;
+    case 4:                                  /* esfera de Stokes */
+        di.kase = 1; di.fluid = 1; SD(rho, 1000); SD(nu, (real)1e-6);
+        SD(V, (real)0.001); SD(D, (real)0.001);
+        break;
+    default:                                 /* placa plana en aire */
+        SD(V, 10); SD(D, 2); SD(L, 1); di.regime = PL_TURB;
+        break;
+    }
+    last_fluid = di.fluid;
+    last_fig = (uint8_t)di.fig;
+    return tipo_of[k < 6 ? k : 5];
 }

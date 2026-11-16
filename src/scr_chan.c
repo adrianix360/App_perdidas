@@ -194,7 +194,7 @@ static const char *compute(void)
 
 static void result_loop(void)
 {
-    static const char *const fk_sum[5] = { "MEMORIA", "", "", "", "VOLVER" };
+    static const char *const fk_sum[5] = { "MEMORIA", "", "GUARDAR", "", "VOLVER" };
     static const char *const fk_memo[5] = { "RESUMEN", "", "", "", "VOLVER" };
     bool memo = false;
     uint8_t k;
@@ -203,6 +203,8 @@ static void result_loop(void)
         k = view_run(titles[tipo], memo ? fk_memo : fk_sum);
         if (k == K_F1)
             memo = !memo;
+        else if (k == K_F3 && !memo)
+            case_save_ui((uint8_t)(KT_CHAN + tipo));
         else if (k == K_MODE)
             scr_settings();
         else
@@ -213,6 +215,11 @@ static void result_loop(void)
 }
 
 void scr_chan(uint8_t t)
+{
+    scr_chan_run(t, 0);
+}
+
+void scr_chan_run(uint8_t t, uint8_t autocalc)
 {
     static uint8_t cur[CT_COUNT];
     form_t fm;
@@ -244,7 +251,12 @@ void scr_chan(uint8_t t)
     fm.hint = t == CT_VENT ? "Use el Q que pide el enunciado"
             : t == CT_JUMP ? "Canal rectangular" : "theta sobre la horizontal";
     for (;;) {
-        k = form_run(&fm);
+        if (autocalc) {
+            autocalc = 0;
+            k = K_F5;
+        } else {
+            k = form_run(&fm);
+        }
         if (k == K_QUIT || k == K_CLEAR)
             break;
         if (k == K_F4 || k == K_MODE) {
@@ -266,4 +278,44 @@ void scr_chan(uint8_t t)
         }
     }
     cur[t] = fm.cur;
+}
+
+/* ---- Mis casos ---- */
+uint16_t chan_save(uint8_t *b)
+{
+    memcpy(b, &ci, sizeof ci);
+    return sizeof ci;
+}
+
+bool chan_load(const uint8_t *b, uint16_t n)
+{
+    if (n != sizeof ci)
+        return false;
+    memcpy(&ci, b, n);
+    ci.qunit &= 1; ci.conv &= 1; ci.ymode &= 1; ci.exitk &= 1;
+    ci.init = 1;
+    return true;
+}
+
+/* ---- Casos del curso (prompt v2, sec. 8.3). Devuelve el tipo ---- */
+#define SC(v, x) do { ci.v = (x); ci.s##v = 1; } while (0)
+uint8_t chan_preset(uint8_t k)
+{
+    memset(&ci, 0, sizeof ci);
+    ci.init = 1;
+    SC(Cv, 1); SC(nu, (real)1e-6); SC(K, 0); SC(th, 30);
+    ci.conv = g_set.mano;
+    switch (k) {
+    case 0:                                  /* Venturi, 2025 P4c */
+        SC(D1, (real)285.75); SC(beta, (real)0.6); SC(Q, 200); SC(S, 4);
+        break;
+    case 1:                                  /* salto, 2017 P3 */
+        SC(Q, 12); SC(b, 2); SC(y, (real)0.4);
+        break;
+    default:                                 /* chorro, 2025 */
+        SC(H, (real)7.5); SC(L, 5); SC(D, 30); SC(ks, (real)0.045);
+        SC(nu, (real)1.007e-6);
+        break;
+    }
+    return k < 3 ? k : 2;
 }

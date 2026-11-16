@@ -157,7 +157,7 @@ static const char *compute(void)
 /* Devuelve true si se uso [USAR f] */
 static bool result_loop(real *dest, uint8_t *dset)
 {
-    static const char *fk_sum[5] = { "MEMORIA", "", "", "", "VOLVER" };
+    static const char *fk_sum[5] = { "MEMORIA", "", "GUARDAR", "", "VOLVER" };
     static const char *const fk_memo[5] = { "RESUMEN", "", "", "", "VOLVER" };
     bool memo = false;
     uint8_t k;
@@ -176,6 +176,8 @@ static bool result_loop(real *dest, uint8_t *dset)
             strcat(l2, fmt_real(*dest, g_set.dec, num));
             ui_alert("USAR f", "Se copio al formulario:", l2, C_OK);
             return true;
+        } else if (k == K_F3 && !memo) {
+            case_save_ui(KT_FRIC);
         } else if (k == K_MODE) {
             scr_settings();
             compute();          /* el metodo pudo cambiar */
@@ -188,6 +190,11 @@ static bool result_loop(real *dest, uint8_t *dset)
 }
 
 void scr_fric(real *dest, uint8_t *dset)
+{
+    scr_fric_run(dest, dset, 0);
+}
+
+void scr_fric_run(real *dest, uint8_t *dset, uint8_t autocalc)
 {
     static uint8_t cur;
     form_t fm;
@@ -211,7 +218,12 @@ void scr_fric(real *dest, uint8_t *dset)
     fm.on_commit = mode_changed;
     for (;;) {
         fm_now = &fm;
-        k = form_run(&fm);
+        if (autocalc) {
+            autocalc = 0;
+            k = K_F5;
+        } else {
+            k = form_run(&fm);
+        }
         fm_now = 0;
         if (k == K_QUIT || k == K_CLEAR)
             break;
@@ -259,4 +271,43 @@ void scr_fric(real *dest, uint8_t *dset)
     cur = fm.cur;
     if (g_set.h.method != m0)
         g_set_dirty = true;
+}
+
+/* ---- Mis casos: modo, Re, ks/D... y los datos de tuberia (pin) ---- */
+uint16_t fric_save(uint8_t *b)
+{
+    memcpy(b, &fi, sizeof fi);
+    memcpy(b + sizeof fi, &pin, sizeof pin);
+    return (uint16_t)(sizeof fi + sizeof pin);
+}
+
+bool fric_load(const uint8_t *b, uint16_t n)
+{
+    if (n != sizeof fi + sizeof pin)
+        return false;
+    memcpy(&fi, b, sizeof fi);
+    memcpy(&pin, b + sizeof fi, sizeof pin);
+    fi.mode &= 1;
+    pin_sanitize(&pin);
+    return true;
+}
+
+/* ---- Casos del curso F-01 a F-05 (prompt v2, sec. 8.5) ---- */
+void fric_preset(uint8_t k)
+{
+    static const real re[5] = { 20000, 200000, 0, 455180, 0 };
+    static const real kd[5] = { 1e-4, 1.5e-4, 0, 7.5e-6, 0 };
+    memset(&fi, 0, sizeof fi);
+    if (k == 2 || k == 4) {                  /* datos de tuberia */
+        fi.mode = 1;
+        pin.Q = k == 2 ? 200 : (real)0.02;
+        pin.D = k == 2 ? (real)285.75 : 20;
+        pin.ks = k == 2 ? (real)0.0015 : 0;
+        pin.nu = (real)1e-6;
+        pin.sQ = pin.sD = pin.sks = pin.snu = 1;
+    } else {
+        fi.Re = re[k];
+        fi.ksd = kd[k];
+        fi.sRe = fi.sksd = 1;
+    }
 }

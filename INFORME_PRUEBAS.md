@@ -1004,3 +1004,31 @@ Los dos superan con holgura los 30 KB pedidos. FLUJOS tiene más de 50 KB de mar
 | EX-03b | $Q=3{,}899$ l/s; $h_{\max}=0{,}3877$ m (interfaz simulada) | 3,899; 0,3877 |
 
 **Tamaños y RAM.** FLUJOS: lanzador 591 B + `FLUJOS0` 60 076 B + `FLUJOS1` 17 913 B (el chorro trae el motor de tuberías). `PERDTXT` 29 546 B. **RAM libre con FLUJOS abierto: 61 546 B**; PERDIDAS sin cambios (58 420 B).
+
+## v2.0, fase 6: integración (15 de noviembre de 2026)
+
+**Construido.**
+
+- **`PERDCAS` 2.0** (`src/cases.c`): guarda casos de los 20 tipos de los dos programas (7 de tubería, «Calcular f», 5 de arrastre, 4 de vertedores y 3 de canales). Cada caso es nombre + tipo + largo + los datos de su pantalla, hasta 424 B. El formato 1.0 se lee, se convierte y se guarda en 2.0. Cada programa lista todos los casos, pero solo abre los suyos: los del otro se marcan con «>» y avisan qué programa abrir. Al cargar, el resultado se recalcula solo, como en la v1.0, y si un dato guardado está fuera de rango, se acota. Cada módulo tiene `*_save`, `*_load` y `scr_*_run(…, autocalc)`; las pruebas compilan con `-DCASES_ALL`.
+- **GUARDAR** (F3) en los resultados de «Calcular f», arrastre, vertedores y canales. «Mis casos» también está en FLUJOS (entrada 5).
+- **Casos del curso.** FLUJOS › Ayuda › 5: los 17 casos AR-01 a AR-06, VE-01 a VE-08 y EX-01 a EX-03; cada módulo los llena con `*_preset` y calcula. PERDIDAS › Ayuda › 9: los 21 de la v1.0 más F-01 a F-05.
+- **Ayuda nueva** en `PERDTXT` (`tools/memo_help2.c`). En PERDIDAS, «Factor de fricción f» (entrada 8). En FLUJOS, «Arrastre y sustentación», «Vertedores y orificios», «Canales y medición» y «Erratas del material». Las erratas suman las de la sección 3.4 del prompt: 2017 P2 sin solución, $C_D$ del paracaídas, crisis de arrastre de la torre, área del cubo, lectura de la Tarea 4-2 P2b, caudal y convención del Venturi 2025, y $\sum K$ del chorro 2025.
+- Los menús de más de 9 entradas muestran «10», sin tecla directa (antes salía «:»).
+
+**Pruebas.**
+
+| Prueba | Resultado |
+|---|---|
+| Interfaz simulada: 16 comprobaciones nuevas (`PERDCAS` 1.0 → 2.0 con un caso tipo D; guardar y cargar AR-2, VE-4, EX-2 y «Calcular f» con el mismo resultado; relectura tras archivar; archivo 2.0 dañado; los 17 casos del curso de FLUJOS y los F-01 a F-05 de PERDIDAS con su valor; ayuda nueva sin líneas de más de 40 caracteres) | 178 de 178; estrés sin cierres |
+| Dorados en el PC y en el eZ80 | 308 pasan, 8 por redondeo, 0 fallan |
+| CEmu: PERDIDAS 34, FLUJOS 58 (4 nuevas: casos del curso, AR-04 cargado, ayuda de arrastre, acerca de) | 34 de 34 y 58 de 58 |
+| **Migración con los archivos reales de la calculadora** (`tools/cemu_ui.py --migr`: `PERDCAS` y `PERDCFG` 1.0 de `respaldo_calc/2026-11-15`) | El caso «TAREA1 (D) Diámetro» aparece en «Mis casos», carga y calcula (D comercial 300 mm, Qmax 222,784 l/s). Los ajustes conservan los de la v1.0 y los campos nuevos toman sus valores por defecto |
+
+**Tamaños y RAM con la app abierta (CEmu).**
+
+| Programa | Archivos | RAM libre |
+|---|---|---|
+| PERDIDAS | 585 B + `PERDIDA0` 65 308 B + `PERDIDA1` 17 792 B | **56 441 B** |
+| FLUJOS | 591 B + `FLUJOS0` 60 076 B + `FLUJOS1` 25 795 B | **53 668 B** |
+| `PERDTXT` | 33 531 B (55 programas) | — |
+| `PERDGFX` | 15 373 B | — |

@@ -1,0 +1,95 @@
+{
+ "rom": "ti84ce.rom (ruta en AUTOTESTER_ROM o editar aqui)",
+ "transfer_files": [
+  "arTIfiCE_v2.1.8xp",
+  "PERDIDAS.8xp.0.8xv",
+  "PERDIDAS.8xp.1.8xv",
+  "PERDIDAS.8xp",
+  "PERDTXT.8xv",
+  "PERDGFX.8xv",
+  "PERDCAS.8xv",
+  "PERDCFG.8xv"
+ ],
+ "target": {
+  "name": "A",
+  "isASM": false
+ },
+ "delay_after_key": 150,
+ "sequence": [
+  "action|launch",
+  "delay|3000",
+  "key|enter",
+  "delay|700",
+  "hash|1",
+  "key|6",
+  "delay|700",
+  "hash|2",
+  "key|enter",
+  "delay|700",
+  "hash|3",
+  "key|mode",
+  "delay|700",
+  "hash|4",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "key|clear",
+  "delay|700",
+  "hash|5",
+  "key|enter",
+  "delay|1500",
+  "delay|700",
+  "hash|6"
+ ],
+ "hashes": {
+  "1": {
+   "description": "01_menu_principal",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "54FD6FE5"
+   ]
+  },
+  "2": {
+   "description": "02_mis_casos_migrados",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "E977FC6C"
+   ]
+  },
+  "3": {
+   "description": "03_caso_v1_cargado",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "2CF7907"
+   ]
+  },
+  "4": {
+   "description": "04_ajustes_migrados",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "16EF033E"
+   ]
+  },
+  "5": {
+   "description": "05_confirmar_salida",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "30DDCEEF"
+   ]
+  },
+  "6": {
+   "description": "06_fuera_de_la_app",
+   "start": "vram_start",
+   "size": "vram_16_size",
+   "expected_CRCs": [
+    "708E5B24"
+   ]
+  }
+ }
+}

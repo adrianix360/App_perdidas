@@ -18,6 +18,7 @@ typedef struct {
 } pipe_inputs;
 
 extern pipe_inputs pin;
+void pin_sanitize(pipe_inputs *p);   /* cases.c */
 
 /* Abre el formulario del tipo t; si autocalc, calcula y muestra el
  * resultado al entrar (para casos cargados) */

@@ -562,7 +562,7 @@ int main(int argc, char **argv)
         ok = 1;
         for (i = 0; i < EXAMPLES; i++) {
             int j;
-            T("8"); T("8");
+            T("8"); T("9");
             K(K_PGUP); K(K_PGUP);   /* primer caso */
             for (j = 0; j < i; j++) K(K_DOWN);
             K(K_ENTER);
@@ -574,11 +574,11 @@ int main(int argc, char **argv)
             }
         }
         check(ok, "los 21 casos del curso cargan y calculan");
-        T("8"); T("8"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 10; i++) K(K_DOWN); K(K_ENTER);
+        T("8"); T("9"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 10; i++) K(K_DOWN); K(K_ENTER);
         run();
         check(starts(view_value("D comercial"), "285.75") && starts(view_value("Qmax con D com."), "262.38"),
               "caso del curso P-17 da 285,75 mm y 262,38 l/s");
-        T("8"); T("8"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 19; i++) K(K_DOWN); K(K_ENTER);
+        T("8"); T("9"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 19; i++) K(K_DOWN); K(K_ENTER);
         run();
         check(starts(view_value("H necesaria"), "12.66"), "caso del curso S-04 (hacia atras) da 12,67 m");
         settings_default(&g_set);
@@ -929,6 +929,154 @@ int main(int argc, char **argv)
         T("3"); T("4");
         runf();
         check(scr_has("PLACA PLANA Y STOKES"), "Canales 4: placa plana y Stokes");
+        settings_default(&g_set);
+    }
+
+    /* 5k. v2.0 fase 6: Mis casos de todos los tipos y PERDCAS 1.0 -> 2.0 */
+    {
+        mock_var *cv = mock_find("PERDCAS", 1);
+        uint8_t *d = cv->data, ck = 0x3C;
+        size_t k = 0, j;
+        real cust[DIAM_CUSTOM_MAX];
+        pipe_inputs p1;
+        settings_default(&g_set);
+        /* PERDCAS 1.0 con un caso tipo D (P-17) */
+        memset(cust, 0, sizeof cust);
+        memset(&p1, 0, sizeof p1);
+        p1.Q = 200; p1.sQ = 1; p1.H = 76; p1.sH = 1; p1.L = 1900; p1.sL = 1;
+        p1.ks = 0.0015; p1.sks = 1; p1.K = 12.8; p1.sK = 1; p1.nu = 1e-6; p1.snu = 1;
+        cust[0] = 250;
+        d[k++] = 'P'; d[k++] = 'C'; d[k++] = 'S'; d[k++] = 1;
+        d[k++] = (uint8_t)(sizeof p1 & 0xFF); d[k++] = (uint8_t)(sizeof p1 >> 8);
+        d[k++] = DIAM_CUSTOM_MAX;
+        memcpy(d + k, cust, sizeof cust); k += sizeof cust;
+        d[k++] = 1;
+        memcpy(d + k, "P17\0\0\0\0\0\0", 9); k += 9;
+        d[k++] = PT_D;
+        memcpy(d + k, &p1, sizeof p1); k += sizeof p1;
+        for (j = 0; j < k; j++)
+            ck = (uint8_t)((ck << 1 | ck >> 7) ^ d[j]);
+        d[k++] = ck;
+        cv->len = k;
+        cv->exists = 1;
+        check(cases_load() == 0 && cases_count() == 1 && diam_custom[0] == 250 && cv->data[3] == 2,
+              "PERDCAS 1.0 se lee y pasa al formato 2.0");
+        check(cases_load() == 0 && cases_count() == 1, "PERDCAS 2.0 se vuelve a leer");
+        T("6"); K(K_ENTER);
+        run();
+        check(has_line("Diametro de diseno"), "el caso 1.0 (tipo D) carga y calcula");
+        /* AR-2: calcular, guardar como PARA, cambiar datos y cargar: el
+         * resultado cargado debe ser el mismo que el guardado */
+        {
+            char vt[48] = "";
+            uint8_t q;
+            T("1"); T("2"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN);
+            TE("950"); K(K_DOWN); K(K_DOWN); TE("5"); TE("8"); K(K_F5); K(K_F3); T("PARA");
+            K(K_ENTER); K(K_ENTER);
+            runf();
+            for (q = 0; q < view_n; q++)
+                if (!strncmp(view_line[q], "> v terminal", 12)) {
+                    strcpy(vt, view_line[q]);
+                    break;
+                }
+            check(cases_count() == 2 && !strcmp(alert_title, "Caso guardado") && vt[0],
+                  "AR-2 guardado en Mis casos");
+            T("1"); T("2"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("100"); K(K_F5);
+            runf();
+            T("5"); K(K_PGUP); K(K_DOWN); K(K_ENTER);
+            runf();
+            check(vt[0] && has_line(vt), "AR-2 cargado desde Mis casos da el mismo resultado");
+        }
+        /* VE-4 y EX-2 */
+        T("2"); T("2"); K(K_F5); K(K_F3); T("VE01"); K(K_ENTER); K(K_ENTER);
+        runf();
+        T("3"); T("2"); K(K_F5); K(K_F3); T("SALTO"); K(K_ENTER); K(K_ENTER);
+        runf();
+        check(cases_count() == 4, "VE y EX guardados");
+        T("5"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_ENTER);
+        runf();
+        check(has_line("Q total"), "caso de vertedores carga y calcula");
+        T("5"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); K(K_ENTER);
+        runf();
+        check(has_line("> y2 = 4.088") || has_line("> y1 = 0.4"), "caso del salto carga y calcula");
+        /* Calcular f: guardar el calculo vigente y cargarlo */
+        {
+            char fl[48] = "";
+            uint8_t q;
+            T("3"); K(K_F5); K(K_F3); T("F01"); K(K_ENTER); K(K_ENTER);
+            run();
+            for (q = 0; q < view_n; q++)
+                if (!strncmp(view_line[q], "> f (", 5)) {
+                    strcpy(fl, view_line[q]);
+                    break;
+                }
+            T("6"); K(K_PGDN); K(K_ENTER);
+            run();
+            check(cases_count() == 5 && fl[0] && has_line(fl),
+                  "caso de Calcular f guardado y cargado con el mismo f");
+        }
+        /* reinicio: archivar y releer */
+        check(cases_archive() && cases_load() == 0 && cases_count() == 5,
+              "los 5 casos de tipos distintos se recuperan del AppVar");
+        cv->data[cv->len / 2] ^= 0x33;
+        check(cases_load() == 2 && cases_count() == 0, "PERDCAS 2.0 danado: lista vacia, sin cierre");
+        cv->exists = 0;
+        cases_load();
+        settings_default(&g_set);
+    }
+
+    /* 5l. v2.0 fase 6: casos del curso y ayuda nueva */
+    {
+        static const char *const want[17] = {
+            "> v terminal = 4.9224", "> M en la base = 1324.4", "> v terminal = 1.3289",
+            "> CL necesario = 0.8831", "> FD = 9.42", "> FD = 0.5289",
+            "> Q total = 0.7405", "> Nivel h = 1.8287", "> H = 0.45689", "> H = 0.5079",
+            "> H = 0.2072", "> Nivel h = 0.2391", "> Q = 1.33333", "> h0 = h - H = 0.0241",
+            "> dp = p1 - p2 = 3266", "> y2 = 4.0881", "> Q = 4.3906"
+        };
+        static const char *const fwant[5] = {
+            "= 0.026101", "= 0.016763", "= 0.011989", "= 0.013487", "= 0.050265"
+        };
+        int i, j, ok = 1;
+        settings_default(&g_set);
+        for (i = 0; i < 17; i++) {
+            T("7"); T("5"); K(K_PGUP); K(K_PGUP);
+            for (j = 0; j < i; j++) K(K_DOWN);
+            K(K_ENTER);
+            runf();
+            if (!has_line(want[i])) {
+                ok = 0;
+                printf("  caso del curso FLUJOS %d: falta [%s] (%s)\n", i + 1, want[i], scr_msg);
+            }
+        }
+        check(ok, "los 17 casos del curso de FLUJOS cargan y dan su valor (AR, VE, EX)");
+        ok = 1;
+        for (i = 0; i < 5; i++) {
+            T("8"); T("9"); K(K_PGDN);
+            for (j = 0; j < 4 - i; j++) K(K_UP);
+            K(K_ENTER);
+            run();
+            if (!has_line(fwant[i])) {
+                ok = 0;
+                printf("  caso F-0%d: falta [%s]\n", i + 1, fwant[i]);
+            }
+        }
+        check(ok, "los casos F-01 a F-05 de PERDIDAS dan su f");
+        T("8"); T("8");
+        run();
+        check(view_n > 10 && memo_ok_noobs() && has_line("Swamee-Jain"), "PERDIDAS: ayuda Factor de friccion f");
+        ok = 1;
+        for (i = 0; i < 4; i++) {
+            char t[2] = { (char)('1' + i), 0 };
+            T("7"); T(t);
+            runf();
+            if (view_n < 8 || !memo_ok_noobs())
+                ok = 0;
+        }
+        check(ok, "FLUJOS: ayuda de arrastre, vertedores, canales y erratas");
+        T("7"); T("4");
+        runf();
+        check(has_line("2025 P4c"), "erratas de la v2.0 en la ayuda");
         settings_default(&g_set);
     }
 

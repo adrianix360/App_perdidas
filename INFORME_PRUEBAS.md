@@ -1032,3 +1032,42 @@ Los dos superan con holgura los 30 KB pedidos. FLUJOS tiene más de 50 KB de mar
 | FLUJOS | 591 B + `FLUJOS0` 60 076 B + `FLUJOS1` 25 795 B | **53 668 B** |
 | `PERDTXT` | 33 531 B (55 programas) | — |
 | `PERDGFX` | 15 373 B | — |
+
+## v2.0, fase 7: entrega (15 de noviembre de 2026)
+
+- `README_es.md` actualizado a la v2.0: los dos programas, tabla de archivos, instalación y actualización desde la v1.0 (conservando `PERDCFG` y `PERDCAS`), uso de cada programa, advertencias, desinstalación total o solo de FLUJOS, solución de problemas y cómo compilar y probar.
+- `instalacion/` reúne todo lo que se envía a la calculadora: `PERDIDAS` (3 archivos), `FLUJOS` (3), `PERDTXT`, `PERDGFX`, `clibs.8xg` y `arTIfiCE_v2.1.8xp` (270 KB en total). Se quitó `HOLAH0.8xp`, la prueba de la fase 1 de la v1.0.
+- Instalado en la calculadora de Adrián (OS 5.8.4) con TI Connect CE en cada fase. Sus `PERDCFG` y `PERDCAS` de la v1.0 se conservaron: `PERDCFG` ya pasó al formato 2.0 en la calculadora (141 B), y la migración de `PERDCAS` se probó en CEmu con su respaldo.
+
+## Resumen final de la v2.0
+
+| Prueba | Resultado |
+|---|---|
+| Casos dorados en el PC (`float` y `double`): v1.0 + AR, VE, EX, F | 308 pasan, 8 por redondeo, 0 fallan |
+| Casos dorados dentro del eZ80 (CEmu) | 308 pasan, 8 por redondeo, 0 fallan; mayor diferencia eZ80 frente a PC 1,99e-5 |
+| Aleatorios contra oráculos independientes en Python | v1.0: 750 casos; v2.0: 625 casos; 0 fallas |
+| Interfaz simulada de los dos programas | 178 de 178; estrés de 1 000 000 de teclas repartido entre PERDIDAS y FLUJOS, sin cierres |
+| CEmu, pantallas | PERDIDAS 34 de 34; FLUJOS 58 de 58; migración 6 de 6 |
+| Calculadora real | Adrián verificó la v2.0 en cada entrega (fases 1b, 2, 3, 4 y 5) |
+
+| Archivo | Tamaño | Dónde |
+|---|---|---|
+| `PERDIDAS` / `PERDIDA0` / `PERDIDA1` | 585 / 65 308 / 17 792 B | RAM / archivo / archivo |
+| `FLUJOS` / `FLUJOS0` / `FLUJOS1` | 591 / 60 076 / 25 795 B | RAM / archivo / archivo |
+| `PERDTXT` | 33 531 B | archivo |
+| `PERDGFX` | 15 373 B | archivo |
+
+| RAM libre con la app abierta (CEmu) | Valor | Pedido |
+|---|---|---|
+| PERDIDAS | 56 441 B | ≥ 30 KB |
+| FLUJOS | 53 668 B | ≥ 30 KB |
+
+**Diferencias con el prompt (decididas con Adrián o por el código):**
+
+- La app quedó en dos programas, PERDIDAS y FLUJOS, por decisión de Adrián al ver el presupuesto de RAM. Por eso el menú principal de PERDIDAS conserva su numeración y la entrada 4 remite a FLUJOS.
+- Haaland usa 1,8 (como la v1.0 y el curso), no 1,81.
+- Colebrook-White parte de $f_1=0{,}0001$ (presentación, diapositiva 25), no de 0,001; el resultado es el mismo.
+- La placa plana y Stokes (EX-4) está en Arrastre y también en Canales.
+- VE-5 (cota de la cresta) está dentro del elemento simple, con el campo «Nivel arriba».
+- El cubo de arista usa por defecto el área $\sqrt2\,D^2$.
+- Los valores del catálogo de $C_D$ no se pudieron contrastar con el libro del curso (no hubo foto de las tablas); cada fila dice su fuente.

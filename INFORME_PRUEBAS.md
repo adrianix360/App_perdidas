@@ -1082,5 +1082,5 @@ golden 0 fallas, 750 aleatorios iguales a la v2.0, barrido `tests/secant_check.c
   (B: Curso/Secante; D: Biseccion/Secante). Con C_H, D usa siempre secante desde D0 de Hazen-Williams con $\sum K$.
 - Sin C_H y con el método de siempre, los resultados son idénticos bit a bit a la v2.0.
 - Vueltas (double): P-26 bisección 44 → secante 6; P-27 curso 14 → secante 4; P-27b 13 → 4.
-- Tamaño: PERDIDAS crece ~3,4 KB (más que el tope de 1 KB acordado; decisión pendiente de Adrián).
+- Tamaño: PERDIDAS crece ~3,4 KB (más que el tope de 1 KB; Adrián lo aceptó el 2026-11-17).
   FLUJOS no crece (se compila sin secante).

@@ -573,14 +573,34 @@ int main(int argc, char **argv)
                        view_line[0], scr_msg);
             }
         }
-        check(ok, "los 21 casos del curso cargan y calculan");
+        check(ok, "los 23 casos del curso cargan y calculan");
         T("8"); T("9"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 10; i++) K(K_DOWN); K(K_ENTER);
         run();
         check(starts(view_value("D comercial"), "285.75") && starts(view_value("Qmax con D com."), "262.38"),
               "caso del curso P-17 da 285,75 mm y 262,38 l/s");
-        T("8"); T("9"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 19; i++) K(K_DOWN); K(K_ENTER);
+        T("8"); T("9"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 21; i++) K(K_DOWN); K(K_ENTER);
         run();
         check(starts(view_value("H necesaria"), "12.66"), "caso del curso S-04 (hacia atras) da 12,67 m");
+        /* v2.1: P-26 y P-27 (Hazen-Williams + secante) */
+        T("8"); T("9"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 16; i++) K(K_DOWN); K(K_ENTER);
+        run();
+        check(starts(view_value("D exacto"), "374.9") && starts(view_value("D comercial"), "400") &&
+              starts(view_value("Qmax con D com."), "357.8"),
+              "caso P-26 (D, HW + secante): 374,91 mm; 400 mm; 357,87 l/s");
+        T("8"); T("9"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 16; i++) K(K_DOWN); K(K_ENTER);
+        K(K_F1);
+        run();
+        check(memo_ok() && has_line("0 (Hazen-Williams)") && has_line("379.8") &&
+              has_line("Secante"), "P-26: memoria con la iteracion 0 de Hazen-Williams");
+        T("8"); T("9"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 17; i++) K(K_DOWN); K(K_ENTER);
+        run();
+        check(starts(view_value("Q"), "357.8") && has_line("secante"),
+              "caso P-27 (B, HW + secante): Q = 357,87 l/s");
+        T("8"); T("9"); K(K_PGUP); K(K_PGUP); for (i = 0; i < 17; i++) K(K_DOWN); K(K_ENTER);
+        K(K_F1);
+        run();
+        check(memo_ok() && has_line("0 (Hazen-Williams)") && has_line("346.4"),
+              "P-27: memoria con Q_HW = 346,48 l/s en la fila 0");
         settings_default(&g_set);
     }
 

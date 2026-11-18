@@ -74,7 +74,7 @@ void pin_sanitize(pipe_inputs *p)
     uint8_t *f[] = { &p->sQ, &p->sH, &p->sD, &p->sL, &p->sks, &p->sK, &p->snu,
                      &p->sf, &p->sCH, &p->seta, &p->sHs, &p->szb, &p->sHp,
                      &p->sz1, &p->sz2, &p->sp1, &p->sp2, &p->valve, &p->modeI,
-                     &p->mach };
+                     &p->mach, &p->sCH0, &p->itm };
     uint8_t i;
     for (i = 0; i < sizeof f / sizeof f[0]; i++)
         *f[i] = clamp01(*f[i]);
@@ -123,9 +123,11 @@ static bool mod_load(uint8_t t, const uint8_t *b, uint16_t n)
 {
 #ifdef HAS_PERD
     if (t < KT_FRIC) {
-        if (n != sizeof pin)
+        /* v2.1: un caso de la v2.0 es mas corto; lo nuevo queda en 0 */
+        if (n < PIN_V20_SIZE || n > sizeof pin)
             return false;
-        memcpy(&pin, b, sizeof pin);
+        memset(&pin, 0, sizeof pin);
+        memcpy(&pin, b, n);
         pin_sanitize(&pin);
         return true;
     }

@@ -7,6 +7,7 @@
 #define PIPE_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "hydro/hydro.h"
 
 typedef struct {
@@ -15,7 +16,12 @@ typedef struct {
     uint8_t sQ, sH, sD, sL, sks, sK, snu, sf, sCH, seta, sHs, szb, sHp;
     uint8_t sz1, sz2, sp1, sp2;
     uint8_t mach, dset, valve, modeI;
+    /* v2.1 (al final: los casos guardados mas cortos se completan con
+     * ceros = sin C_H de arranque, metodo de siempre) */
+    uint8_t sCH0, itm;      /* C_H de arranque dado; iteracion IT_*    */
+    real CH0;               /* C_H de arranque (B y D)                 */
 } pipe_inputs;
+#define PIN_V20_SIZE offsetof(pipe_inputs, sCH0)
 
 extern pipe_inputs pin;
 void pin_sanitize(pipe_inputs *p);   /* cases.c */

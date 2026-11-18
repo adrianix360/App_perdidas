@@ -12,7 +12,7 @@
 #ifndef MEMO_DEFS_H
 #define MEMO_DEFS_H
 
-#define TX_VERSION 2
+#define TX_VERSION 3
 #define TX_NONE 0xFFFFu
 #define TX_FULL 0x01
 #define TX_SHORT 0x02
@@ -52,6 +52,8 @@ enum {
     V_JE2, V_JDE, V_JP, V_JEFF,
     V_EH, V_EL, V_ED, V_EKS, V_EK, V_EQ, V_EQLS, V_EV, V_ERE, V_EF, V_ETH,
     V_EVX, V_EVY, V_EHM, V_ER, V_ET, V_EIT, V_ELD,
+    /* v2.1: arranque de Hazen-Williams y secante (B y D) */
+    V_CH0, V_D0, V_HF1, V_Q0LS,
     V_COUNT
 };
 
@@ -68,6 +70,12 @@ enum {
     G_X11
 };
 /* Calcular f */
+/* v2.1, tuberia (tipos B y D) */
+#define G_PSEC    G_X0   /* B o D resuelto por secante         */
+#define G_PHW     G_X1   /* arranque de Hazen-Williams         */
+#define G_PDFB    G_X2   /* D: la secante fallo (biseccion)    */
+#define G_QSEC    G_X3   /* D: Qmax con D comercial (secante)  */
+#define G_PREQ    G_X4   /* B: se pidio secante                */
 #define G_FMODE2  G_X0   /* datos de tuberia (modo 2)          */
 #define G_FHASV   G_X1   /* se dio v en lugar de Q             */
 #define G_FKSDIN  G_X2   /* ks/D calculado desde ks y D (modo 1)*/
@@ -146,6 +154,7 @@ enum { XP_FRIC_SUM, XP_FRIC_MEMO,
 /* tablas de iteraciones (M_TABLE id) */
 enum { TB_B_COURSE = 0, TB_B_BIS, TB_D, TB_CW,
        TB_HOOK,          /* lo dibuja la pantalla (memo_hook) */
+       TB_B_SEC, TB_D_SEC,   /* v2.1: secante */
        TB_COUNT };
 
 #endif

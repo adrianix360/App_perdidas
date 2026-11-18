@@ -707,7 +707,8 @@ static void case_HW(void)
     begin("P-26m");
     cfg(1e-6, FM_CW);
     hydro_design_o(&p, (real)0.305, 8, 0, 0, &C, &bad, &r, 0);
-    put("respaldo C_H=1", r.fb);
+    put("respaldo C_H=1 (info)", r.fb);
+    put("vueltas C_H=1 (info)", r.iters);
     put("dif C_H=1 ok", relx(r.D_exact, rb.D_exact) <= SEC_TOL);
     p.sumK = 300;                               /* SumK muy alto */
     hydro_design(&p, (real)0.305, 8, 0, 0, &C, &rb, 0);

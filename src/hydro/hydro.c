@@ -5,6 +5,20 @@
 #include "hydro.h"
 
 /* Coeficiente de Haaland segun el material del curso */
+/* v2.1: FLUJOS (chorro EX-3) usa el caudal maximo como en la v2.0; ahi
+ * se compila sin la secante ni el arranque de Hazen-Williams, porque en
+ * la calculadora cada byte de codigo es RAM. */
+#ifdef PROG_FLUJOS
+#define ITER_OPT 0
+#else
+#define ITER_OPT 1
+#endif
+#if defined(__GNUC__) || defined(__clang__)
+#define NOINLINE __attribute__((noinline))
+#else
+#define NOINLINE
+#endif
+
 #ifndef HAALAND_COEF
 #define HAALAND_COEF 1.8
 #endif
@@ -291,7 +305,8 @@ static int solve_v_bisection(const hydro_pipe *p, real H, const hydro_cfg *c,
 /* Tipo B: caudal maximo                                               */
 /* ------------------------------------------------------------------ */
 /* Velocidad de la formula del curso (diapositivas 10 y 11) dado hf */
-static real v_course(const hydro_pipe *p, real hf, const hydro_cfg *c)
+static NOINLINE real v_course(const hydro_pipe *p, real hf,
+                               const hydro_cfg *c)
 {
     real g2 = 2.0 * c->g;
     real arg = p->ks / (3.7 * p->D) +
@@ -304,7 +319,7 @@ static real v_course(const hydro_pipe *p, real hf, const hydro_cfg *c)
  * potencias, monotona) por Newton, partiendo de la raiz sin el termino
  * b. Con D (p, q < 0) parte por la izquierda; con Q, por la derecha:
  * en ambos casos converge sin pasarse. Solo es un arranque. */
-static real pow_root(real a, real p, real b, real q, real H)
+static NOINLINE real pow_root(real a, real p, real b, real q, real H)
 {
     real x = R_POW(H / a, 1.0 / p), t1, t2;
     unsigned char i;
@@ -316,10 +331,65 @@ static real pow_root(real a, real p, real b, real q, real H)
     return x;
 }
 
+/* v2.1: secante protegida, comun a los tipos B y D. fn(s, x, o) llena
+ * o[0] y o[1] (columnas de la memoria) y o[2] = F(x); devuelve 0 si x
+ * no sirve. sg = signo de F en lo. Fila 0: x0; fila 1: k x0 (k > 0) o
+ * x0 - F(x0) (k = 0: un paso del curso); despues, secante. Si una vuelta
+ * sale de (lo, hi), punto medio del intervalo que encierra la raiz.
+ * Vueltas = filas de secante (desde la 2). Devuelve 1 si converge. */
+typedef struct {
+    const hydro_pipe *p;
+    const hydro_cfg *c;
+    real Q, H;
+} sec_ctx;
+typedef unsigned char (*sec_fn)(const sec_ctx *s, real x, real *o);
+
+static NOINLINE unsigned char secant(sec_fn fn, const sec_ctx *s, real x,
+                                     real k, real lo, real hi, real sg,
+                                     hydro_log *lg, int *iters, real *root)
+{
+    real o[3], xp = x, Fp = 0, n;
+    int i;
+    hydro_log_clear(lg);
+    for (i = 0; i <= HYDRO_SEC_MAX + 1; i++) {
+        if (!fn(s, x, o))
+            return 0;
+        log_row(lg, (real)i, x, o[0], o[1], o[2]);
+        if (o[2] == 0 || (i > 1 && R_FABS(o[2]) <= 1e-3 * s->H &&
+                          R_FABS(x - xp) <= HYDRO_SEC_REL * x)) {
+            *iters = i > 1 ? i - 1 : 0;
+            *root = x;
+            return 1;
+        }
+        n = i ? x - o[2] * (x - xp) / (o[2] - Fp)
+              : (k > 0 ? k * x : x - o[2]);
+        if (!(n > lo && n < hi))
+            n = 0.5 * (lo + hi);
+        if (o[2] * sg > 0)      /* despues: el 2.o punto no se recorta */
+            lo = x;
+        else
+            hi = x;
+        xp = x;
+        Fp = o[2];
+        x = n;
+    }
+    return 0;
+}
+
+/* B: G(hf) = hf + SumK v(hf)^2/2g - H, con v(hf) de la formula del curso */
+static unsigned char fB(const sec_ctx *s, real hf, real *o)
+{
+    real v = v_course(s->p, hf, s->c);
+    o[0] = v;
+    o[1] = s->p->sumK * v * v / (2.0 * s->c->g);
+    o[2] = hf + o[1] - s->H;
+    return v > 0;
+}
+
 int hydro_qmax_o(const hydro_pipe *p, real H, const hydro_cfg *c,
                  const hydro_iter_opt *o, hydro_qmax_res *r, hydro_log *lg)
 {
-    real A, v = 0, hf, hfn, hm, g2 = 2.0 * c->g, Gp = 0, G, b, lo, hi;
+    real A, v = 0, hf, hfn, hm, g2 = 2.0 * c->g;
     int i, e = hydro_check_pipe(p, c);
 
     hydro_log_clear(lg);
@@ -342,10 +412,10 @@ int hydro_qmax_o(const hydro_pipe *p, real H, const hydro_cfg *c,
     } else if (c->method == FM_CW) {
         /* v2.1: hf1 de Hazen-Williams, con Q_HW tal que
          * hf_HW(Q) + SumK v^2/2g = H. Si falla, hf1 = H como antes. */
-        if (o && o->CH > 0) {
-            r->Q0 = pow_root(10.675 * p->L /
-                             (R_POW(o->CH, 1.852) * R_POW(p->D, 4.87)),
-                             1.852, p->sumK / (g2 * A * A), 2.0, H);
+        if (ITER_OPT && o && o->CH > 0) {
+            /* hf_HW(Q) = hydro_hw_hf(1, D, L, C_H) Q^1.852 */
+            r->Q0 = pow_root(hydro_hw_hf(1, p->D, p->L, o->CH), 1.852,
+                             p->sumK / (g2 * A * A), 2.0, H);
             r->hf1 = hydro_hw_hf(r->Q0, p->D, p->L, o->CH);
             if (r->hf1 > 0 && r->hf1 < H) {
                 r->hw = 1;
@@ -357,44 +427,16 @@ int hydro_qmax_o(const hydro_pipe *p, real H, const hydro_cfg *c,
             }
         }
         hf = r->hf1;
-        if (o && o->solver == IT_SECANT) {
-            /* v2.1: secante sobre G(hf) = hf + SumK v(hf)^2/2g - H, con
-             * v(hf) de la formula del curso. El 2.o punto es un paso del
-             * curso (hf = H - hm). Fila 0: el arranque. */
-            hydro_log_clear(lg);
-            hfn = hf;
-            lo = 0;          /* G crece con hf: G(0) < 0 <= G(H) */
-            hi = H;
-            for (i = 0; i <= HYDRO_SEC_MAX; i++) {
+        if (ITER_OPT && o && o->solver == IT_SECANT) {
+            /* v2.1: secante sobre G(hf); G crece con hf: G(0) < 0.
+             * Criterio relativo: con hf pequeno, 1e-5 m no basta. */
+            sec_ctx s;
+            s.p = p;
+            s.c = c;
+            s.H = H;
+            if (secant(fB, &s, hf, 0, 0, H, -1, lg, &r->iters, &hf)) {
                 v = v_course(p, hf, c);
-                if (!(v > 0))
-                    break;
-                hm = p->sumK * v * v / g2;
-                G = hf + hm - H;
-                log_row(lg, (real)i, hf, v, hm, G);
-                if (G > 0)
-                    hi = hf;
-                else
-                    lo = hf;
-                if (i == 0)
-                    b = H - hm;
-                else if (G != Gp)
-                    b = hf - G * (hf - hfn) / (G - Gp);
-                else
-                    b = hf;
-                /* si la vuelta sale del intervalo: punto medio */
-                if (!(b > lo && b < hi))
-                    b = 0.5 * (lo + hi);
-                /* criterio relativo: con hf pequeno, 1e-5 m no basta */
-                if (R_FABS(b - hf) <= HYDRO_SEC_REL * b) {
-                    v = v_course(p, b, c);
-                    r->iters = i;
-                    r->course_ok = 1;
-                    break;
-                }
-                hfn = hf;
-                Gp = G;
-                hf = b;
+                r->course_ok = 1;
             }
         } else {
             /* Iteracion del curso (diapositivas 10 y 11) */
@@ -421,8 +463,8 @@ int hydro_qmax_o(const hydro_pipe *p, real H, const hydro_cfg *c,
         if (r->course_ok && v * p->D / c->nu < c->re_lam)
             r->course_ok = 0;
         if (r->course_ok)
-            r->solver = (o && o->solver == IT_SECANT) ? SOLV_SECANT
-                                                     : SOLV_COURSE;
+            r->solver = (ITER_OPT && o && o->solver == IT_SECANT)
+                            ? SOLV_SECANT : SOLV_COURSE;
     }
 
     if (r->solver == SOLV_BISECTION) {
@@ -497,6 +539,14 @@ static real hT_of_D(const hydro_pipe *p, real D, real Q, const hydro_cfg *c)
     return s.hT;
 }
 
+static unsigned char fD(const sec_ctx *s, real D, real *o)
+{
+    o[0] = s->Q / hydro_area(D);
+    o[1] = hT_of_D(s->p, D, s->Q, s->c);
+    o[2] = o[1] - s->H;
+    return o[1] > 0;
+}
+
 real hydro_vp(real H, real hf, real sumK, const hydro_cfg *c)
 {
     if (!(sumK > 0) || !(H > hf))
@@ -510,7 +560,8 @@ int hydro_design_o(const hydro_pipe *p, real Qd, real H,
                    hydro_log *lg)
 {
     hydro_pipe q = *p;
-    real lo = 0.001, hi = 20.0, mid, g, a, b, Fa, Fb, k8;
+    real lo = 0.001, hi = 20.0, mid, g, k8;
+    sec_ctx s;
     int it, i, e;
 
     hydro_log_clear(lg);
@@ -539,42 +590,21 @@ int hydro_design_o(const hydro_pipe *p, real Qd, real H,
      * cumple hf + SumK v^2/2g = H con hf de Hazen-Williams (si hay C_H)
      * o de Darcy con f = 0,02. Si una vuelta sale de [lo, hi], da un
      * error o no converge, se usa la biseccion de siempre. */
-    if (o && (o->solver == IT_SECANT || o->CH > 0)) {
+    if (ITER_OPT && o && (o->solver == IT_SECANT || o->CH > 0)) {
         k8 = 8.0 * Qd * Qd / (HYDRO_PI * HYDRO_PI * c->g);
-        if (o->CH > 0) {
-            r->D0 = pow_root(10.675 * q.L * R_POW(Qd, 1.852) /
-                             R_POW(o->CH, 1.852), -4.87,
-                             q.sumK * k8, -4.0, H);
-            r->hw = 1;
-        }
-        if (!(r->D0 > lo && r->D0 < hi)) {
-            r->D0 = pow_root(0.02 * q.L * k8, -5.0, q.sumK * k8, -4.0, H);
-            r->hw = 0;
-        }
-        a = r->D0;
-        Fa = hT_of_D(&q, a, Qd, c) - H;
-        log_row(lg, 0, a, Qd / hydro_area(a), Fa + H, Fa);
-        b = 1.02 * a;
-        Fb = hT_of_D(&q, b, Qd, c) - H;
-        for (it = 1; it <= HYDRO_SEC_MAX; it++) {
-            if (!(Fa + H > 0 && Fb + H > 0 && Fb != Fa))
-                break;
-            mid = b - Fb * (b - a) / (Fb - Fa);
-            if (!(mid > lo && mid < hi))
-                break;
-            a = b;
-            Fa = Fb;
-            b = mid;
-            Fb = hT_of_D(&q, b, Qd, c) - H;
-            log_row(lg, (real)it, b, Qd / hydro_area(b), Fb + H, Fb);
-            if (Fb + H > 0 && R_FABS(Fb) <= 1e-3 * H &&
-                R_FABS(b - a) <= HYDRO_SEC_REL * b) {
-                r->solver = SOLV_SECANT;
-                r->iters = it;
-                r->D_exact = b;
-                break;
-            }
-        }
+        /* hf_HW(D) = hydro_hw_hf(Qd, 1, L, C_H) D^-4.87 */
+        r->hw = o->CH > 0;
+        r->D0 = pow_root(r->hw ? hydro_hw_hf(Qd, 1, q.L, o->CH)
+                               : 0.02 * q.L * k8,
+                         r->hw ? -4.87 : -5.0, q.sumK * k8, -4.0, H);
+        /* F = hT - H baja al crecer D: F(lo) > 0 */
+        s.p = &q;
+        s.c = c;
+        s.Q = Qd;
+        s.H = H;
+        if (secant(fD, &s, r->D0, 1.02, lo, hi, 1, lg, &r->iters,
+                   &r->D_exact))
+            r->solver = SOLV_SECANT;
         if (r->solver != SOLV_SECANT) {
             r->fb = 1;
             hydro_log_clear(lg);

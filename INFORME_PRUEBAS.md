@@ -1071,3 +1071,16 @@ Los dos superan con holgura los 30 KB pedidos. FLUJOS tiene más de 50 KB de mar
 - VE-5 (cota de la cresta) está dentro del elemento simple, con el campo «Nivel arriba».
 - El cubo de arista usa por defecto el área $\sqrt2\,D^2$.
 - Los valores del catálogo de $C_D$ no se pudieron contrastar con el libro del curso (no hubo foto de las tablas); cada fila dice su fuente.
+
+## v2.1 (en curso, 2026-11-17): secante y arranque de Hazen-Williams (tipos B y D)
+
+Estado: pruebas en PC completas y sin fallas (float y double, interfaz con sanitizer 182/182,
+golden 0 fallas, 750 aleatorios iguales a la v2.0, barrido `tests/secant_check.c`).
+**Pendiente:** CEmu (`cemu_golden.py`, `cemu_ui.py --check`), RAM libre, README e instalación.
+
+- Campos nuevos opcionales en B y D: «C_H arranque (opc)» (vacío = como la v2.0) e «Iteracion»
+  (B: Curso/Secante; D: Biseccion/Secante). Con C_H, D usa siempre secante desde D0 de Hazen-Williams con $\sum K$.
+- Sin C_H y con el método de siempre, los resultados son idénticos bit a bit a la v2.0.
+- Vueltas (double): P-26 bisección 44 → secante 6; P-27 curso 14 → secante 4; P-27b 13 → 4.
+- Tamaño: PERDIDAS crece ~3,4 KB (más que el tope de 1 KB acordado; decisión pendiente de Adrián).
+  FLUJOS no crece (se compila sin secante).

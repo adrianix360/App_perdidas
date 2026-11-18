@@ -24,6 +24,8 @@ pipe_inputs pin;
 static const char *const mach_names[2] = { "Bomba", "Turbina" };
 static const char *const yesno[2] = { "No", "Si" };
 static const char *const modeI_names[2] = { "hf dado Q", "Q dado H" };
+static const char *const itB_names[2] = { "Curso", "Secante" };
+static const char *const itD_names[2] = { "Biseccion", "Secante" };
 
 /* Resultados del ultimo calculo */
 static hydro_cfg C;
@@ -68,8 +70,13 @@ static const char *const titles[PT_COUNT] = {
 
 static form_field f_A[] = { F_Q, F_D, F_L, F_KS, F_K, F_NU, F_F,
     FLD("H sobre punto(opc)", "m", Hp, sHp, FF_ANY | FF_OPT), F_MET };
+/* v2.1: C_H opcional para arrancar desde Hazen-Williams (vacio = como
+ * la v2.0) y metodo de iteracion. Van al final: los casos del curso
+ * cargan los campos en orden. */
+#define F_CH0 { "C_H arranque (opc)", 0, &pin.CH0, 0, &pin.sCH0, FF_RANGE | FF_OPT, 0, 0, 1, 200 }
 static form_field f_B[] = { FLD("Carga H", "m", H, sH, FF_ANY), F_D, F_L,
-    F_KS, F_K, F_NU, F_F, F_MET };
+    F_KS, F_K, F_NU, F_F, F_MET, F_CH0,
+    { "Iteracion", 0, 0, &pin.itm, 0, FF_CHOICE, itB_names, 2, 0, 0 } };
 static form_field f_C[] = {
     { "Equipo", 0, 0, &pin.mach, 0, FF_CHOICE, mach_names, 2, 0, 0 },
     F_Q, F_D, F_L, F_KS, F_K, F_NU,
@@ -80,7 +87,8 @@ static form_field f_D[] = { FLD("Caudal diseno Qd", "l/s", Q, sQ, FF_POS),
     FLD("Carga H", "m", H, sH, FF_ANY), F_L, F_KS, F_K, F_NU,
     { "Lista diametros", 0, 0, &pin.dset, 0, FF_CHOICE, diam_set_names, DIAM_CHOICES, 0, 0 },
     { "Valvula control", 0, 0, &pin.valve, 0, FF_CHOICE, yesno, 2, 0, 0 },
-    F_MET };
+    F_MET, F_CH0,
+    { "Iteracion", 0, 0, &pin.itm, 0, FF_CHOICE, itD_names, 2, 0, 0 } };
 static form_field f_F[] = { F_Q, F_D, F_L, F_KS, F_K, F_NU,
     FLD("Carga H", "m", H, sH, FF_ANY), F_F, F_MET };
 static form_field f_E[] = {
@@ -160,6 +168,11 @@ static void fill_values(void)
         SETF(G_BIS, R.q.solver == SOLV_BISECTION);
         SETF(G_DIRECT, R.q.solver == SOLV_DIRECT);
         SETF(G_FB, R.q.st.warn & W_FALLBACK);
+        SETF(G_PSEC, R.q.solver == SOLV_SECANT);
+        SETF(G_PREQ, tipo == PT_B && pin.itm == IT_SECANT);
+        SETF(G_PHW, R.q.hw);
+        memo_V[V_CH0] = pin.CH0; memo_V[V_HF1] = R.q.hf1;
+        memo_V[V_Q0LS] = R.q.Q0 * 1000;
         if (tipo == PT_I) {
             memo_V[V_CH] = pin.CH; memo_V[V_HW] = X.hw; memo_V[V_ERR] = X.err;
             memo_V[V_QHW] = X.Qhw; memo_V[V_QHWLS] = X.Qhw * 1000;
@@ -191,6 +204,11 @@ static void fill_values(void)
         memo_V[V_VALKV] = X.val.Kv; memo_V[V_VALV] = X.val.st.v;
         memo_W |= R.d.warn;
         SETF(G_COURSE, R.d.qmax.solver == SOLV_COURSE);
+        SETF(G_QSEC, R.d.qmax.solver == SOLV_SECANT);
+        SETF(G_PSEC, R.d.solver == SOLV_SECANT);
+        SETF(G_PHW, R.d.hw);
+        SETF(G_PDFB, R.d.fb);
+        memo_V[V_CH0] = pin.CH0; memo_V[V_D0] = R.d.D0 * 1000;
         SETF(G_VP, R.d.vp > 0);
         SETF(G_VAL, X.has_val);
         break;
@@ -264,6 +282,9 @@ static const char *compute(void)
 {
     int e = H_OK;
     uint8_t i;
+    hydro_iter_opt o;
+    o.CH = pin.sCH0 ? pin.CH0 : 0;
+    o.solver = pin.itm;
     make_pipe();
     hydro_log_clear(&LG);
     memset(&X, 0, sizeof X);
@@ -274,7 +295,7 @@ static const char *compute(void)
             X.ph = hydro_pressure_head(pin.Hp, 0, R.st.v, R.st.hT, &C, &R.st.warn);
         break;
     case PT_B:
-        e = hydro_qmax(&P, pin.H, &C, &R.q, &LG);
+        e = hydro_qmax_o(&P, pin.H, &C, &o, &R.q, &LG);
         break;
     case PT_C:
         e = (pin.mach == 0) ? hydro_pump(&P, pin.Q / 1000, pin.Hs, pin.eta, &C, &R.m)
@@ -294,7 +315,8 @@ static const char *compute(void)
             for (i = 0; i < dlist_n; i++)
                 dlist[i] = diam_sets[pin.dset].mm[i] / 1000;
         }
-        e = hydro_design(&P, pin.Q / 1000, pin.H, dlist, dlist_n, &C, &R.d, &LG);
+        e = hydro_design_o(&P, pin.Q / 1000, pin.H, dlist, dlist_n, &C, &o,
+                           &R.d, &LG);
         if (!e && pin.valve) {
             P.D = R.d.D_com;
             X.has_val = 1;   /* si hv < 0 se muestra igual, con su aviso */

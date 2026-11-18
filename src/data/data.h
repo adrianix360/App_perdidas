@@ -66,7 +66,7 @@ extern const water waters[WATERS];
 
 /* ---- casos del curso (examples.c) ---- */
 #define EX_NONE ((real)-1e30)      /* campo vacio */
-#define EXAMPLES 21
+#define EXAMPLES 23
 typedef struct {
     const char *name;
     unsigned char tipo;            /* PT_*; PT_COUNT = sistema       */

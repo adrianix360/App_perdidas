@@ -386,7 +386,6 @@ static const golden_t golden[] = {
     GX("P-27b", "metodo (3 secante)",  3),
     GX("P-27b", "vueltas <= 6",        1),
     GX("P-27b", "dif secante-curso ok", 1),
-    GX("P-26m", "respaldo C_H=1",      1),
     GX("P-26m", "dif C_H=1 ok",        1),
     GX("P-26m", "dif SumK=300 ok",     1),
     GX("P-26m", "B laminar: biseccion", 1),

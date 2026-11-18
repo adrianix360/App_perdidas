@@ -290,15 +290,44 @@ static int solve_v_bisection(const hydro_pipe *p, real H, const hydro_cfg *c,
 /* ------------------------------------------------------------------ */
 /* Tipo B: caudal maximo                                               */
 /* ------------------------------------------------------------------ */
-int hydro_qmax(const hydro_pipe *p, real H, const hydro_cfg *c,
-               hydro_qmax_res *r, hydro_log *lg)
+/* Velocidad de la formula del curso (diapositivas 10 y 11) dado hf */
+static real v_course(const hydro_pipe *p, real hf, const hydro_cfg *c)
 {
-    real A, v = 0, hf, hfn, hm, arg, g2 = 2.0 * c->g;
+    real g2 = 2.0 * c->g;
+    real arg = p->ks / (3.7 * p->D) +
+               2.51 * c->nu * R_SQRT(p->L) /
+               R_SQRT(g2 * p->D * p->D * p->D * hf);
+    return -R_SQRT(4.0 * g2 * p->D * hf / p->L) * R_LOG10(arg);
+}
+
+/* v2.1: valor inicial. Raiz x > 0 de a x^p + b x^q = H (suma de dos
+ * potencias, monotona) por Newton, partiendo de la raiz sin el termino
+ * b. Con D (p, q < 0) parte por la izquierda; con Q, por la derecha:
+ * en ambos casos converge sin pasarse. Solo es un arranque. */
+static real pow_root(real a, real p, real b, real q, real H)
+{
+    real x = R_POW(H / a, 1.0 / p), t1, t2;
+    unsigned char i;
+    for (i = 0; i < 8; i++) {
+        t1 = a * R_POW(x, p);
+        t2 = b * R_POW(x, q);
+        x -= x * (t1 + t2 - H) / (p * t1 + q * t2);
+    }
+    return x;
+}
+
+int hydro_qmax_o(const hydro_pipe *p, real H, const hydro_cfg *c,
+                 const hydro_iter_opt *o, hydro_qmax_res *r, hydro_log *lg)
+{
+    real A, v = 0, hf, hfn, hm, g2 = 2.0 * c->g, Gp = 0, G, b, lo, hi;
     int i, e = hydro_check_pipe(p, c);
 
     hydro_log_clear(lg);
     r->iters = 0;
     r->course_ok = 0;
+    r->hw = 0;
+    r->Q0 = 0;
+    r->hf1 = H;
     r->solver = SOLV_BISECTION;
     if (e)
         return e;
@@ -311,37 +340,89 @@ int hydro_qmax(const hydro_pipe *p, real H, const hydro_cfg *c,
         r->solver = SOLV_DIRECT;
         r->iters = 1;
     } else if (c->method == FM_CW) {
-        /* Iteracion del curso (diapositivas 10 y 11) */
-        hf = H;
-        for (i = 1; i <= c->max_iter; i++) {
-            arg = p->ks / (3.7 * p->D) +
-                  2.51 * c->nu * R_SQRT(p->L) /
-                  R_SQRT(g2 * p->D * p->D * p->D * hf);
-            v = -R_SQRT(4.0 * g2 * p->D * hf / p->L) * R_LOG10(arg);
-            if (!(v > 0))
-                break;
-            hm = p->sumK * v * v / g2;
-            hfn = H - hm;
-            log_row(lg, (real)i, hf, v, hm, hfn);
-            r->iters = i;
-            if (!(hfn > 0))
-                break;
-            if (R_FABS(hfn - hf) <= c->tol + HYDRO_EPS_REL * hf) {
-                /* velocidad final con el ultimo hf */
-                arg = p->ks / (3.7 * p->D) +
-                      2.51 * c->nu * R_SQRT(p->L) /
-                      R_SQRT(g2 * p->D * p->D * p->D * hfn);
-                v = -R_SQRT(4.0 * g2 * p->D * hfn / p->L) * R_LOG10(arg);
-                r->course_ok = 1;
-                break;
+        /* v2.1: hf1 de Hazen-Williams, con Q_HW tal que
+         * hf_HW(Q) + SumK v^2/2g = H. Si falla, hf1 = H como antes. */
+        if (o && o->CH > 0) {
+            r->Q0 = pow_root(10.675 * p->L /
+                             (R_POW(o->CH, 1.852) * R_POW(p->D, 4.87)),
+                             1.852, p->sumK / (g2 * A * A), 2.0, H);
+            r->hf1 = hydro_hw_hf(r->Q0, p->D, p->L, o->CH);
+            if (r->hf1 > 0 && r->hf1 < H) {
+                r->hw = 1;
+                v = r->Q0 / A;
+                hm = p->sumK * v * v / g2;
+                log_row(lg, 0, r->hf1, v, hm, r->hf1);
+            } else {
+                r->hf1 = H;
             }
-            hf = hfn;
+        }
+        hf = r->hf1;
+        if (o && o->solver == IT_SECANT) {
+            /* v2.1: secante sobre G(hf) = hf + SumK v(hf)^2/2g - H, con
+             * v(hf) de la formula del curso. El 2.o punto es un paso del
+             * curso (hf = H - hm). Fila 0: el arranque. */
+            hydro_log_clear(lg);
+            hfn = hf;
+            lo = 0;          /* G crece con hf: G(0) < 0 <= G(H) */
+            hi = H;
+            for (i = 0; i <= HYDRO_SEC_MAX; i++) {
+                v = v_course(p, hf, c);
+                if (!(v > 0))
+                    break;
+                hm = p->sumK * v * v / g2;
+                G = hf + hm - H;
+                log_row(lg, (real)i, hf, v, hm, G);
+                if (G > 0)
+                    hi = hf;
+                else
+                    lo = hf;
+                if (i == 0)
+                    b = H - hm;
+                else if (G != Gp)
+                    b = hf - G * (hf - hfn) / (G - Gp);
+                else
+                    b = hf;
+                /* si la vuelta sale del intervalo: punto medio */
+                if (!(b > lo && b < hi))
+                    b = 0.5 * (lo + hi);
+                /* criterio relativo: con hf pequeno, 1e-5 m no basta */
+                if (R_FABS(b - hf) <= HYDRO_SEC_REL * b) {
+                    v = v_course(p, b, c);
+                    r->iters = i;
+                    r->course_ok = 1;
+                    break;
+                }
+                hfn = hf;
+                Gp = G;
+                hf = b;
+            }
+        } else {
+            /* Iteracion del curso (diapositivas 10 y 11) */
+            for (i = 1; i <= c->max_iter; i++) {
+                v = v_course(p, hf, c);
+                if (!(v > 0))
+                    break;
+                hm = p->sumK * v * v / g2;
+                hfn = H - hm;
+                log_row(lg, (real)i, hf, v, hm, hfn);
+                r->iters = i;
+                if (!(hfn > 0))
+                    break;
+                if (R_FABS(hfn - hf) <= c->tol + HYDRO_EPS_REL * hf) {
+                    /* velocidad final con el ultimo hf */
+                    v = v_course(p, hfn, c);
+                    r->course_ok = 1;
+                    break;
+                }
+                hf = hfn;
+            }
         }
         /* La formula del curso supone Colebrook-White (Re > 2000) */
         if (r->course_ok && v * p->D / c->nu < c->re_lam)
             r->course_ok = 0;
         if (r->course_ok)
-            r->solver = SOLV_COURSE;
+            r->solver = (o && o->solver == IT_SECANT) ? SOLV_SECANT
+                                                     : SOLV_COURSE;
     }
 
     if (r->solver == SOLV_BISECTION) {
@@ -423,12 +504,13 @@ real hydro_vp(real H, real hf, real sumK, const hydro_cfg *c)
     return R_SQRT(2.0 * c->g * (H - hf) / sumK);
 }
 
-int hydro_design(const hydro_pipe *p, real Qd, real H,
-                 const real *list, int n, const hydro_cfg *c,
-                 hydro_design_res *r, hydro_log *lg)
+int hydro_design_o(const hydro_pipe *p, real Qd, real H,
+                   const real *list, int n, const hydro_cfg *c,
+                   const hydro_iter_opt *o, hydro_design_res *r,
+                   hydro_log *lg)
 {
     hydro_pipe q = *p;
-    real lo = 0.001, hi = 20.0, mid, g;
+    real lo = 0.001, hi = 20.0, mid, g, a, b, Fa, Fb, k8;
     int it, i, e;
 
     hydro_log_clear(lg);
@@ -438,6 +520,10 @@ int hydro_design(const hydro_pipe *p, real Qd, real H,
     r->vp = 0;
     r->warn = 0;
     r->iters = 0;
+    r->D0 = 0;
+    r->solver = SOLV_BISECTION;
+    r->hw = 0;
+    r->fb = 0;
     q.D = 1.0;
     e = hydro_check_pipe(&q, c);
     if (e)
@@ -449,20 +535,68 @@ int hydro_design(const hydro_pipe *p, real Qd, real H,
     if (hT_of_D(&q, hi, Qd, c) > H || hT_of_D(&q, lo, Qd, c) < H)
         return H_ERR_NOROOT;
 
-    /* Biseccion geometrica sobre D (hT decrece con D) */
-    for (it = 1; it <= 200; it++) {
-        mid = R_SQRT(lo * hi);
-        g = hT_of_D(&q, mid, Qd, c) - H;
-        log_row(lg, (real)it, lo, hi, mid, g);
-        if (g > 0)
-            lo = mid;
-        else
-            hi = mid;
-        if (hi - lo <= HYDRO_BIS_REL * hi)
-            break;
+    /* v2.1: secante sobre F(D) = hT(Qd, D) - H desde D0 y 1,02 D0. D0
+     * cumple hf + SumK v^2/2g = H con hf de Hazen-Williams (si hay C_H)
+     * o de Darcy con f = 0,02. Si una vuelta sale de [lo, hi], da un
+     * error o no converge, se usa la biseccion de siempre. */
+    if (o && (o->solver == IT_SECANT || o->CH > 0)) {
+        k8 = 8.0 * Qd * Qd / (HYDRO_PI * HYDRO_PI * c->g);
+        if (o->CH > 0) {
+            r->D0 = pow_root(10.675 * q.L * R_POW(Qd, 1.852) /
+                             R_POW(o->CH, 1.852), -4.87,
+                             q.sumK * k8, -4.0, H);
+            r->hw = 1;
+        }
+        if (!(r->D0 > lo && r->D0 < hi)) {
+            r->D0 = pow_root(0.02 * q.L * k8, -5.0, q.sumK * k8, -4.0, H);
+            r->hw = 0;
+        }
+        a = r->D0;
+        Fa = hT_of_D(&q, a, Qd, c) - H;
+        log_row(lg, 0, a, Qd / hydro_area(a), Fa + H, Fa);
+        b = 1.02 * a;
+        Fb = hT_of_D(&q, b, Qd, c) - H;
+        for (it = 1; it <= HYDRO_SEC_MAX; it++) {
+            if (!(Fa + H > 0 && Fb + H > 0 && Fb != Fa))
+                break;
+            mid = b - Fb * (b - a) / (Fb - Fa);
+            if (!(mid > lo && mid < hi))
+                break;
+            a = b;
+            Fa = Fb;
+            b = mid;
+            Fb = hT_of_D(&q, b, Qd, c) - H;
+            log_row(lg, (real)it, b, Qd / hydro_area(b), Fb + H, Fb);
+            if (Fb + H > 0 && R_FABS(Fb) <= 1e-3 * H &&
+                R_FABS(b - a) <= HYDRO_SEC_REL * b) {
+                r->solver = SOLV_SECANT;
+                r->iters = it;
+                r->D_exact = b;
+                break;
+            }
+        }
+        if (r->solver != SOLV_SECANT) {
+            r->fb = 1;
+            hydro_log_clear(lg);
+        }
     }
-    r->iters = it;
-    r->D_exact = 0.5 * (lo + hi);
+
+    if (r->solver == SOLV_BISECTION) {
+        /* Biseccion geometrica sobre D (hT decrece con D) */
+        for (it = 1; it <= 200; it++) {
+            mid = R_SQRT(lo * hi);
+            g = hT_of_D(&q, mid, Qd, c) - H;
+            log_row(lg, (real)it, lo, hi, mid, g);
+            if (g > 0)
+                lo = mid;
+            else
+                hi = mid;
+            if (hi - lo <= HYDRO_BIS_REL * hi)
+                break;
+        }
+        r->iters = it;
+        r->D_exact = 0.5 * (lo + hi);
+    }
     q.D = r->D_exact;
     hydro_pipe_state(&q, Qd, c, &r->st_exact);
 
@@ -482,7 +616,7 @@ int hydro_design(const hydro_pipe *p, real Qd, real H,
     e = hydro_pipe_state(&q, Qd, c, &r->st_com_qd);
     if (e)
         return e;
-    e = hydro_qmax(&q, H, c, &r->qmax, 0);
+    e = hydro_qmax_o(&q, H, c, o, &r->qmax, 0);
     if (e)
         return e;
     if (r->st_com_qd.hm > c->hm_ratio * r->st_com_qd.hf) {

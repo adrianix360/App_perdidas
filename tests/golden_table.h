@@ -365,6 +365,32 @@ static const golden_t golden[] = {
     GX("F-05", "error Re=0",           3),   /* H_ERR_Q */
     GX("F-05", "error ks/D<0",         5),   /* H_ERR_KS */
     GX("F-05", "log CW filas>2",       1),
+    /* v2.1: arranque de Hazen-Williams y secante (Ejercicio 2 de clase;
+     * valores de Adrian con un programa aparte, no son oficiales) */
+    GT("P-26", "D exacto CW [mm]",     374.9084, 4, 1e-5),
+    GT("P-26", "D exacto SJ [mm]",     374.7644, 4, 1e-5),
+    GF("P-26", "f",                    0.011669, 6),
+    GT("P-26", "v [m/s]",              2.7629,   4, 1e-5),
+    GT("P-26", "D0 HW con SumK [mm]",  379.89,   2, 1e-5),
+    GT("P-26", "D0 HW sin SumK [mm]",  359.98,   2, 1e-5),
+    GX("P-26", "metodo (3 secante)",   3),
+    GX("P-26", "arranque HW",          1),
+    GX("P-26", "vueltas <= 6",         1),
+    GX("P-26", "dif secante-biseccion ok", 1),
+    GT("P-27", "Q [l/s]",              357.87,   2, 1e-5),
+    GX("P-27", "metodo (3 secante)",   3),
+    GX("P-27", "arranque HW",          1),
+    GX("P-27", "vueltas <= 6",         1),
+    GX("P-27", "dif secante-curso ok", 1),
+    GT("P-27b", "Q [l/s]",             305.18,   2, 1e-5),
+    GX("P-27b", "metodo (3 secante)",  3),
+    GX("P-27b", "vueltas <= 6",        1),
+    GX("P-27b", "dif secante-curso ok", 1),
+    GX("P-26m", "respaldo C_H=1",      1),
+    GX("P-26m", "dif C_H=1 ok",        1),
+    GX("P-26m", "dif SumK=300 ok",     1),
+    GX("P-26m", "B laminar: biseccion", 1),
+    GX("P-26m", "B laminar: dif ok",   1),
 };
 
 #define GOLDEN_N (sizeof(golden) / sizeof(golden[0]))

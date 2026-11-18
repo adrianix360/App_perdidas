@@ -635,6 +635,95 @@ int golden_counts(int *pass, int *pass_r, int *fail, int *missing)
     return n_fail || n_missing;
 }
 
+/* ------------------------------------------------------------------ */
+/* v2.1: arranque de Hazen-Williams y secante (tipos D y B)            */
+/* Ejercicio 2 de clase; valores de Adrian con un programa aparte.     */
+/* ------------------------------------------------------------------ */
+#ifdef HYDRO_USE_DOUBLE
+#define SEC_TOL 1e-6
+#else
+#define SEC_TOL 2e-5
+#endif
+static double relx(double a, double b)
+{
+    return fabs(a - b) / fabs(b);
+}
+
+static void qmax_hw(const char *id, double D)
+{
+    hydro_pipe p = P(D, 500, 0.0015e-3, 5, 0);
+    hydro_iter_opt o = { 150, IT_SECANT }, oc = { 150, IT_DEFAULT };
+    hydro_qmax_res r, rc, rh;
+    begin(id);
+    cfg(1e-6, FM_CW);
+    put("error", hydro_qmax_o(&p, 8, &C, &o, &r, 0));
+    hydro_qmax(&p, 8, &C, &rc, 0);
+    hydro_qmax_o(&p, 8, &C, &oc, &rh, 0);
+    put("Q [l/s]", 1000.0 * r.st.Q);
+    put("metodo (3 secante)", r.solver);
+    put("arranque HW", r.hw);
+    put("hf1 HW [m]", r.hf1);
+    put("Q HW [l/s]", 1000.0 * r.Q0);
+    put("vueltas secante", r.iters);
+    put("vueltas <= 6", r.iters <= 6);
+    put("vueltas curso desde H", rc.iters);
+    put("vueltas curso desde HW", rh.iters);
+    put("dif secante-curso ok", relx(r.st.Q, rc.st.Q) <= SEC_TOL);
+    end();
+}
+
+static void case_HW(void)
+{
+    hydro_pipe p = P(0, 500, 0.0015e-3, 5, 0);
+    hydro_iter_opt o = { 150, IT_SECANT }, bad = { 1, IT_SECANT };
+    hydro_design_res r, rb, rs;
+    hydro_qmax_res q, qb;
+
+    begin("P-26");
+    cfg(1e-6, FM_CW);
+    put("error", hydro_design_o(&p, (real)0.305, 8, 0, 0, &C, &o, &r, 0));
+    hydro_design(&p, (real)0.305, 8, 0, 0, &C, &rb, 0);
+    put("D exacto CW [mm]", 1000.0 * r.D_exact);
+    put("f", r.st_exact.f);
+    put("v [m/s]", r.st_exact.v);
+    put("D0 HW con SumK [mm]", 1000.0 * r.D0);
+    put("D0 HW sin SumK [mm]", 1000.0 * pow(10.675 * 500 * pow(0.305, 1.852) /
+                                            (pow(150, 1.852) * 8), 1 / 4.87));
+    put("metodo (3 secante)", r.solver);
+    put("arranque HW", r.hw);
+    put("vueltas secante", r.iters);
+    put("vueltas <= 6", r.iters <= 6);
+    put("vueltas biseccion", rb.iters);
+    put("dif secante-biseccion ok", relx(r.D_exact, rb.D_exact) <= SEC_TOL);
+    cfg(1e-6, FM_SJ);
+    hydro_design_o(&p, (real)0.305, 8, 0, 0, &C, &o, &rs, 0);
+    put("D exacto SJ [mm]", 1000.0 * rs.D_exact);
+    end();
+
+    qmax_hw("P-27", 0.400);
+    qmax_hw("P-27b", 0.375);
+
+    /* Arranques malos: el respaldo entra y el resultado no cambia */
+    begin("P-26m");
+    cfg(1e-6, FM_CW);
+    hydro_design_o(&p, (real)0.305, 8, 0, 0, &C, &bad, &r, 0);
+    put("respaldo C_H=1", r.fb);
+    put("dif C_H=1 ok", relx(r.D_exact, rb.D_exact) <= SEC_TOL);
+    p.sumK = 300;                               /* SumK muy alto */
+    hydro_design(&p, (real)0.305, 8, 0, 0, &C, &rb, 0);
+    hydro_design_o(&p, (real)0.305, 8, 0, 0, &C, &o, &r, 0);
+    put("dif SumK=300 ok", relx(r.D_exact, rb.D_exact) <= SEC_TOL);
+    put("D SumK=300 [mm]", 1000.0 * r.D_exact);
+    put("vueltas SumK=300", r.iters);
+    p = P(0.4, 500, 0.0015e-3, 5, 0);           /* laminar: sin curso */
+    cfg(1e-2, FM_CW);
+    hydro_qmax(&p, 8, &C, &qb, 0);
+    hydro_qmax_o(&p, 8, &C, &o, &q, 0);
+    put("B laminar: biseccion", q.solver == SOLV_BISECTION);
+    put("B laminar: dif ok", relx(q.st.Q, qb.st.Q) <= SEC_TOL);
+    end();
+}
+
 int golden_run(int verb)
 {
     verbose = verb;
@@ -649,6 +738,7 @@ int golden_run(int verb)
     case_E();
     case_S();
     case_R();
+    case_HW();
     golden_v2();
     OUT("\nTotal: %d pasan (0,1 %%), %d pasan por redondeo (r), "
            "%d fallan, %d sin dato\n", n_pass, n_pass_r, n_fail, n_missing);

@@ -26,6 +26,7 @@ typedef double real;
 #define R_COS   cos
 #define HYDRO_EPS_REL 1e-12      /* convergencia relativa de iteraciones */
 #define HYDRO_BIS_REL 1e-12      /* ancho relativo final de biseccion    */
+#define HYDRO_SEC_REL 1e-10      /* paso relativo final de la secante    */
 #else
 typedef float real;
 #define R_LOG10 log10f
@@ -38,6 +39,7 @@ typedef float real;
 #define R_COS   cosf
 #define HYDRO_EPS_REL 4e-7f
 #define HYDRO_BIS_REL 1e-6f
+#define HYDRO_SEC_REL 1e-5f
 #endif
 
 #define HYDRO_PI ((real)3.14159265358979)
@@ -57,7 +59,16 @@ enum {
 enum { REG_LAMINAR = 0, REG_TRANSITION, REG_TURBULENT };
 
 /* Solucionador usado en el caudal maximo */
-enum { SOLV_DIRECT = 0, SOLV_COURSE, SOLV_BISECTION };
+enum { SOLV_DIRECT = 0, SOLV_COURSE, SOLV_BISECTION, SOLV_SECANT };
+
+/* v2.1: opciones de iteracion de los tipos B y D. Con opt = 0 (o todo
+ * en cero) el motor resuelve exactamente como la v2.0. */
+enum { IT_DEFAULT = 0, IT_SECANT };   /* B: curso; D: biseccion */
+#define HYDRO_SEC_MAX 12              /* tope de vueltas de la secante */
+typedef struct {
+    real CH;                /* > 0: arranque Hazen-Williams con este C_H */
+    unsigned char solver;   /* IT_*                                      */
+} hydro_iter_opt;
 
 /* ------------------------------------------------------------------ */
 /* Codigos de error (0 = correcto)                                     */
@@ -194,10 +205,14 @@ typedef struct {
     hydro_state st;
     unsigned char solver;     /* SOLV_*                                 */
     unsigned char course_ok;  /* la iteracion del curso convergio        */
+    unsigned char hw;         /* se arranco desde Hazen-Williams         */
     int iters;
+    real hf1;                 /* hf de arranque (H o el de Hazen-W.)     */
+    real Q0;                  /* Q de Hazen-Williams (si hw)             */
 } hydro_qmax_res;
-int hydro_qmax(const hydro_pipe *p, real H, const hydro_cfg *c,
-               hydro_qmax_res *r, hydro_log *lg);
+int hydro_qmax_o(const hydro_pipe *p, real H, const hydro_cfg *c,
+                 const hydro_iter_opt *o, hydro_qmax_res *r, hydro_log *lg);
+#define hydro_qmax(p, H, c, r, lg) hydro_qmax_o(p, H, c, 0, r, lg)
 
 /* Tipo C: bomba (Hs = carga estatica a vencer: (z2+p2/g)-(z1+p1/g)) */
 typedef struct {
@@ -224,10 +239,17 @@ typedef struct {
     hydro_qmax_res qmax;      /* caudal maximo con D comercial          */
     real vp;                  /* velocidad de perdidas (0 si no aplica) */
     unsigned int warn;
+    real D0;                  /* D de arranque de la secante            */
+    unsigned char solver;     /* SOLV_BISECTION o SOLV_SECANT           */
+    unsigned char hw;         /* D0 de Hazen-Williams                   */
+    unsigned char fb;         /* la secante fallo: se uso la biseccion  */
 } hydro_design_res;
-int hydro_design(const hydro_pipe *p, real Qd, real H,
-                 const real *list, int n, const hydro_cfg *c,
-                 hydro_design_res *r, hydro_log *lg);
+int hydro_design_o(const hydro_pipe *p, real Qd, real H,
+                   const real *list, int n, const hydro_cfg *c,
+                   const hydro_iter_opt *o, hydro_design_res *r,
+                   hydro_log *lg);
+#define hydro_design(p, Qd, H, l, n, c, r, lg) \
+    hydro_design_o(p, Qd, H, l, n, c, 0, r, lg)
 
 /* Tipo E: calibracion. dz = z1 - z2; dp = p1/g - p2/g (m) */
 typedef struct {

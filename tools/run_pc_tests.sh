@@ -16,7 +16,7 @@ for m in drag weir chan; do
   gcc $CF -Wdouble-promotion -fsingle-precision-constant -c src/hydro/$m.c -o "$OUT/${m}_f.o"
   gcc $CF -Wdouble-promotion -DHYDRO_USE_DOUBLE -c src/hydro/$m.c -o "$OUT/${m}_d.o"
 done
-for t in golden random_check random_check2; do
+for t in golden random_check random_check2 secant_check; do
   gcc $CF -c tests/$t.c -o "$OUT/${t}_f.o"
   gcc $CF -DHYDRO_USE_DOUBLE -c tests/$t.c -o "$OUT/${t}_d.o"
   gcc -o "$OUT/${t}_f.exe" "$OUT/${t}_f.o" "$OUT/hydro_f.o" "$OUT/drag_f.o" "$OUT/weir_f.o" "$OUT/chan_f.o" -lm
@@ -46,5 +46,7 @@ for p in f d; do
   "$OUT/random_check_$p.exe" tests/random_cases.csv || st=1
   echo "=================== aleatorios v2.0 ($p) ==================="
   "$OUT/random_check2_$p.exe" tests/random_cases2.csv || st=1
+  echo "=================== secante y arranque HW, v2.1 ($p) ==================="
+  "$OUT/secant_check_$p.exe" tests/random_cases.csv || st=1
 done
 exit $st

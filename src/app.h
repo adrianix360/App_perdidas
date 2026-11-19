@@ -13,7 +13,7 @@
 #else
 #define APP_NAME    "PERDIDAS"
 #endif
-#define APP_VERSION "2.0"
+#define APP_VERSION "2.1"
 #define CFG_APPVAR  "PERDCFG"
 #define TX_APPVAR   "PERDTXT"
 #define CASES_APPVAR "PERDCAS"

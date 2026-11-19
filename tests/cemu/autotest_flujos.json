@@ -1017,7 +1017,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "49281CA1"
+    "7F82300E"
    ]
   },
   "57": {

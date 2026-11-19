@@ -212,7 +212,9 @@ uint8_t cases_load(void)
         s->name[CASE_NAME] = 0;
         s->tipo = nm[CASE_NAME + 1];
         if (hdr[3] == 1) {                 /* v1.0: siempre pipe_inputs */
-            if (blob != sizeof(pipe_inputs) || s->tipo >= PT_COUNT)
+            /* v2.1: pipe_inputs crecio; el de la v1.0 es PIN_V20_SIZE */
+            if (blob < PIN_V20_SIZE || blob > sizeof(pipe_inputs) ||
+                s->tipo >= PT_COUNT)
                 goto bad;
             s->len = blob;
         } else {

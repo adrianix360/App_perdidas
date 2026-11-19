@@ -73,7 +73,7 @@ static form_field f_A[] = { F_Q, F_D, F_L, F_KS, F_K, F_NU, F_F,
 /* v2.1: C_H opcional para arrancar desde Hazen-Williams (vacio = como
  * la v2.0) y metodo de iteracion. Van al final: los casos del curso
  * cargan los campos en orden. */
-#define F_CH0 { "C_H arranque (opc)", 0, &pin.CH0, 0, &pin.sCH0, FF_RANGE | FF_OPT, 0, 0, 1, 200 }
+#define F_CH0 { "C_H inicio (opc.)", 0, &pin.CH0, 0, &pin.sCH0, FF_RANGE | FF_OPT, 0, 0, 1, 200 }
 static form_field f_B[] = { FLD("Carga H", "m", H, sH, FF_ANY), F_D, F_L,
     F_KS, F_K, F_NU, F_F, F_MET, F_CH0,
     { "Iteracion", 0, 0, &pin.itm, 0, FF_CHOICE, itB_names, 2, 0, 0 } };

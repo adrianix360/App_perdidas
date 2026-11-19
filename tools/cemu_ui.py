@@ -17,6 +17,8 @@ FLUJOS = "--flujos" in sys.argv
 MIGR = "--migr" in sys.argv
 BACKUP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                       "respaldo_calc", "2026-11-15")
+# v2.1: PERD_BACKUP=<carpeta> prueba con otro respaldo (p. ej. el formato 2)
+BACKUP = os.environ.get("PERD_BACKUP", BACKUP)
 RUN = ("C:/dev/build/cemu_migr" if MIGR else "C:/dev/build/cemu_flujos" if FLUJOS
        else "C:/dev/build/cemu_ui")
 ROM = "C:/dev/tools/CEmu/ti84ce.rom"

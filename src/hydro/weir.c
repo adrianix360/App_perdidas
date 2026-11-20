@@ -91,7 +91,8 @@ int weir_total(const weir_el *e, unsigned char n, real h, real g,
 }
 
 int weir_level(const weir_el *e, unsigned char n, real Q, real g,
-               real *h, real *Qi, unsigned int *warn, int *iters)
+               real *h, real *Qi, unsigned int *warn, int *iters,
+               hydro_log *lg)
 {
     unsigned char i;
     real lo, hi, mid, q, zmin;
@@ -99,6 +100,7 @@ int weir_level(const weir_el *e, unsigned char n, real Q, real g,
     int k;
 
     *iters = 0;
+    hydro_log_clear(lg);
     if (n < 1 || n > WEIR_MAX || !(g > 0))
         return H_ERR_ARG;
     for (i = 0; i < n; i++)
@@ -128,10 +130,12 @@ int weir_level(const weir_el *e, unsigned char n, real Q, real g,
     }
     if (k == 40)
         return H_ERR_NOROOT;
+    hydro_log_row(lg, 0, lo, hi, hi, q - Q);
     for (k = 0; k < 200; k++) {
         mid = 0.5 * (lo + hi);
         w = 0;
         weir_total(e, n, mid, g, &q, 0, &w);
+        hydro_log_row(lg, (real)(k + 1), lo, hi, mid, q - Q);
         if (q > Q)
             hi = mid;
         else

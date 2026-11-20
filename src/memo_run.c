@@ -114,6 +114,7 @@ static const real m_D[5] = { 1, 1000, 1000, 1000, 1 };
 static const char *const hB_sec[5] = { "i", "hf", "v", "hm", "G" };
 static const char *const hD_sec[5] = { "i", "D mm", "v", "hT", "hT-H" };
 static const real m_Ds[5] = { 1, 1000, 1, 1, 1 };
+static const char *const hW_bis[5] = { "i", "h min", "h max", "h", "Q(h)-Q" };
 
 static void run_prog(uint8_t prog, uint8_t depth)
 {
@@ -178,6 +179,8 @@ static void run_prog(uint8_t prog, uint8_t depth)
                 memo_table(hB_sec, 5, memo_log, m_one);
             else if (id == TB_D_SEC)
                 memo_table(hD_sec, 5, memo_log, m_Ds);
+            else if (id == TB_W_BIS)
+                memo_table(hW_bis, 5, memo_log, m_one);
             else
                 memo_table(hCW, 2, memo_log, m_one);
             break;

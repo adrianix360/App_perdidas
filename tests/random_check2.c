@@ -107,7 +107,7 @@ int main(int argc, char **argv)
                 weir_total(e, 3, (real)x[8], C.g, &Q, Qi, &w);
                 cmp(k, Q, r1, ln);
             } else {
-                weir_level(e, 3, (real)x[8], C.g, &h, Qi, &w, &it);
+                weir_level(e, 3, (real)x[8], C.g, &h, Qi, &w, &it, 0);
                 cmp(k, h, r1, ln);
             }
             break;

@@ -250,19 +250,63 @@ static real coefK(const weir_el *e, real H)
     }
 }
 
+/* v2.1: en la memoria (comp_full) cada elemento va paso a paso, con
+ * la formula, los numeros sustituidos y la suma final */
+static uint8_t comp_full;
 static void comp_hook(void)
 {
-    char b[UI_COLS + 1];
+    char b[2 * UI_COLS + 1];
     uint8_t i;
+    const weir_el *e;
     for (i = 0; i < (uint8_t)wi.ne; i++) {
+        e = &EL[i];
         memo_line(mfmt(b, sizeof b, "%d %s x%d: z=%w Cd=%w", i + 1,
-                       et_names[EL[i].type], EL[i].count, (double)EL[i].z,
-                       (double)EL[i].Cd), C_FG);
-        if (HI[i] > 0)
+                       et_names[e->type], e->count, (double)e->z,
+                       (double)e->Cd), C_FG);
+        if (!(HI[i] > 0)) {
+            memo_line("   h <= z: no recibe agua, Q = 0", C_GRAY);
+            continue;
+        }
+        if (!comp_full) {
             memo_line(mfmt(b, sizeof b, "   H=h-z=%w m  Q=%w m3/s", (double)HI[i],
                            (double)QI[i]), C_OK);
-        else
-            memo_line("   h <= z: no recibe agua, Q = 0", C_GRAY);
+            continue;
+        }
+        memo_line(mfmt(b, sizeof b, " H = h - z = %v - %v = %v m",
+                       (double)memo_V[V_WLEV], (double)e->z, (double)HI[i]), C_FG);
+        if (e->type == WE_RECT) {
+            memo_line(" Q = n Cd (2/3) sqrt(2g) b H^1.5", C_FG);
+            memo_line(mfmt(b, sizeof b, "   = %d(%v)(2/3)sqrt(2(%v))(%v)(%v)^1.5",
+                           e->count, (double)e->Cd, (double)C.g, (double)e->a,
+                           (double)HI[i]), C_GRAY);
+        } else if (e->type == WE_TRI) {
+            memo_line(" Q = n Cd (8/15) sqrt(2g) tan(t/2) H^2.5", C_FG);
+            memo_line(mfmt(b, sizeof b, "   = %d(%v)(8/15)sqrt(2(%v))tan(%v/2)(%v)^2.5",
+                           e->count, (double)e->Cd, (double)C.g, (double)e->a,
+                           (double)HI[i]), C_GRAY);
+        } else {
+            if (e->type == WE_ORC)
+                memo_line(mfmt(b, sizeof b, " A = pi d^2/4 = pi(%v)^2/4 = %v m2",
+                               (double)e->a, (double)hydro_area(e->a)), C_FG);
+            else
+                memo_line(mfmt(b, sizeof b, " A = b a = %v(%v) = %v m2", (double)e->a,
+                               (double)e->b, (double)(e->a * e->b)), C_FG);
+            memo_line(" Q = n Cd A sqrt(2 g H)  (H al centro)", C_FG);
+            memo_line(mfmt(b, sizeof b, "   = %d(%v)(%v)sqrt(2(%v)(%v))",
+                           e->count, (double)e->Cd,
+                           (double)(e->type == WE_ORC ? hydro_area(e->a) : e->a * e->b),
+                           (double)C.g, (double)HI[i]), C_GRAY);
+        }
+        memo_line(mfmt(b, sizeof b, "   Q%d = %v m3/s", i + 1, (double)QI[i]), C_OK);
+    }
+    if (comp_full) {
+        size_t k;
+        strcpy(b, " Q = ");
+        for (i = 0; i < (uint8_t)wi.ne; i++) {
+            k = strlen(b);
+            mfmt(b + k, sizeof b - k, i ? " + %v" : "%v", (double)QI[i]);
+        }
+        memo_line(b, C_FG);
     }
 }
 
@@ -277,6 +321,8 @@ static const char *compute(void)
     C = g_set.h;
     memo_cfg = &C;
     memo_hook = 0;
+    memo_log = &memo_lg;          /* v2.1: biseccion del nivel */
+    hydro_log_clear(&memo_lg);
     memo_V[V_G] = C.g;
     if (tipo == WT_SIMPLE) {
         memset(EL, 0, sizeof EL);
@@ -297,7 +343,7 @@ static const char *compute(void)
             if (!wi.sQ)
                 return "Falta el caudal Q";
             Q = qsi(wi.Q);
-            err = weir_level(EL, 1, Q, C.g, &H, QI, &w, &it);
+            err = weir_level(EL, 1, Q, C.g, &H, QI, &w, &it, &memo_lg);
             MSETF(G_WH0, wi.shup);
             memo_V[V_WLEV] = wi.hup;
             memo_V[V_WH0] = wi.hup - H;
@@ -330,7 +376,7 @@ static const char *compute(void)
             if (!wi.sQ)
                 return "Falta el caudal Q";
             Q = qsi(wi.Q);
-            err = weir_level(EL, (uint8_t)wi.ne, Q, C.g, &h, QI, &w, &it);
+            err = weir_level(EL, (uint8_t)wi.ne, Q, C.g, &h, QI, &w, &it, &memo_lg);
         }
         for (i = 0; i < (uint8_t)wi.ne; i++)
             HI[i] = h - EL[i].z;
@@ -462,6 +508,7 @@ static void result_loop(void)
     uint8_t k;
     fk_sum[1] = tipo == WT_COMP ? "ESQUEMA" : "";
     for (;;) {
+        comp_full = memo;
         memo_show(PROG_X(XP_VE1_SUM + 2 * tipo + memo));
         k = view_run(titles[tipo], memo ? fk_memo : fk_sum);
         if (k == K_F1)

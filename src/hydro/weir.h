@@ -46,7 +46,11 @@ int weir_total(const weir_el *e, unsigned char n, real h, real g,
  * resuelve con la formula cerrada; si no, biseccion (la funcion es
  * monotona creciente). iters = vueltas de la biseccion (0 si cerrada). */
 int weir_level(const weir_el *e, unsigned char n, real Q, real g,
-               real *h, real *Qi, unsigned int *warn, int *iters);
+               real *h, real *Qi, unsigned int *warn, int *iters,
+               hydro_log *lg);
+/* v2.1: si lg, guarda la biseccion para la memoria: fila 0 = intervalo
+ * inicial (0, h min, h max, h max, Q(h max) - Q); filas i = (i, h min,
+ * h max, h medio, Q(h medio) - Q). */
 
 /* VE-6: perfil de velocidades v = k y^n en un canal de ancho b y
  * tirante h: Q = b k h^(n+1) / (n+1) */

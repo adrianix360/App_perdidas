@@ -151,27 +151,27 @@ static void case_VE(void)
     put("Q total [m3/s]", Q);
     end();
     begin("VE-02");
-    weir_level(e, 2, (real)0.5, g, &h, Qi, &w, &it);
+    weir_level(e, 2, (real)0.5, g, &h, Qi, &w, &it, 0);
     put("h [m]", h);
     end();
 
     e[0] = WE(WE_TRI, 90, 0, 1);
     begin("VE-03");
-    weir_level(e, 1, (real)0.2, g, &h, Qi, &w, &it);
+    weir_level(e, 1, (real)0.2, g, &h, Qi, &w, &it, 0);
     put("H [m]", h);
     end();
     begin("VE-04");
-    weir_level(e, 1, (real)0.26064, g, &h, Qi, &w, &it);
+    weir_level(e, 1, (real)0.26064, g, &h, Qi, &w, &it, 0);
     put("H [m]", h);
     end();
     begin("VE-05");
     e[0] = WE(WE_TRI, 60, 0, 1);
-    weir_level(e, 1, (real)0.016, g, &h, Qi, &w, &it);
+    weir_level(e, 1, (real)0.016, g, &h, Qi, &w, &it, 0);
     put("H [m]", h);
     end();
     begin("VE-06");
     e[1] = WE(WE_RECT, 1.3, h, 1);
-    weir_level(e, 2, (real)0.036, g, &h, Qi, &w, &it);
+    weir_level(e, 2, (real)0.036, g, &h, Qi, &w, &it, 0);
     put("h [m]", h);
     put("Q tri [l/s]", Qi[0] * 1000);
     put("Q rec [l/s]", Qi[1] * 1000);
@@ -188,7 +188,7 @@ static void case_VE(void)
     end();
     begin("VE-08");
     e[0] = WE(WE_TRI, 90, 0, 1);
-    weir_level(e, 1, Q, g, &h, Qi, &w, &it);
+    weir_level(e, 1, Q, g, &h, Qi, &w, &it, 0);
     put("H [m]", h);
     put("h0 [m]", 1 - h);
     end();
@@ -211,10 +211,10 @@ static void case_VE(void)
     s1 = WE(WE_TRI, 90, 0, 1);
     s2[0] = s1;
     s2[1] = WE(WE_RECT, 1, 100, 1);     /* nunca recibe agua */
-    weir_level(&s1, 1, (real)0.2, g, &h1, Qi, &w, &it);
-    weir_level(s2, 2, (real)0.2, g, &h2, Qi, &w, &it);
+    weir_level(&s1, 1, (real)0.2, g, &h1, Qi, &w, &it, 0);
+    weir_level(s2, 2, (real)0.2, g, &h2, Qi, &w, &it, 0);
     put("equivalencia 1 tri", fabs((double)(h1 - h2)) < 1e-5 * h1);
-    put("error Q=0", weir_level(&s1, 1, 0, g, &h1, Qi, &w, &it));
+    put("error Q=0", weir_level(&s1, 1, 0, g, &h1, Qi, &w, &it, 0));
     s1 = WE(WE_ORC, 0, 0, 1);
     put("error d=0", weir_total(&s1, 1, 1, g, &Q, Qi, &w));
     s1 = WE(WE_ORC, 0.2, 1, 1);

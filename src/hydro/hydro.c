@@ -50,7 +50,8 @@ void hydro_log_clear(hydro_log *lg)
 
 /* Guarda las primeras HYDRO_LOG_MAX/2 filas y, si hay mas, las ultimas
  * HYDRO_LOG_MAX/2 (la memoria de calculo muestra "..." entre ambas). */
-static void log_row(hydro_log *lg, real a, real b, real c, real d, real e)
+#define log_row hydro_log_row
+void hydro_log_row(hydro_log *lg, real a, real b, real c, real d, real e)
 {
     real *r;
     unsigned char k, j;

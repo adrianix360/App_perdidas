@@ -12,7 +12,7 @@
 #ifndef MEMO_DEFS_H
 #define MEMO_DEFS_H
 
-#define TX_VERSION 3
+#define TX_VERSION 4
 #define TX_NONE 0xFFFFu
 #define TX_FULL 0x01
 #define TX_SHORT 0x02
@@ -155,6 +155,7 @@ enum { XP_FRIC_SUM, XP_FRIC_MEMO,
 enum { TB_B_COURSE = 0, TB_B_BIS, TB_D, TB_CW,
        TB_HOOK,          /* lo dibuja la pantalla (memo_hook) */
        TB_B_SEC, TB_D_SEC,   /* v2.1: secante */
+       TB_W_BIS,             /* v2.1: nivel de vertedores */
        TB_COUNT };
 
 #endif

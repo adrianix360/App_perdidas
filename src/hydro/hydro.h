@@ -165,6 +165,8 @@ typedef struct {
 } hydro_log;
 
 void hydro_log_clear(hydro_log *lg);
+/* agrega una fila (lg puede ser NULL) */
+void hydro_log_row(hydro_log *lg, real a, real b, real c, real d, real e);
 
 /* ------------------------------------------------------------------ */
 /* Funciones base                                                      */

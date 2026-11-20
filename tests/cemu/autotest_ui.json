@@ -812,7 +812,7 @@
    "start": "vram_start",
    "size": "vram_16_size",
    "expected_CRCs": [
-    "A8219860"
+    "186F25C7"
    ]
   },
   "33": {

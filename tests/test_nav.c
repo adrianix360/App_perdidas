@@ -859,6 +859,11 @@ int main(int argc, char **argv)
         T("2"); T("2"); K(K_PGUP); K(K_DOWN); K(K_RIGHT); K(K_DOWN); K(K_DOWN); TE("500"); K(K_F5);
         runf();
         check(has_line("> Nivel h = 1.8287"), "VE-02: h = 1.829 m");
+        T("2"); T("2"); K(K_F5); K(K_F1);
+        runf();
+        check(has_line("ITERACIONES (nivel h)") && has_line("Q(h)-Q") && has_line("Q1 = ") &&
+              has_line("sqrt(2(9.81)") && has_line(" Q = ") && memo_ok(),
+              "VE-02: memoria con biseccion y caudales paso a paso");
         /* VE-06: triangular 60 en 0 + rectangular 1.3 m en 0.2072, Q = 36 l/s */
         T("2"); T("2"); K(K_PGUP); K(K_DOWN); K(K_DOWN); K(K_DOWN); TE("36"); K(K_DOWN);
         K(K_DOWN); K(K_DOWN); TE("60"); K(K_DOWN); TE("0"); K(K_DOWN);

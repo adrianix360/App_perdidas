@@ -1,0 +1,10 @@
+local mock = dofile("tests/mock_nspire.lua")
+local env = mock.load_app("build/app.lua")
+assert(env.platform.apiLevel == "2.4", "apiLevel")
+local ops = mock.paint()
+assert(#ops > 0, "sin operaciones de dibujo")
+assert(mock.has_text("PERDIDAS / FLUJOS"), "falta el titulo")
+local t = mock.screen_text()[1]
+assert(t.x >= 0 and t.x + t.w <= 318, "titulo fuera de pantalla")
+mock.dump_ops("build/smoke_ops.json")
+print("test_smoke OK")

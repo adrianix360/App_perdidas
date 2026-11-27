@@ -103,14 +103,14 @@ end
 
 -- ============================================ 3. PERDIDAS: cada opcion y vuelta con ESC
 local perd_titles = { [1] = "TUBERIA SIMPLE", [2] = "SISTEMA SERIE/PARALELO (G)",
-  [3] = "FACTOR DE FRICCION f", [5] = "BIBLIOTECA", [6] = "MIS CASOS", [7] = "AJUSTES",
-  [8] = "AYUDA" }
+  [3] = "FACTOR DE FRICCION f", [5] = "ESTATICA Y DINAMICA", [6] = "BIBLIOTECA",
+  [7] = "MIS CASOS", [8] = "AJUSTES", [9] = "AYUDA" }
 do
   restart()
   keys("1")
   check(title() == "MENU PRINCIPAL" and shown("Tuberia simple") and shown("Biblioteca") and
     shown("Mis casos") and shown("Ayuda / Acerca de"), "PERDIDAS: menu principal")
-  for _, i in ipairs({ 1, 2, 3, 5, 6, 7, 8 }) do
+  for _, i in ipairs({ 1, 2, 3, 5, 6, 7, 8, 9 }) do
     keys(tostring(i))
     check(title() == perd_titles[i], "PERDIDAS opcion " .. i .. ": abre " .. perd_titles[i] .. " (" .. title() .. ")")
     noerr("PERDIDAS opcion " .. i)
@@ -127,7 +127,7 @@ do
   end
   -- ayuda: 10 entradas
   for i = 1, 10 do
-    restart(); keys("1", "8")
+    restart(); keys("1", "9")
     if i < 10 then keys(tostring(i)) else downs(9); keys("enter") end
     check(noerr("ayuda " .. i) and (i >= 9 or W.view_n > 3), "ayuda entrada " .. i .. " abre")
     keys("esc")
@@ -135,7 +135,7 @@ do
   end
   -- biblioteca: 4 entradas
   for i = 1, 4 do
-    restart(); keys("1", "5", tostring(i))
+    restart(); keys("1", "6", tostring(i))
     check(noerr("biblioteca " .. i) and title() ~= "BIBLIOTECA", "biblioteca entrada " .. i .. " abre")
     keys("esc")
     check(title() == "BIBLIOTECA", "biblioteca entrada " .. i .. ": ESC vuelve")
@@ -148,7 +148,7 @@ do
   check(title() == "MENU PRINCIPAL" and W.APP_NAME == "PERDIDAS", "FLUJOS desde PERDIDAS: vuelve a PERDIDAS")
   -- PERDIDAS 9 Salir y ESC con confirmacion
   mock.marked_changed = 0
-  keys("9")
+  keys("tab"); keys("enter")
   check(shown("Guarde el documento") and mock.marked_changed > 0, "PERDIDAS 9 Salir: guarda y avisa")
   keys("enter")
   check(shown("PERDIDAS / FLUJOS"), "PERDIDAS 9 Salir: menu inicial")
@@ -162,7 +162,7 @@ do
   restart(); keys("2")
   check(title() == "FLUJOS EXTERNOS Y MEDICION" and W.APP_NAME == "FLUJOS", "inicio 2: abre FLUJOS")
   local subs = {
-    { 1, "ARRASTRE Y SUSTENTACION", 6 }, { 2, "VERTEDORES Y ORIFICIOS", 4 },
+    { 1, "ARRASTRE Y SUSTENTACION", 7 }, { 2, "VERTEDORES Y ORIFICIOS", 5 },
     { 3, "CANALES Y MEDICION", 4 }, { 7, "AYUDA", 6 } }
   for _, s in ipairs(subs) do
     keys(tostring(s[1]))
@@ -230,7 +230,7 @@ do
   mock.paint(); mock.click(10, 5)
   check(title() == "MENU PRINCIPAL", "clic en el titulo no hace nada")
   local L = rt.layout()
-  mock.click(40, L.y_body + L.rowh * 5 + 2)             -- fila 6: Mis casos
+  mock.click(40, L.y_body + L.rowh * 6 + 2)             -- fila 7: Mis casos
   check(title() == "MIS CASOS", "clic en una fila del menu la elige")
   keys("esc")
   keys("1", "1"); F(5)
@@ -274,7 +274,7 @@ local function save_case(name)
 end
 do
   for i = #U.state.cas, 1, -1 do U.state.cas[i] = nil end
-  restart(); keys("1", "8"); downs(8); keys("enter", "enter")   -- caso del curso #1 de PERDIDAS
+  restart(); keys("1", "9"); downs(8); keys("enter", "enter")   -- caso del curso #1 de PERDIDAS
   save_case("PERD1")
   back_root()
   restart(); keys("2", "7", "5", "enter")                  -- AR-01
@@ -284,7 +284,7 @@ do
   save_case("EX02")
   back_root()
   check(#U.state.cas == 3, "Mis casos: 3 casos de ambos programas (" .. #U.state.cas .. ")")
-  restart(); keys("1", "7", "backtab", "right", "right")   -- ajustes: Haaland
+  restart(); keys("1", "8", "backtab", "right", "right")   -- ajustes: Haaland
   downs(4); TE("3"); F(5)                                   -- decimales = 3
   check(U.g_set.h.method == 3 and U.g_set.dec == 3,
     "ajustes cambiados antes de guardar (" .. U.g_set.h.method .. "," .. U.g_set.dec .. ")")
@@ -300,7 +300,7 @@ do
   local names = {}
   for i, c in ipairs(U.state.cas) do names[i] = c.nombre end
   check(table.concat(names, ",") == "PERD1,AR01,EX02", "on.restore: nombres de los casos")
-  restart(); keys("1", "6")
+  restart(); keys("1", "7")
   check(shown("PERD1") and shown("AR01") and shown("EX02") and shown("Casos: 3 de 20"),
     "Mis casos tras restaurar: lista")
   keys("enter")
@@ -394,7 +394,7 @@ do
     check(title() ~= "AJUSTES", "tipo " .. t[2] .. ": Ajustes vuelve al formulario")
   end
   -- cada uno de los 19 campos de Ajustes se edita y se guarda
-  restart(); keys("1", "7", "backtab")
+  restart(); keys("1", "8", "backtab")
   keys("right", "down")                                   -- metodo: Swamee-Jain
   for _, v in ipairs({ "9.8", "9800", "1.1E-6", "4", "1E-6", "2000", "0.5", "4", "5000", "0.2",
     "2100", "4100", "1.2", "1.5E-5" }) do TE(v) end
@@ -426,7 +426,7 @@ do
   for i = 0, lib.WATERS - 1 do
     local w = lib.waters[i + 1]
     Store.settings_default(U.g_set)
-    restart(); keys("1", "5", "3"); downs(i); keys("enter")
+    restart(); keys("1", "6", "3"); downs(i); keys("enter")
     local ok
     if w.rho > 0 and w.rho < 10 then ok = nr(U.g_set.rho_air, w.rho) and nr(U.g_set.nu_air, w.nu)
     else ok = nr(U.g_set.h.nu, w.nu) end
@@ -438,7 +438,7 @@ do
     local sum = 0
     for _, it in ipairs(pr.items) do sum = sum + it.qty * it.K end
     Pipe.pin_reset()
-    restart(); keys("1", "5", "2"); F(2); downs(i); keys("enter"); F(5)
+    restart(); keys("1", "6", "2"); F(2); downs(i); keys("enter"); F(5)
     check(noerr("conjunto " .. pr.name) and math.abs(Pipe.pin.K - sum) < 1e-6,
       "conjunto " .. pr.name .. ": Suma K = " .. sum .. " (" .. tostring(Pipe.pin.K) .. ")")
     back_root()
@@ -476,6 +476,78 @@ do
   check(fd_con("20", 0), "AR-1: V = 20 m/s da FD = 23.56 N")
   check(fd_con("72", 1), "AR-1: V = 72 km/h equivale a 20 m/s")
   check(fd_con("20*3.6/" .. tostring(U.g_set.knot), 2), "AR-1: V en nudos (km/h por nudo de Ajustes) equivale a 20 m/s")
+end
+
+-- ===================== 8. Estatica y dinamica: menu, Mis casos (KT 22..40), on.save/on.restore
+do
+  for i = #U.state.cas, 1, -1 do U.state.cas[i] = nil end
+  restart(); keys("1", "5")
+  check(title() == "ESTATICA Y DINAMICA" and shown("Estatica de fluidos") and shown("Dinamica de fluidos")
+    and shown("Ayuda"), "PERDIDAS 5: submenu Estatica y dinamica")
+  local St, Dy = env.require("scr.scr_stat"), env.require("scr.scr_dyn")
+  check(St.KT_BASE == 22 and Dy.kt.D1c == 33 and Dy.kt.D4 == 40, "KT asignados a los modulos (22..40)")
+  keys("1"); check(title() ~= "ESTATICA Y DINAMICA" and noerr("estatica"), "submenu: Estatica abre"); keys("esc")
+  keys("2"); check(title() ~= "ESTATICA Y DINAMICA" and noerr("dinamica"), "submenu: Dinamica abre"); keys("esc")
+  keys("3"); check(vhas("ESTATICA DE FLUIDOS") and vhas("DINAMICA DE FLUIDOS"), "submenu: Ayuda"); keys("esc")
+  back_root()
+  -- un ejemplo de cada tipo: calcular y guardar con F3
+  local jobs, seen = {}, {}
+  for i = 1, St.example_count() do
+    local kd = St.example_kind(i)
+    local idx = type(kd) == "number" and kd or nil
+    if not idx then for j, nm in ipairs(St.KINDS) do if nm == kd then idx = j end end end
+    if idx and not seen["S" .. idx] then
+      seen["S" .. idx] = true
+      jobs[#jobs + 1] = { name = "S" .. idx, kt = 21 + idx, fn = function() St.example_run(i) end }
+    end
+  end
+  for i, e in ipairs(Dy.examples) do
+    local kd = e.load()
+    if kd and not seen[kd] then
+      seen[kd] = true
+      local nth = 0
+      for _, k in ipairs({ "D1c", "D1t", "D2a", "D2b", "D2c", "D3a", "D3b", "D4" }) do
+        nth = nth + 1
+        if k == kd then break end
+      end
+      jobs[#jobs + 1] = { name = "D" .. kd:sub(2), kt = Dy.kt[kd], fn = function() Dy.example_run(i) end }
+    end
+  end
+  check(#jobs == 19, "ejemplos: un caso por tipo nuevo (" .. #jobs .. ")")
+  for _, j in ipairs(jobs) do
+    rt.start(function() j.fn() end)
+    mock.paint()
+    F(3); typed(j.name); keys("enter"); keys("enter")
+    noerr("guardar " .. j.name)
+    back_root()
+  end
+  check(#U.state.cas == 19, "Mis casos: 19 casos nuevos guardados (" .. #U.state.cas .. ")")
+  local tipos = {}
+  for _, c in ipairs(U.state.cas) do tipos[c.tipo] = true end
+  local nt = 0
+  for t = 22, 40 do if tipos[t] then nt = nt + 1 end end
+  check(nt == 19, "Mis casos: tipos 22..40 todos distintos (" .. nt .. ")")
+  local strs = 0
+  for _, c in ipairs(U.state.cas) do
+    for _, v in pairs(c.datos) do if type(v) == "string" and v ~= "" then strs = strs + 1 end end
+  end
+  check(strs > 0, "dinamica guarda expresiones de texto (" .. strs .. ")")
+  local snap = mock.save()
+  check(snap.ver == 3 and #snap.cas == 19, "on.save con los 19 casos nuevos")
+  env = mock.load_app(APP); bind()
+  mock.restore(snap)
+  check(#U.state.cas == 19, "on.restore recupera los 19 casos (" .. #U.state.cas .. ")")
+  local strs2 = 0
+  for _, c in ipairs(U.state.cas) do
+    for _, v in pairs(c.datos) do if type(v) == "string" and v ~= "" then strs2 = strs2 + 1 end end
+  end
+  check(strs2 == strs, "on.restore conserva las expresiones de texto")
+  for i = 1, 19 do
+    restart(); keys("1", "7"); downs(i - 1); keys("enter")
+    check(noerr("recargar caso " .. i) and W.view_n >= 3 and not vhas("?"),
+      "Mis casos " .. i .. " (tipo " .. U.state.cas[i].tipo .. ") recarga y calcula")
+    back_root()
+  end
 end
 
 print(string.format("test_nav: %d comprobaciones, %d fallo(s)", checks, fails))

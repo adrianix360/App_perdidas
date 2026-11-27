@@ -1,6 +1,6 @@
-# Informe de pruebas: PERDIDAS y FLUJOS en la TI-Nspire CX II CAS (v1.0 Nspire)
+# Informe de pruebas: PERDIDAS y FLUJOS en la TI-Nspire CX II CAS (v1.1 Nspire)
 
-Port a Lua 5.1 de la app de la TI-84 (v2.1). Pruebas en el PC con Lua 5.1.5 y un mock estricto de la API Nspire; `bash tools/run_tests.sh` corre todo (6 suites + lista de verificación).
+Port a Lua 5.1 de la app de la TI-84 (v2.1). Pruebas en el PC con Lua 5.1.5 y un mock estricto de la API Nspire; `bash tools/run_tests.sh` corre todo (9 suites + lista de verificación).
 
 ## Suites
 
@@ -8,10 +8,13 @@ Port a Lua 5.1 de la app de la TI-84 (v2.1). Pruebas en el PC con Lua 5.1.5 y un
 |---|---|---|
 | `test_core` | 339 casos dorados, 750 + 625 aleatorios, 500 + 500 secante, 71 expr/numfmt, datos | núcleo numérico, `expr`, `numfmt`, tablas |
 | `test_ui` | 223 | teclas, widgets, memoria de cálculo, figuras, gráfica |
-| `test_perdidas` | 429 | pantallas de PERDIDAS, Mis casos, Ajustes, store |
+| `test_perdidas` | 430 | pantallas de PERDIDAS, Mis casos, Ajustes, store |
 | `test_flujos` | 399 | pantallas de FLUJOS, catálogo CD, casos del curso |
-| `test_nav` | 344 | menú inicial, toolpalette, clics, ciclo de vida, on.save/on.restore, resize |
+| `test_nav` | 424 | menú inicial, toolpalette, clics, ciclo de vida, on.save/on.restore, resize |
 | `test_smoke` | humo | arranque y sandbox de la API |
+| `test_examenes` | 162 | ejercicios de examen con los motores existentes, VE-8 (tanques acoplados), potencia de AR-1, AR-5 (Magnus), EX-1 con aire, Mis casos y store |
+| `test_statics` | 491 | estática de fluidos E1 a E6 (motor y pantallas) |
+| `test_dyn` | 291 | dinámica de fluidos D1 a D4 (motor y pantallas) |
 | `check_checklist` | 557 filas | cada ítem de la v2.1 ligado a una aserción; 0 sin cobertura |
 
 ## Resultados numéricos frente al C en double

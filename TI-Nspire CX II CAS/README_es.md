@@ -16,9 +16,39 @@ Dos programas, reunidos en un solo documento para la calculadora TI-Nspire CX II
 - **Vertedores y orificios:** elemento simple ($H \leftrightarrow Q$ y cota de la cresta), estructura compuesta (nivel ↔ caudal, reparto), perfil de velocidades y energía aguas abajo.
 - **Canales y medición:** Venturi con manómetro, salto hidráulico y chorro desde un tubo.
 
+**ESTÁTICA Y DINÁMICA** (v1.1, menú principal › *Estática y dinámica*; ejercicios de los exámenes IC-605):
+
+- **Estática de fluidos:** E1 viscosidad (placa entre paredes, eje y cojinete con par y potencia, bloque en rampa con aceite o fricción seca), E2 manometría en serie, E3 superficies planas (placas vertical, inclinada y compuesta; compuerta circular; compuerta en L con incógnita $H$; reacción en la bisagra), E4 superficies curvas (cuarto de círculo y semicilindro con pernos), E5 flotación y estabilidad ($GM$, cilindro hueco, prisma, barcaza, cubo) y E6 equilibrio relativo (aceleración horizontal y vertical, recipientes en polea).
+- **Dinámica de fluidos:** D1 perfiles de velocidad ($Q$, $\alpha$, $\beta$, Simpson sobre $u(y)$ o $u(r)$), D2 continuidad, descarga libre y Bernoulli con presiones en puntos, D3 cantidad de movimiento (codo reductor con anclajes y chorros que sostienen un peso, con la potencia de la bomba) y D4 tanques no permanentes ($Q_e$ y $Q_s(t)$ como expresiones, integración RK4, tiempo de vaciado y nivel de equilibrio).
+- **VE-8 Tanques acoplados** (Vertedores y orificios): dos tanques unidos por un orificio sumergido, cada uno con hasta 4 salidas libres (vertedor triangular o rectangular, orificio circular o rectangular) y pared opcional. Se resuelve con $Q_e$ dado, con el caudal de un elemento (incluso 0), o con el nivel de un tanque (p. ej. el borde de rebalse).
+- **AR-1** agrega la potencia $P = F_D V$ (W, kW y hp); **AR-5 Balance vertical (Magnus)** da $\omega D/2V$ para leer $C_L$ de la gráfica y concluye si la pelota sube o cae; **EX-1** acepta un fluido distinto del agua (aire).
+
 Los dos programas tienen **Mis casos** (compartidos), **casos del curso** para cargar y estudiar, ayuda y ajustes comunes.
 
-Versión 1.0 Nspire (basada en la v2.1 de la TI-84). Autor del encargo: Adrián Castro Ramírez.
+Versión 1.1 Nspire (basada en la v2.1 de la TI-84; la 1.1 agrega estática y dinámica de fluidos, VE-8, AR-5 y la potencia de arrastre). Autor del encargo: Adrián Castro Ramírez.
+
+## Ejercicios de examen cubiertos (v1.1)
+
+Cada fila se comprueba contra `tools/oracle_examenes.py` (tolerancia 0,2 %): `tests/test_examenes.lua` para los resueltos con los motores existentes, VE-8, AR-1 y AR-5; `tests/test_statics.lua` y `tests/test_dyn.lua` para las pantallas nuevas.
+
+| Examen / ejercicio | Dónde |
+|---|---|
+| Vertedores P4 a,c; Parcial 2-2025 P3 a,b | VE-8 (casos del curso VE-09 a VE-12) |
+| Final-2025 P1 a,b; P2; P3 a,b; P5; chorro | PERDIDAS (D, B, F, C), sistemas y EX-3 |
+| Final-2025 P4 a,b; Parcial 2-2024 P4 b,c | VE-2 y VE-7 |
+| Final-2025 P4 c; Parcial 2-2025 P1 | EX-1 (con $S-1$; con aire) |
+| Parcial 2-2025 P4 (potencia de arrastre) | AR-1 |
+| Parcial 2-2024 P5 (Magnus) | AR-5 (caso del curso AR-07) |
+| EPSON P1; P1-2024; P1-2018 P4; P1-2022 P1; P1-2017 P3 | E1 viscosidad |
+| P1-2018 P3; P1-2017 P1 | E2 manometría |
+| EPSON P2; P1-2022 P2; P1-2017 P2 plana; P1-2018 P2 | E3 superficies planas |
+| EPSON P3; P1-2022 P3; P1-2017 P2 curva | E4 superficies curvas |
+| EPSON P4; P1-2018 P1; P1-2022 P4; P1-2017 P4 | E5 flotación |
+| EPSON P5 b; P1-2018 P5; P1-2022 P5 | E6 equilibrio relativo |
+| EPSON P5 a; Parcial 2-2024 P4 a; perfil parabólico | D1 perfiles |
+| Varios Ej1; Parcial 2-2024 P2 | D2 continuidad y Bernoulli |
+| Parcial 2-2024 P3; Parcial 2-2025 P5 (flyboard) | D3 cantidad de movimiento |
+| Parcial 2-2024 P1; Parcial 2-2025 P2; Varios Ej2, tanques de 3 m y 5 m | D4 tanques no permanentes |
 
 ---
 
@@ -32,7 +62,7 @@ Versión 1.0 Nspire (basada en la v2.1 de la TI-84). Autor del encargo: Adrián 
 
 ## 2. Archivo
 
-Un solo archivo: `instalacion/PerdidasFlujos.tns`. Contiene los dos programas (PERDIDAS y FLUJOS), las memorias de cálculo, la ayuda y las ilustraciones del catálogo.
+Un solo archivo: `instalacion/PerdidasFlujos.tns`. Contiene los dos programas (PERDIDAS y FLUJOS, con *Estática y dinámica* en el menú de PERDIDAS), las memorias de cálculo, la ayuda y las ilustraciones del catálogo.
 
 ## 3. Instalación
 
@@ -149,7 +179,7 @@ Genera `build/PerdidasFlujos.tns` (se copia a `instalacion/`). Con `--no-tns` so
 bash tools/run_tests.sh
 ```
 
-Compila y corre las 6 suites (`test_core`, `test_ui`, `test_perdidas`, `test_flujos`, `test_nav`, `test_smoke`) y la comprobación de la lista de verificación (`tools/check_checklist.py`). Usa Lua 5.1.5 y Luna en `C:\dev\tools`. `python -I tools/gen_checklist.py` regenera `tests/checklist.md`.
+Compila y corre las 9 suites (`test_core`, `test_ui`, `test_perdidas`, `test_flujos`, `test_nav`, `test_smoke`, `test_examenes`, `test_statics`, `test_dyn`) y la comprobación de la lista de verificación (`tools/check_checklist.py`). Usa Lua 5.1.5 y Luna en `C:\dev\tools`. `python -I tools/gen_checklist.py` regenera `tests/checklist.md`.
 
 Los resultados están en `INFORME_PRUEBAS.md`.
 

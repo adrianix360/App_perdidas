@@ -28,7 +28,8 @@ local msetf = MR.msetf
 
 local function nz(x) return x ~= nil and x ~= 0 and x ~= false end
 
-local VALS = { "D1", "D2", "beta", "Q", "v1", "Cv", "S", "b", "y", "H", "L", "D", "ks", "nu", "K", "th" }
+local VALS = { "D1", "D2", "beta", "Q", "v1", "Cv", "S", "b", "y", "H", "L", "D", "ks", "nu", "K", "th",
+  "rho" }
 local CHOICES = { "qunit", "conv", "ymode", "exitk", "init" }
 
 local ci = {}
@@ -61,6 +62,7 @@ local f_vent = {
   FN("Cv", nil, "Cv", FF_RANGE, 0.01, 1),
   FN("S manometro (opc)", nil, "S", FF_POS + FF_OPT),
   FC("Manometro", "conv", cv_names, 2),
+  FN("rho fluido (opc)", "kg/m3", "rho", FF_POS + FF_OPT),     -- vacio: agua de Ajustes
 }
 local f_jump = {
   FN("Caudal Q", "m3/s", "Q", FF_POS),
@@ -97,6 +99,8 @@ local function compute()
   MR.cfg = C
   MR.hook = nil
   MR.log = nil
+  -- fluido que circula distinto del agua (p. ej. aire): S = rho_manometro / rho_fluido
+  if tipo == CT_VENT and nz(ci.srho) then C.gamma = ci.rho * C.g end
   V[MR.V_G] = C.g
   V[MR.V_GAM] = C.gamma
   local err

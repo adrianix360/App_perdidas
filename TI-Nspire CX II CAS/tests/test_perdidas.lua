@@ -160,36 +160,37 @@ do
     check(W.APP_NAME == "PERDIDAS", "vuelve de FLUJOS como PERDIDAS")
   end
   check(shown("MENU PRINCIPAL"), "tras Flujos externos")
-  -- 5 Biblioteca
-  keys("5")
+  keys("5"); check(shown("ESTATICA Y DINAMICA") and shown("Estatica de fluidos") and shown("Dinamica de fluidos"), "estatica y dinamica: submenu"); keys("esc")
+  -- 5 Estatica y dinamica, 6 Biblioteca
+  keys("6")
   check(shown("BIBLIOTECA"), "biblioteca")
   for i = 1, 4 do keys(tostring(i)); keys("esc"); keys("esc") end   -- 4 hojas (algunas con un ESC extra)
   keys("esc")
   -- 6 Mis casos vacio
-  keys("6"); check(shown("MIS CASOS") and shown("(vacio)"), "mis casos vacio"); keys("esc")
+  keys("7"); check(shown("MIS CASOS") and shown("(vacio)"), "mis casos vacio"); keys("esc")
   -- 7 Ajustes
-  keys("7"); check(shown("AJUSTES"), "ajustes"); keys("esc")
+  keys("8"); check(shown("AJUSTES"), "ajustes"); keys("esc")
   -- 8 Ayuda: 8 temas + casos del curso + acerca de
-  keys("8")
+  keys("9")
   check(shown("AYUDA"), "ayuda")
   local helps = 0
   for i = 1, 8 do
-    start_perdidas(); keys("8")
+    start_perdidas(); keys("9")
     if i < 9 then keys(tostring(i)) end
     if check(ok_app("ayuda " .. i) and shown("AYUDA") and W.view_n > 3, "ayuda tema " .. i) then
       helps = helps + 1
     end
   end
-  start_perdidas(); keys("8"); downs(8); keys("enter")
+  start_perdidas(); keys("9"); downs(8); keys("enter")
   check(shown("CASOS DEL CURSO"), "ayuda: casos del curso")
   keys("esc")
   downs(1); keys("enter")
-  check(shown("ACERCA DE") and vhas("PERDIDAS v2.1") and vhas("Memoria Lua"), "ayuda: acerca de")
+  check(shown("ACERCA DE") and vhas("PERDIDAS v1.1") and vhas("Memoria Lua"), "ayuda: acerca de")
   png("perd_acerca")
   -- 9 Salir
   start_perdidas()
   mock.marked_changed = 0
-  keys("9")
+  downs(9); keys("enter")
   check(shown("Guarde el documento"), "Salir avisa de guardar (ctrl+S)")
   check(mock.marked_changed > 0, "Salir marca cambios")
   keys("enter")
@@ -207,7 +208,7 @@ end
 -- Entra a Ayuda > Casos del curso, abre la entrada r (0-based) y deja el resultado
 local function open_course(r)
   start_perdidas()
-  keys("8"); downs(8); keys("enter")
+  keys("9"); downs(8); keys("enter")
   downs(r); keys("enter")
 end
 local function numtxt(label)       -- "label = valor" de las lineas del visor
@@ -566,7 +567,7 @@ end
 do
   H.hydro_cfg_default(U.g_set.h)
   Pipe.pin_reset()
-  start_perdidas(); keys("5")
+  start_perdidas(); keys("6")
   -- materiales: todos los materiales listados; USAR deja ks y C_H en pin
   keys("1")
   check(shown("MATERIALES"), "biblioteca: materiales")
@@ -648,7 +649,7 @@ end
 do
   H.hydro_cfg_default(U.g_set.h)
   for i = 1, 15 do diams.diam_custom[i] = 0 end
-  start_perdidas(); keys("5", "4")
+  start_perdidas(); keys("6", "4")
   downs(5); keys("enter")
   check(shown("LISTA PROPIA"), "lista propia: formulario")
   TE("200"); TE("300"); TE("100")
@@ -679,7 +680,7 @@ end
 do
   H.hydro_cfg_default(U.g_set.h)
   Store.settings_default(U.g_set)
-  start_perdidas(); keys("7")
+  start_perdidas(); keys("8")
   check(shown("AJUSTES") and shown("Metodo de f") and shown("Colebrook"), "ajustes: formulario")
   png("perd_ajustes")
   keys("right")                    -- metodo: Swamee-Jain
@@ -690,11 +691,11 @@ do
   check(shown("MENU PRINCIPAL") and U.g_set.dec == 4 and math.abs(U.g_set.h.g - 9.8) < 1e-12,
     "ajustes: g y decimales guardados")
   -- rango invalido: g = 50
-  keys("7"); keys("backtab"); keys("down"); TE("50")
+  keys("8"); keys("backtab"); keys("down"); TE("50")
   check(shown("Fuera del rango"), "ajustes: g = 50 fuera de rango")
   keys("esc"); keys("esc")
   -- Re laminar > Re turbulento: aviso al salir
-  keys("7"); keys("backtab")
+  keys("8"); keys("backtab")
   downs(11); TE("5000")            -- Re laminar = 5000 > Re turbulento (4000)
   F(5)
   check(shown("Revise: Re turb"), "ajustes: Re lam > Re turb avisa")
@@ -702,14 +703,14 @@ do
   F(5)
   check(shown("MENU PRINCIPAL") and U.g_set.h.re_lam == 2000, "ajustes: valor valido sale")
   -- defecto
-  keys("7"); F(1)
+  keys("8"); F(1)
   check(shown("Restaurar"), "ajustes: DEFECTO pide confirmacion")
   keys("enter")
   check(U.g_set.dec == 6 and U.g_set.h.method == 0 and U.g_set.h.g == 9.81, "ajustes: valores por defecto")
   -- cada campo de Ajustes se puede editar
   keys("esc")
   -- ajuste persistente a traves de on.save/on.restore
-  keys("7"); keys("backtab"); keys("right", "right", "right")     -- Goudar-Sonnad
+  keys("8"); keys("backtab"); keys("right", "right", "right")     -- Goudar-Sonnad
   downs(4); TE("5")
   F(5)
   local t = mock.save()
@@ -763,7 +764,7 @@ do
   keys("esc")
   back_root()
   -- la lista de Mis casos: nombres y tipos
-  start_perdidas(); keys("6")
+  start_perdidas(); keys("7")
   check(shown("MIS CASOS") and shown("C0") and shown("(A) Perdidas dado Q") and shown("Casos: 8 de 20"), "Mis casos: lista")
   png("perd_casos")
   -- cargar (F1): reabre el calculo
@@ -774,7 +775,7 @@ do
   check(shown("MIS CASOS"), "Mis casos: vuelve a la lista")
   -- cargar cada caso
   for i = 0, #U.state.cas - 1 do
-    start_perdidas(); keys("6"); downs(i); F(1)
+    start_perdidas(); keys("7"); downs(i); F(1)
     check(ok_app("cargar " .. i) and (vhas("RESULTADO") or vhas("Colebrook") or vhas("Re")), "Mis casos: carga el caso " .. (i + 1))
     check(back_root(), "Mis casos: vuelta " .. (i + 1))
   end
@@ -787,7 +788,7 @@ do
   mock.restore(snap)
   check(#U.state.cas == nsave and U.state.cas[3].tipo == 2, "on.restore: casos de vuelta")
   -- el caso restaurado sigue siendo funcional
-  start_perdidas(); keys("6"); downs(2); keys("enter")
+  start_perdidas(); keys("7"); downs(2); keys("enter")
   check(ok_app("caso restaurado") and vhas("RESULTADO"), "caso restaurado se carga y calcula")
   back_root()
   -- datos danados se ignoran
@@ -796,7 +797,7 @@ do
   check(#U.state.cas == 0, "on.restore: casos invalidos descartados")
   mock.restore(snap)
   -- borrar
-  start_perdidas(); keys("6")
+  start_perdidas(); keys("7")
   F(3)
   check(shown("Se borra para siempre"), "borrar: pide confirmacion")
   keys("esc")
@@ -818,7 +819,7 @@ do
   for i = #U.state.cas, 1, -1 do U.state.cas[i] = nil end
   -- casos de FLUJOS: se listan, pero se abren en el otro programa
   U.state.cas[1] = { nombre = "ARR", tipo = Cases.KT_DRAG, datos = { x = 1 } }
-  start_perdidas(); keys("6")
+  start_perdidas(); keys("7")
   check(shown(">") and shown("AR-1 Fuerza FD/FL"), "Mis casos: caso de FLUJOS marcado con >")
   keys("enter")
   check(shown("el programa FLUJOS"), "Mis casos: un caso de FLUJOS se abre en FLUJOS")

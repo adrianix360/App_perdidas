@@ -450,7 +450,7 @@ do
   check(has_line("> dp = p1 - p2 = 3266") and has_line("> h manometro = 1.1097"),
     "EX-01a: dp = 32 660 Pa y h = 1.110 m (S - 1)")
   near(V("VDP"), gold("EX-01a", "dp [Pa]"), 1e-6, "EX-01a dp")
-  T("31"); K(PGDN); K(RIGHT); K("F5")
+  T("31"); K(PGDN); K(UP); K(RIGHT); K("F5")      -- "rho fluido" es el ultimo campo
   runf()
   check(has_line("> h manometro = 0.8323") and has_line("examen"),
     "EX-01a: h = 0.8323 m con la convencion del examen")
@@ -668,7 +668,8 @@ do
     { { "JY2", "EX-02", "y2 [m]" }, { "JFR1", "EX-02", "Fr1" } },
     { { "EQLS", "EX-03a", "Q [l/s]" }, { "EV", "EX-03a", "v [m/s]" } },
   }
-  check(#FL.course_names == 17, "17 casos del curso en la lista")
+  check(#FL.course_names == 22 and FL.course_names[17]:find("EX-03", 1, true),
+    "17 casos del curso en la lista")      -- + VE-09..12 y AR-07 al final (ampliacion)
   reset_set()
   for i = 0, 16 do
     T("75"); K(PGUP); K(PGUP)

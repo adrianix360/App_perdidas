@@ -25,7 +25,7 @@ S.CAT_N = 17
 S.DEC_MAX = 9
 S.CASES_MAX = 20
 S.CASE_NAME = 8
-S.KT_COUNT = 20
+S.KT_COUNT = 41          -- v2.1 (0..19) + VE-8 (20) + AR-5 (21) + estatica (22..32) + dinamica (33..40)
 
 local g_set = U.g_set
 S.g_set = g_set

@@ -24,6 +24,10 @@ API PUBLICA
   drag_stokes(mu, V, D)
   drag_plate(L, w, V, rho, nu, faces, mode, r) -> err
         r: Re Cf_lam Cf_turb Cf_mix Cf A F regime warn
+  drag_power(F, V) -> P (W);  HP_W = 745.69987 W por hp (potencia de arrastre P = FD V)
+  drag_magnus(m, Dm, V, rpm, rho, CL, CD, g, up, r) -> err      (AR-5: esfera con giro)
+        CL, CD <= 0 = sin dato; up = true: FL hacia arriba (false: hacia abajo)
+        r: W vol B A q SR FL FD Fnet az lift (true si hay CL) rises (Fnet > 0)
 ]]
 
 local H = require("core.hydro")
@@ -196,6 +200,32 @@ function D.drag_plate(L, w, V, rho, nu, faces, mode, r)
     end
     r.A = L * w
     r.F = r.Cf * drag_q(rho, V) * r.A * faces
+    return H_OK
+end
+
+D.HP_W = 745.69987
+function D.drag_power(F, V) return F * abs(V) end
+
+-- Balance vertical de una esfera con giro (efecto Magnus). SR = omega D / (2 V)
+-- es el parametro con el que se lee C_L de la grafica. Fnet > 0 = hacia arriba.
+function D.drag_magnus(m, Dm, V, rpm, rho, CL, CD, g, up, r)
+    if not (m > 0) or not (Dm > 0) or not (V > 0) or not (rpm >= 0) or
+        not (rho >= 0) or not (g > 0) then
+        return H_ERR_ARG
+    end
+    r.W = m * g
+    r.vol = PI * Dm * Dm * Dm / 6.0
+    r.B = rho * g * r.vol
+    r.A = H.hydro_area(Dm)
+    r.q = drag_q(rho, V)
+    r.SR = rpm * 2.0 * PI / 60.0 * Dm / (2.0 * V)
+    r.lift = CL ~= nil and CL > 0
+    r.FL = r.lift and (CL * r.q * r.A) or 0
+    r.FD = (CD ~= nil and CD > 0) and (CD * r.q * r.A) or 0
+    local fl = (up == false) and -r.FL or r.FL
+    r.Fnet = fl + r.B - r.W
+    r.az = r.Fnet / m
+    r.rises = r.Fnet > 0
     return H_OK
 end
 

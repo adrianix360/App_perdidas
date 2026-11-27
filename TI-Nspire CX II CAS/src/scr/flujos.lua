@@ -28,7 +28,7 @@ local function sub_menu(m, fn)
 end
 
 local function drag_item(r)
-  if r == 5 then Sk.scr_cat(false) else Sd.scr_drag(r) end
+  if r == 6 then Sk.scr_cat(false) else Sd.scr_drag(r) end
 end
 local function weir_item(r) Sw.scr_weir(r) end
 local function chan_item(r)
@@ -54,18 +54,27 @@ local course_names = {
   "EX-01 Venturi (2025 P4c)",
   "EX-02 Salto hidraulico (2017 P3)",
   "EX-03 Chorro desde un tubo (2025)",
+  "VE-09 2 tanques, Qe 250 (Vert. P4a)",
+  "VE-10 2 tanques, rebalse (Vert. P4c)",
+  "VE-11 2 tanques, tri. Q=0 (2025 P3a)",
+  "VE-12 2 tanques, tri. 50 l/s (P3b)",
+  "AR-07 Balance vertical Magnus (2024)",
 }
 S.course_names = course_names
 
 local course_cur = 0
 local function course_cases()
   while true do
-    for i = 0, 16 do W.list_line[i] = course_names[i + 1] end
-    local r, k = W.list_pick("CASOS DEL CURSO", "ENTER carga los datos y calcula", 17,
+    for i = 0, #course_names - 1 do W.list_line[i] = course_names[i + 1] end
+    local r, k = W.list_pick("CASOS DEL CURSO", "ENTER carga los datos y calcula", #course_names,
       course_cur, nil)
     if r < 0 or k ~= U.K_ENTER then return end
     course_cur = r
-    if r < 6 then
+    if r == 21 then
+      Sd.scr_drag_run(Sd.drag_preset(6), true)        -- AR-07 (Magnus)
+    elseif r >= 17 then
+      Sw.scr_weir_run(Sw.weir_preset(r - 9), true)    -- VE-09..VE-12 (tanques)
+    elseif r < 6 then
       Sd.scr_drag_run(Sd.drag_preset(r), true)
     elseif r < 14 then
       Sw.scr_weir_run(Sw.weir_preset(r - 6), true)
@@ -109,6 +118,7 @@ local ar_items = {
   "Estructura: varios cuerpos  (AR-3)",
   "Vuelo nivelado (avion)      (AR-4)",
   "Placa plana y flujo lento (Stokes)",
+  "Balance vertical (Magnus)  (AR-5)",
   "Catalogo de coeficientes CD",
 }
 local ve_items = {
@@ -116,6 +126,7 @@ local ve_items = {
   "Estructura compuesta      (VE-4)",
   "Perfil de velocidades     (VE-6)",
   "Aguas abajo: energia      (VE-7)",
+  "Tanques acoplados         (VE-8)",
 }
 local ch_items = {
   "Venturi y manometro       (EX-1)",
@@ -132,9 +143,9 @@ local help_items = {
   "Acerca de",
 }
 local m = { title = "FLUJOS EXTERNOS Y MEDICION", items = items, n = 8, cur = 0 }
-local mar = { title = "ARRASTRE Y SUSTENTACION", items = ar_items, n = 6, cur = 0 }
+local mar = { title = "ARRASTRE Y SUSTENTACION", items = ar_items, n = 7, cur = 0 }
 local mh = { title = "AYUDA", items = help_items, n = 6, cur = 0 }
-local mve = { title = "VERTEDORES Y ORIFICIOS", items = ve_items, n = 4, cur = 0 }
+local mve = { title = "VERTEDORES Y ORIFICIOS", items = ve_items, n = 5, cur = 0 }
 local mch = { title = "CANALES Y MEDICION", items = ch_items, n = 4, cur = 0 }
 
 function S.flujos_main()

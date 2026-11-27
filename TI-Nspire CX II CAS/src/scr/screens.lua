@@ -24,7 +24,7 @@ local K_ENTER, K_CLEAR, K_QUIT, K_MODE, K_F1, K_F5 =
   U.K_ENTER, U.K_CLEAR, U.K_QUIT, U.K_MODE, U.K_F1, U.K_F5
 local C_TITLE, C_FG, C_GRAY, C_WARN, C_ERR, C_OK = U.C_TITLE, U.C_FG, U.C_GRAY, U.C_WARN, U.C_ERR, U.C_OK
 local HELP_COUNT_UI = 7        -- temas de tuberias en PERDTXT (0..6) + 7: factor de friccion f
-local APP_VERSION = "2.1"
+local APP_VERSION = "1.1"
 
 Sc.method_names = { "Colebrook-White", "Swamee-Jain", "Haaland", "Goudar-Sonnad" }
 local method_names = Sc.method_names
@@ -104,6 +104,7 @@ function Sc.scr_about()
   W.view_clear()
   W.view_add(W.APP_NAME .. " v" .. APP_VERSION, C_TITLE)
   W.view_add(flujos and "Arrastre, vertedores y canales" or "Perdidas de energia en tuberias", C_FG)
+  W.view_add("+ Estatica y dinamica de fluidos", C_FG)
   W.view_add("IC-0605 Mecanica de Fluidos, UCR", C_FG)
   W.view_add("Adrian Castro Ramirez", C_FG)
   W.view_add_sep()
@@ -237,10 +238,16 @@ local function salir_aviso()
 end
 Sc.salir_aviso = salir_aviso
 
+local function ext_fluidos()
+  local ok, m = pcall(require, "scr.fluidos")
+  if ok and type(m) == "table" then m.fluidos_main()
+  else U.ui_alert("Estatica y dinamica", "Modulo no disponible", nil, C_ERR) end
+end
+
 local main_menu = {
-  title = "MENU PRINCIPAL", n = 9, cur = 0,
+  title = "MENU PRINCIPAL", n = 10, cur = 0,
   items = { "Tuberia simple", "Sistemas (serie / paralelo)", "Calcular f (solo f)",
-            "Flujos externos (FLUJOS)", "Biblioteca", "Mis casos", "Ajustes",
+            "Flujos externos (FLUJOS)", "Estatica y dinamica", "Biblioteca", "Mis casos", "Ajustes",
             "Ayuda / Acerca de", "Salir" },
 }
 
@@ -258,15 +265,16 @@ function Sc.scr_main()
         salir_aviso()
         return
       end
-    elseif r == W.MENU_MODE or r == 6 then Sc.scr_settings()
+    elseif r == W.MENU_MODE or r == 7 then Sc.scr_settings()
     elseif r == 0 then scr_pipe_menu()
     elseif r == 1 then Net.scr_net()
     elseif r == 2 then Fric.scr_fric(nil, nil, nil)
     elseif r == 3 then ext_flujos()
-    elseif r == 4 then Lib.scr_library()
-    elseif r == 5 then Cases.scr_cases()
-    elseif r == 7 then scr_help()
-    elseif r == 8 then
+    elseif r == 4 then ext_fluidos()
+    elseif r == 5 then Lib.scr_library()
+    elseif r == 6 then Cases.scr_cases()
+    elseif r == 8 then scr_help()
+    elseif r == 9 then
       salir_aviso()
       return
     end

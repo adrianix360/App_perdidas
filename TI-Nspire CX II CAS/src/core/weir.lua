@@ -18,6 +18,14 @@ API PUBLICA
         y, v = listas Lua (base 1) de n puntos
   weir_section(Q, b, h, g) -> err, v, E
   weir_alt_depths(q, E, g) -> err, hsub, hsup, hc
+  weir_tanks(t, g, r, lg) -> err        (VE-8: dos tanques acoplados)
+        t = {a = lista T-A (aguas arriba, recibe Qe), na (0..4), b = lista T-B, nb (1..4),
+             con = {type = WE_ORC|WE_ORR, Cd, a, b, z} (orificio sumergido T-A -> T-B),
+             wA, wB (cota de la pared, opcional), mode = TK_QE | TK_ELEM | TK_HA | TK_HB,
+             Qe (modo 0), tank (0 = A, 1 = B) + idx + q (modo 1), HA (modo 2), HB (modo 3)}
+        r: HA HB dh Acon Qcon Qe QA[i] QB[i] sumA sumB iters warn
+        Constantes: TK_QE=0 TK_ELEM=1 TK_HA=2 TK_HB=3; avisos VW_UNSUB (orificio
+        no sumergido), VW_OVA / VW_OVB (nivel sobre la pared de T-A / T-B)
 ]]
 
 local H = require("core.hydro")
@@ -38,6 +46,8 @@ W.VW_PARTIAL, W.VW_DRY, W.VW_HIGH, W.VW_FRANCIS, W.VW_BE_NEG = 1, 2, 4, 8, 16
 local VW_PARTIAL, VW_DRY, VW_HIGH, VW_FRANCIS, VW_BE_NEG = 1, 2, 4, 8, 16
 W.WEIR_MAX = 8
 local WEIR_MAX = 8
+W.VW_UNSUB, W.VW_OVA, W.VW_OVB = 32, 64, 128
+W.TK_QE, W.TK_ELEM, W.TK_HA, W.TK_HB = 0, 1, 2, 3
 
 local function weir_check(e)
     if e.type >= WE_COUNT or e.count < 1 or not (e.Cd > 0) or
@@ -247,6 +257,149 @@ function W.weir_alt_depths(q, E, g)
     local hsub = alt_bis(q, E, g, hc, E)          -- rama lenta
     local hsup = alt_bis(q, E, g, hc * 1e-3, hc)  -- rama rapida
     return H_OK, hsub, hsup, hc
+end
+
+-- ---------------------------------------------------------------------
+-- VE-8: dos tanques acoplados. T-A (aguas arriba) recibe Qe y descarga a T-B
+-- por un orificio sumergido (Q = Cd A sqrt(2 g dh), dh = HA - HB); cada tanque
+-- tiene hasta 4 elementos de salida libre (tipos de weir_q). Para un HB dado
+-- todo se calcula explicitamente hacia aguas arriba:
+--   Qcon = suma Q_B(HB);  dh = (Qcon / (Cd A))^2 / (2 g);  HA = HB + dh;
+--   Qe = Qcon + suma Q_A(HA).
+-- La incognita HB sale por biseccion (Qe dado) o directo (nivel dado).
+-- ---------------------------------------------------------------------
+local TK_QE, TK_ELEM, TK_HA, TK_HB = 0, 1, 2, 3
+local VW_UNSUB, VW_OVA, VW_OVB = 32, 64, 128
+
+local function tk_sum(e, n, h, g, warn)
+    local Q, Qi = 0, {}
+    for i = 1, n do
+        local q, _
+        q, _, warn = weir_q(e[i], h, g, warn)
+        Qi[i] = q
+        Q = Q + q
+    end
+    return Q, Qi, warn
+end
+
+local function tk_acon(c)
+    if c.type == WE_ORC then return H.hydro_area(c.a) end
+    return c.a * c.b
+end
+
+-- Estado completo para HB (explicito hacia aguas arriba)
+local function tk_state(t, g, HB, A, warn)
+    local s = { HB = HB }
+    s.sumB, s.QB, warn = tk_sum(t.b, t.nb, HB, g, warn)
+    s.Qcon = s.sumB
+    local u = s.Qcon / (t.con.Cd * A)
+    s.dh = u * u / (2.0 * g)
+    s.HA = HB + s.dh
+    s.sumA, s.QA, warn = tk_sum(t.a, t.na, s.HA, g, warn)
+    s.Qe = s.Qcon + s.sumA
+    s.warn = warn
+    return s
+end
+
+function W.weir_tanks(t, g, r, lg)
+    local na, nb, c = t.na or 0, t.nb or 0, t.con
+    local mode = t.mode or TK_QE
+    r.iters = 0
+    r.warn = 0
+    log_clear(lg)
+    if not (g > 0) or na < 0 or na > 4 or nb < 1 or nb > 4 or type(c) ~= "table" or
+        mode < TK_QE or mode > TK_HB then
+        return H_ERR_ARG
+    end
+    if not (c.type == WE_ORC or c.type == WE_ORR) or not (c.Cd > 0) or not (c.a > 0) or
+        (c.type == WE_ORR and not (c.b > 0)) then
+        return H_ERR_ARG
+    end
+    for i = 1, na do if weir_check(t.a[i]) ~= 0 then return H_ERR_ARG end end
+    for i = 1, nb do if weir_check(t.b[i]) ~= 0 then return H_ERR_ARG end end
+    local A = tk_acon(c)
+    local zmin = t.b[1].z
+    local zminB = zmin
+    for i = 2, nb do if t.b[i].z < zminB then zminB = t.b[i].z end end
+    zmin = zminB
+    for i = 1, na do if t.a[i].z < zmin then zmin = t.a[i].z end end
+    local s
+    -- el nivel dado de un tanque (modos 1, 2, 3)
+    local lvlA, lvlB
+    if mode == TK_ELEM then
+        local e = (t.tank == 1) and t.b[t.idx] or t.a[t.idx]
+        if type(e) ~= "table" or not ((t.q or -1) >= 0) then return H_ERR_ARG end
+        local h
+        if t.q == 0 then
+            h = e.z
+        else
+            local err, hh = W.weir_level({ e }, 1, t.q, g, 0)
+            if err ~= 0 then return err end
+            h = hh
+        end
+        if t.tank == 1 then lvlB = h else lvlA = h end
+    elseif mode == TK_HA then
+        lvlA = t.HA
+    elseif mode == TK_HB then
+        lvlB = t.HB
+    end
+    if mode == TK_QE then
+        local Q = t.Qe
+        if not (Q and Q > 0) then return H_ERR_Q end
+        local lo = zmin
+        local hi = zmin + 1.0
+        local k = 0
+        while k < 60 do
+            if tk_state(t, g, hi, A, 0).Qe >= Q then break end
+            lo = hi
+            hi = zmin + 2.0 * (hi - zmin)
+            k = k + 1
+        end
+        if k == 60 then return H_ERR_NOROOT end
+        log_row(lg, 0, lo, hi, hi, tk_state(t, g, hi, A, 0).Qe - Q)
+        k = 0
+        while k < 200 do
+            local mid = 0.5 * (lo + hi)
+            local f = tk_state(t, g, mid, A, 0).Qe - Q
+            log_row(lg, k + 1, lo, hi, mid, f)
+            if f > 0 then hi = mid else lo = mid end
+            if hi - lo <= BIS_REL * (abs(hi) + 1e-3) then break end
+            k = k + 1
+        end
+        r.iters = k + 1
+        s = tk_state(t, g, 0.5 * (lo + hi), A, 0)
+    elseif lvlB then
+        s = tk_state(t, g, lvlB, A, 0)
+    else
+        -- nivel de T-A dado: HB + dh(HB) = HA (creciente en HB)
+        local HAv = lvlA
+        if HAv <= zminB then
+            s = tk_state(t, g, HAv, A, 0)
+        else
+            local lo, hi = zminB, HAv
+            log_row(lg, 0, lo, hi, hi, tk_state(t, g, hi, A, 0).HA - HAv)
+            local k = 0
+            while k < 200 do
+                local mid = 0.5 * (lo + hi)
+                local f = tk_state(t, g, mid, A, 0).HA - HAv
+                log_row(lg, k + 1, lo, hi, mid, f)
+                if f > 0 then hi = mid else lo = mid end
+                if hi - lo <= BIS_REL * (abs(hi) + 1e-3) then break end
+                k = k + 1
+            end
+            r.iters = k + 1
+            s = tk_state(t, g, 0.5 * (lo + hi), A, 0)
+        end
+    end
+    r.HA, r.HB, r.dh, r.Acon = s.HA, s.HB, s.dh, A
+    r.Qcon, r.Qe, r.sumA, r.sumB, r.QA, r.QB = s.Qcon, s.Qe, s.sumA, s.sumB, s.QA, s.QB
+    local w = s.warn
+    local half = (c.type == WE_ORC) and 0.5 * c.a or 0.5 * c.b
+    if r.Qcon > 0 and r.HB < (c.z or 0) + half then w = warn_set(w, VW_UNSUB) end
+    if t.wA and r.HA > t.wA + 1e-9 then w = warn_set(w, VW_OVA) end
+    if t.wB and r.HB > t.wB + 1e-9 then w = warn_set(w, VW_OVB) end
+    r.warn = w
+    return H_OK
 end
 
 return W

@@ -4,6 +4,9 @@
 --   2 AR-3 estructura con varios cuerpos (fuerza, momento en la base)
 --   3 AR-4 vuelo nivelado (dos pasos: C_L necesario, luego la lectura)
 --   4 EX-4 placa plana y flujo lento (Stokes)
+--   5 AR-5 balance vertical de una esfera con giro (Magnus): W, empuje, FL, FD
+--     y fuerza neta; su memoria se escribe aqui (ui/memo.lua).
+-- AR-1 (arrastre) agrega la potencia P = FD V (W, kW, hp) al resultado y a la memoria.
 -- Patron de siempre: formulario -> resultado -> memoria (PERDTXT).
 -- F1 CD abre el catalogo y devuelve C_D y la figura. Unidades: SI; V en m/s, km/h o nudos.
 --
@@ -24,7 +27,8 @@ local cat = require("scr.scr_cat")
 local F = require("scr.flu_util")
 
 local S = {}
-local DT_AR1, DT_AR2, DT_AR3, DT_AR4, DT_PL, DT_COUNT = 0, 1, 2, 3, 4, 5
+local DT_AR1, DT_AR2, DT_AR3, DT_AR4, DT_PL, DT_MAG, DT_COUNT = 0, 1, 2, 3, 4, 5, 6
+local KT_AR5 = 21            -- tipo de Mis casos (scr.cases)
 local NB = Dr.DRAG_BODIES
 local CAT_N = dc.CAT_N
 local FF_POS, FF_NONNEG, FF_CHOICE, FF_INT, FF_OPT, FF_ANY =
@@ -41,8 +45,8 @@ local function nz(x) return x ~= nil and x ~= 0 and x ~= false end
 
 -- ------------------------------------------------------------ estado (di)
 local VALS = { "rho", "nu", "V", "cd", "fig", "D", "L", "A", "Lr", "W", "vol", "h", "rh4",
-  "nw", "Aw", "cdf", "Df", "alpha", "cdw", "clmax", "nb" }
-local CHOICES = { "fluid", "vunit", "lift", "kase", "faces", "regime", "init" }
+  "nw", "Aw", "cdf", "Df", "alpha", "cdw", "clmax", "nb", "mb", "rpm", "cl" }
+local CHOICES = { "fluid", "vunit", "lift", "kase", "faces", "regime", "init", "lsgn" }
 local BVALS = { "cd", "fig", "D", "L", "A", "y", "V" }
 
 local di = {}
@@ -65,6 +69,7 @@ local lift_names = { "Arrastre FD", "Sustentac. FL" }
 local kase_names = { "Placa plana", "Esfera Stokes" }
 local face_names = { "Una", "Dos" }
 local reg_names = { "Auto", "Laminar", "Turbulento", "Mixto" }
+local ls_names = { "FL hacia arriba", "FL hacia abajo" }
 
 local function FN(lab, un, k, fl) return { label = lab, unit = un, t = di, k = k, setk = "s" .. k, flags = fl } end
 local function FC(lab, k, names, n)
@@ -116,8 +121,16 @@ local f_pl = cat_ext({ FC("Caso", "kase", kase_names, 2) }, cat_ext(F_FLUID(), c
   FC("Caras mojadas", "faces", face_names, 2),
   FC("Regimen (placa)", "regime", reg_names, 4) })))
 
+local f_mag = cat_ext(F_FLUID(), cat_ext({ FN("Masa m", "kg", "mb", FF_POS),
+  FN("Diametro D esfera", "m", "D", FF_POS) }, cat_ext(F_V(), {
+  FN("Giro w", "rpm", "rpm", FF_NONNEG),
+  FN("CL (grafica, wD/2V)", nil, "cl", FF_POS + FF_OPT),
+  FN("CD (opc)", nil, "cd", FF_POS + FF_OPT),
+  FC("Sentido de FL", "lsgn", ls_names, 2) })))
+
 local titles = { "FUERZA DE ARRASTRE (AR-1)", "VELOCIDAD TERMINAL (AR-2)",
-  "ESTRUCTURA: CUERPOS (AR-3)", "VUELO NIVELADO (AR-4)", "PLACA PLANA Y STOKES" }
+  "ESTRUCTURA: CUERPOS (AR-3)", "VUELO NIVELADO (AR-4)", "PLACA PLANA Y STOKES",
+  "BALANCE VERTICAL (AR-5)" }
 
 local tipo = DT_AR1
 local last_fluid, last_fig = 255, 0
@@ -145,7 +158,7 @@ end
 
 local function set_form(fm)
   if tipo == DT_AR3 then fm.f = build_ar3()
-  else fm.f = ({ [0] = f_ar1, f_ar2, false, f_ar4, f_pl })[tipo] end
+  else fm.f = ({ [0] = f_ar1, f_ar2, false, f_ar4, f_pl, f_mag })[tipo] end
   fm.n = #fm.f
   if fm.cur >= fm.n then fm.cur = 0 end
 end
@@ -223,10 +236,120 @@ local function bodies_hook()
   end
 end
 
+-- --------------------------------- AR-1: potencia de arrastre P = FD V
+local PW = nil        -- {F = FD (N), v = V (m/s)} del ultimo AR-1 de arrastre
+
+local function power_lines(memo)
+  if not PW then return end
+  local P = Dr.drag_power(PW.F, PW.v)
+  M.memo_sec("POTENCIA DE ARRASTRE")
+  if memo then
+    M.memo_eq("P", "FD V", mfmt("%v(%v)", PW.F, PW.v), P, "W")
+  end
+  M.memo_res("P = FD V", P, "W")
+  M.memo_res("P", P / 1000, "kW")
+  M.memo_res("P", P / Dr.HP_W, "hp")
+end
+
+-- --------------------------------- AR-5: balance vertical (Magnus)
+local MG = nil        -- {r = resultados del motor, v, g, up}
+
+-- Devuelve nil si va bien o el texto del error
+local function compute_mag()
+  local C = F.cfg_copy()
+  local v = vms(di.V)
+  local r = {}
+  local cl = nz(di.scl) and di.cl or 0
+  local cd = nz(di.scd) and di.cd or 0
+  local up = (di.lsgn == 0)
+  local err = Dr.drag_magnus(di.mb, di.D, v, di.rpm, di.rho, cl, cd, C.g, up, r)
+  if err ~= 0 then return "Datos invalidos (m, D, V > 0)" end
+  r.Re = Dr.drag_re(v, di.D, di.nu)
+  MG = { r = r, v = v, g = C.g, up = up, cl = cl, cd = cd }
+  return nil
+end
+
+local function mag_concl(r)
+  if math.abs(r.Fnet) <= 1e-9 * r.W then
+    M.memo_line("> Equilibrio: la pelota no acelera en vertical", C_OK)
+  elseif r.rises then
+    M.memo_line("> SUBE: la fuerza neta va hacia arriba", C_OK)
+  else
+    M.memo_line("> CAE: la fuerza neta va hacia abajo", C_OK)
+  end
+end
+
+local function mag_sum()
+  local r = MG.r
+  M.memo_begin("AR-5 BALANCE VERTICAL (MAGNUS)")
+  M.memo_sec("PARAMETRO DE GIRO")
+  M.memo_res("w D / (2 V)", r.SR, "")
+  M.memo_line(mfmt("V = %v m/s   Re = %v", MG.v, r.Re), C_GRAY)
+  if not r.lift then
+    M.memo_line("Lea C_L en la grafica con este valor", C_WARN)
+    M.memo_line("y escribalo en el formulario.", C_WARN)
+  end
+  M.memo_sec("FUERZAS")
+  M.memo_res("W = m g", r.W, "N")
+  M.memo_res("Empuje FB", r.B, "N")
+  if r.lift then M.memo_res("Sustentacion FL", r.FL, "N") end
+  if r.FD > 0 then M.memo_res("Arrastre FD", r.FD, "N") end
+  if r.lift then
+    M.memo_sec("BALANCE VERTICAL")
+    M.memo_res("Fuerza neta (+ arriba)", r.Fnet, "N")
+    M.memo_res("Aceleracion vertical", r.az, "m/s2")
+    mag_concl(r)
+  end
+end
+
+local function mag_memo()
+  local r = MG.r
+  M.memo_begin("MEMORIA: BALANCE VERTICAL (MAGNUS)")
+  M.memo_sec("DATOS")
+  M.memo_data("m", di.mb, "kg")
+  M.memo_data("D esfera", di.D, "m")
+  M.memo_data("V", MG.v, "m/s")
+  M.memo_data("giro", di.rpm, "rpm")
+  M.memo_data("rho fluido", di.rho, "kg/m3")
+  M.memo_data("g", MG.g, "m/s2")
+  if r.lift then M.memo_data("CL (grafica)", MG.cl, "") end
+  if r.FD > 0 then M.memo_data("CD", MG.cd, "") end
+  M.memo_sec("1. PARAMETRO DE GIRO")
+  local w = di.rpm * 2 * math.pi / 60
+  M.memo_eq("w", "rpm 2 pi / 60", mfmt("%v(2 pi)/60", di.rpm), w, "rad/s")
+  M.memo_eq("wD/2V", "w D / (2 V)", mfmt("%w(%w)/(2(%w))", w, di.D, MG.v), r.SR, "")
+  M.memo_sec("2. FUERZAS")
+  M.memo_eq("W", "m g", mfmt("%v(%v)", di.mb, MG.g), r.W, "N")
+  M.memo_eq("Vol", "pi D^3/6", mfmt("pi(%v)^3/6", di.D), r.vol, "m3")
+  M.memo_eq("FB", "rho g Vol", mfmt("%v(%v)(%v)", di.rho, MG.g, r.vol), r.B, "N")
+  M.memo_eq("A", "pi D^2/4", mfmt("pi(%v)^2/4", di.D), r.A, "m2")
+  M.memo_eq("q", "rho V^2 / 2", mfmt("%v(%v)^2/2", di.rho, MG.v), r.q, "Pa")
+  if r.lift then
+    M.memo_eq("FL", "CL q A", mfmt("%v(%v)(%v)", MG.cl, r.q, r.A), r.FL, "N")
+  end
+  if r.FD > 0 then
+    M.memo_eq("FD", "CD q A", mfmt("%v(%v)(%v)", MG.cd, r.q, r.A), r.FD, "N")
+  end
+  if r.lift then
+    M.memo_sec("3. BALANCE VERTICAL")
+    M.memo_line(MG.up and "FL hacia arriba, FD horizontal" or "FL hacia abajo, FD horizontal", C_GRAY)
+    M.memo_eq("Fnet", MG.up and "FL + FB - W" or "-FL + FB - W",
+      mfmt("%v + %v - %v", MG.up and r.FL or -r.FL, r.B, r.W), r.Fnet, "N")
+    M.memo_eq("az", "Fnet / m", mfmt("%v/%v", r.Fnet, di.mb), r.az, "m/s2")
+    mag_concl(r)
+  else
+    M.memo_sec("FALTA C_L")
+    M.memo_line("Lea C_L en la grafica con wD/2V y", C_WARN)
+    M.memo_line("repita el calculo con ese valor.", C_WARN)
+  end
+end
+
 -- Devuelve nil si va bien o el texto del error
 local function compute()
   local g = F.gset()
   MR.memo_reset()
+  PW = nil
+  if tipo == DT_MAG then return compute_mag() end
   local V = MR.V
   local C = F.cfg_copy()
   MR.cfg = C
@@ -264,11 +387,13 @@ local function compute()
       V[MR.V_RE] = Dr.drag_re(v, Lr, di.nu)
       w = Dr.drag_re_warn(V[MR.V_RE], k)
       msetf(MR.G_DLIFT, di.lift ~= 0)
+      PW = (di.lift == 0) and { v = v } or nil
       if H.warn_has(w, Dr.DW_STOKES) and V[MR.V_KST] > 0 and di.lift == 0 then
         V[MR.V_CDV] = V[MR.V_KST] / V[MR.V_RE]
         V[MR.V_FD] = Dr.drag_force(rho, V[MR.V_CDV], A, v)
         msetf(MR.G_DSTK, true)
       end
+      if PW then PW.F = V[MR.V_FD] end
     else
       local useb = nz(di.svol) and (di.fluid == 1 or nz(g.buoy) or di.fluid == 2)
       if di.fluid == 1 and not nz(di.svol) then return "Agua: falta el volumen (empuje)" end
@@ -417,10 +542,16 @@ local function result_loop()
   local fk_memo = { "RESUMEN", "", "", "", "VOLVER" }
   local memo = false
   while true do
-    MR.memo_show(MR.PROG_X(MR.XP_AR1_SUM + 2 * tipo + (memo and 1 or 0)))
+    if tipo == DT_MAG then
+      if memo then mag_memo() else mag_sum() end
+    else
+      MR.memo_show(MR.PROG_X(MR.XP_AR1_SUM + 2 * tipo + (memo and 1 or 0)))
+      if tipo == DT_AR1 then power_lines(memo) end
+    end
     local k = W.view_run(titles[tipo + 1], memo and fk_memo or fk_sum)
     if k == K_F1 then memo = not memo
-    elseif k == K_F3 and not memo then F.case_save_ui(MR.KT_DRAG + tipo)
+    elseif k == K_F3 and not memo then
+      F.case_save_ui(tipo == DT_MAG and KT_AR5 or MR.KT_DRAG + tipo)
     elseif k == K_F2 and tipo == DT_AR3 then sketch()
     elseif k == K_MODE then F.scr_settings()
     else return end
@@ -471,7 +602,8 @@ function S.scr_drag_run(t, autocalc)
   set_form(fm)
   fm.fk = { (t <= DT_AR3) and "CD" or "", "", "", "AJUSTES", "CALC" }
   fm.on_commit = on_commit
-  fm.hint = t == DT_AR4 and "Sin CD alas: calcula el CL necesario"
+  fm.hint = t == DT_MAG and "Sin CL: da wD/2V para leer la grafica"
+    or t == DT_AR4 and "Sin CD alas: calcula el CL necesario"
     or "Fluido Aire o Agua llena rho y nu"
   while true do
     fm_now = fm
@@ -526,6 +658,7 @@ function S.drag_load(t)
   if di.vunit > 2 then di.vunit = 0 end
   di.lift, di.kase, di.faces = clamp01(di.lift), clamp01(di.kase), clamp01(di.faces)
   if di.regime > 3 then di.regime = 0 end
+  di.lsgn = clamp01(di.lsgn)
   if not (di.nb >= 1 and di.nb <= NB) then di.nb = 2 end
   if not (di.nw >= 1 and di.nw <= 4) then di.nw = 2 end
   di.init = 1
@@ -537,7 +670,7 @@ end
 local function SD(k, x) di[k] = x; di["s" .. k] = 1 end
 
 function S.drag_preset(k)
-  local tipo_of = { [0] = DT_AR2, DT_AR3, DT_AR2, DT_AR4, DT_PL, DT_PL }
+  local tipo_of = { [0] = DT_AR2, DT_AR3, DT_AR2, DT_AR4, DT_PL, DT_PL, DT_MAG }
   blank()
   di.init = 1
   SD("nw", 2)
@@ -563,12 +696,16 @@ function S.drag_preset(k)
   elseif k == 4 then                            -- esfera de Stokes
     di.kase = 1; di.fluid = 1; SD("rho", 1000); SD("nu", 1e-6)
     SD("V", 0.001); SD("D", 0.001)
+  elseif k == 6 then                            -- pelota de tenis con efecto, 2024 P5
+    SD("rho", 1.25); SD("nu", 1.5e-5)
+    SD("mb", 0.06); SD("D", 0.065); SD("V", 125); di.vunit = 1
+    SD("rpm", 4800); SD("cl", 0.12)
   else                                          -- placa plana en aire
     SD("V", 10); SD("D", 2); SD("L", 1); di.regime = Dr.PL_TURB
   end
   last_fluid = di.fluid
   last_fig = floor(di.fig)
-  return tipo_of[k < 6 and k or 5]
+  return tipo_of[k < 7 and k or 5]
 end
 
 return S

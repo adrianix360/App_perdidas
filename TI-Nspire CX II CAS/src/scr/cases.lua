@@ -29,8 +29,15 @@ local C_ERR, C_WARN, C_OK, C_TITLE = U.C_ERR, U.C_WARN, U.C_OK, U.C_TITLE
 
 C.CASES_MAX, C.CASE_NAME = 20, 8
 C.PT_COUNT = 7
-C.KT_FRIC, C.KT_DRAG, C.KT_WEIR, C.KT_CHAN, C.KT_COUNT = 7, 8, 13, 17, 20
-local KT_FRIC, KT_DRAG, KT_WEIR, KT_CHAN, KT_COUNT = 7, 8, 13, 17, 20
+C.KT_FRIC, C.KT_DRAG, C.KT_WEIR, C.KT_CHAN, C.KT_COUNT = 7, 8, 13, 17, 41
+local KT_FRIC, KT_DRAG, KT_WEIR, KT_CHAN, KT_COUNT = 7, 8, 13, 17, 41
+-- Tipos de la ampliacion (se agregan al final: los casos guardados siguen valiendo)
+C.KT_VE8, C.KT_AR5 = 20, 21
+local KT_VE8, KT_AR5 = 20, 21
+-- Estatica (kinds 1..11 de scr_stat) = 22..32; dinamica (D1c D1t D2a D2b D2c D3a D3b D4) = 33..40
+C.KT_STAT, C.KT_DYN = 22, 33
+local KT_STAT = 22
+local DYN_KINDS = { "D1c", "D1t", "D2a", "D2b", "D2c", "D3a", "D3b", "D4" }
 
 -- nombre corto de cada tipo para la lista (<= 28 caracteres)
 C.tipo_txt = {
@@ -42,6 +49,12 @@ C.tipo_txt = {
   "VE Elemento simple", "VE-4 Compuesta", "VE-6 Perfil v(y)",
   "VE-7 Aguas abajo",
   "EX-1 Venturi", "EX-2 Salto hidraulico", "EX-3 Chorro",
+  "VE-8 Tanques acoplados", "AR-5 Balance vertical",
+  "E1 Placa entre paredes", "E1 Cojinete", "E1 Bloque en rampa", "E2 Manometria",
+  "E3 Superficie plana", "E3 Compuerta en L", "E4 Cuarto de circulo", "E4 Semicilindro",
+  "E5 Flotacion", "E6 Equilibrio relativo", "E6 Recipientes en polea",
+  "D1 Perfil en canal", "D1 Perfil en tuberia", "D2 Continuidad", "D2 Descarga de tanque",
+  "D2 Bernoulli", "D3 Codo o reduccion", "D3 Chorros y peso", "D4 Tanque no permanente",
 }
 
 local function cs() return U.state.cas end
@@ -54,6 +67,7 @@ local function settings() require("scr.screens").scr_settings() end
 -- Programa dueno del caso: PERDIDAS (< KT_DRAG) o FLUJOS (>= KT_DRAG).
 -- Cada programa lista todos, pero solo abre los suyos.
 function C.own(t)
+  if t >= KT_STAT then return true end      -- estatica y dinamica: se abren desde ambos
   if W.APP_NAME == "FLUJOS" then return t >= KT_DRAG end
   return t < KT_DRAG
 end
@@ -66,6 +80,30 @@ local function f4mod(name)
   local ok, m = pcall(require, "scr." .. name)
   if ok and type(m) == "table" then return m end
   return nil
+end
+
+-- Estatica y dinamica: un proveedor por tipo (modulos cargados al usarse)
+for kind = 1, 11 do
+  local function m() return f4mod("scr_stat") end
+  C.register(KT_STAT + kind - 1, KT_STAT + kind - 1, {
+    save = function() local s = m(); return s and s.case_get(kind) end,
+    load = function(d) local s = m(); return s ~= nil and type(d) == "table" and s.case_set(kind, d) end,
+    run = function() local s = m(); if s then s.case_run(kind, true) end end })
+end
+for i, kind in ipairs(DYN_KINDS) do
+  local function m() return f4mod("scr_dyn") end
+  C.register(C.KT_DYN + i - 1, C.KT_DYN + i - 1, {
+    save = function() local s = m(); return s and s.case_get(kind) end,
+    load = function(d) local s = m(); return s ~= nil and type(d) == "table" and s.case_set(kind, d) end,
+    run = function() local s = m(); if s then s.case_run(kind) end end })
+end
+-- Asigna los codigos a los modulos (GUARDAR de sus pantallas); se llama al usar Mis casos
+-- o al abrir el submenu de estatica y dinamica
+function C.bind_kinds()
+  local s = f4mod("scr_stat")
+  if s then s.KT_BASE = KT_STAT end
+  local d = f4mod("scr_dyn")
+  if d then for i, kind in ipairs(DYN_KINDS) do d.kt[kind] = C.KT_DYN + i - 1 end end
 end
 
 -- Devuelve {save=, load=, run=} del tipo t, o nil si no esta disponible
@@ -91,7 +129,9 @@ local function provider(t)
              run = function() F.scr_fric_run(nil, nil, nil, true) end }
   end
   local name, pre, base
-  if t < KT_WEIR then name, pre, base = "scr_drag", "drag", KT_DRAG
+  if t == KT_VE8 then name, pre, base = "scr_weir", "weir", KT_VE8 - 4     -- tipo relativo 4
+  elseif t == KT_AR5 then name, pre, base = "scr_drag", "drag", KT_AR5 - 5  -- tipo relativo 5
+  elseif t < KT_WEIR then name, pre, base = "scr_drag", "drag", KT_DRAG
   elseif t < KT_CHAN then name, pre, base = "scr_weir", "weir", KT_WEIR
   else name, pre, base = "scr_chan", "chan", KT_CHAN end
   local m = f4mod(name)
@@ -113,6 +153,7 @@ end
 
 -- Guarda el caso actual (desde la pantalla de resultado)
 function C.case_save_ui(tipo)
+  C.bind_kinds()
   local p = provider(tipo)
   local data = p and p.save and p.save()
   if type(data) ~= "table" then
@@ -140,6 +181,7 @@ function C.case_save_ui(tipo)
 end
 
 function C.scr_cases()
+  C.bind_kinds()
   local fk = { "CARGAR", "", "BORRAR", "", "VOLVER" }
   local cur = 0
   while true do

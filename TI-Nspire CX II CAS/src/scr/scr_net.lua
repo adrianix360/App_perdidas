@@ -32,7 +32,8 @@ local function new_pipe(tr)
 end
 local function new_ni()
   local ni = { np = 1, H = 0, kp = 1, Qk = 0, nu = 0, z1 = 0,
-               snp = 1, sH = 0, skp = 0, sQk = 0, snu = 0, sz1 = 0, mode = 0, p = {} }
+               snp = 1, sH = 0, skp = 0, sQk = 0, snu = 0, sz1 = 0, mode = 0, p = {},
+               bom = 0, bdato = 0, bP = 0, bEta = 0, bHB = 0, sbP = 0, sbEta = 0, sbHB = 0 }
   for i = 1, NP do ni.p[i] = new_pipe(i == 1 and 1 or nil) end
   return ni
 end
@@ -47,6 +48,10 @@ local pname = "ABCDEFGH"
 local function PN(i) return pname:sub(i, i) end
 
 local mode_names = { "Adelante (H dada)", "Atras (Q en tubo)" }
+local yesno = { "No", "Si" }
+local bdato_names = { "Potencia P", "Carga HB" }
+local HB, H0, BLOG = 0, 0, H.new_log()     -- bomba en la linea (Modificaciones JV)
+local function bomb() return b(ni.bom) end
 local method_names = { "Colebrook-White", "Swamee-Jain", "Haaland", "Goudar-Sonnad" }
 
 -- si cambia el numero de tubos, el formulario se rehace al instante
@@ -85,6 +90,17 @@ local function build_form()
                       hi = (j == 1) and NP or nil }
     end
   end
+  -- bomba en la linea: (z1 - z2) + HB = M Q^2 (al final para no mover los campos)
+  ff[#ff + 1] = { label = "Bomba en la linea", t = ni, chk = "bom", flags = FF_CHOICE,
+                  choices = yesno, nchoices = 2 }
+  ff[#ff + 1] = { label = "Dato de la bomba", t = ni, chk = "bdato", flags = FF_CHOICE,
+                  choices = bdato_names, nchoices = 2 }
+  ff[#ff + 1] = { label = "Potencia bomba P", unit = "kW", t = ni, k = "bP", setk = "sbP",
+                  flags = FF_POS + FF_OPT }
+  ff[#ff + 1] = { label = "Eficiencia bomba", unit = "0-1", t = ni, k = "bEta", setk = "sbEta",
+                  flags = W.FF_RANGE + FF_OPT, lo = 0.001, hi = 1 }
+  ff[#ff + 1] = { label = "Carga HB (dato)", unit = "m", t = ni, k = "bHB", setk = "sbHB",
+                  flags = FF_ANY + FF_OPT }
   return ff
 end
 
@@ -140,16 +156,66 @@ local function compute()
     NET.root = tr_node[1]
   end
   local e
+  HB, H0 = 0, 0
+  H.hydro_log_clear(BLOG)
+  local pot = bomb() and ni.bdato == 0
+  if bomb() then
+    if pot then
+      if not b(ni.sbP) then return "Falta la potencia P de la bomba" end
+      if not b(ni.sbEta) then return "Falta la eficiencia de la bomba" end
+    elseif not b(ni.sbHB) then
+      return "Falta la carga HB de la bomba"
+    end
+  end
+  local function HBq(Q)
+    if not bomb() then return 0 end
+    if pot then return H.hydro_head_from_power(ni.bP * 1000, ni.bEta, Q, NC) end
+    return ni.bHB
+  end
   if ni.mode == 0 then
     if not b(ni.sH) then return "Falta la carga H" end
-    e = H.hydro_net_solve(NET, ni.H, NC)
-    Htot = ni.H
+    H0 = ni.H
+    if pot then
+      -- Q total tal que Q = Q_red(H + eta P/(gamma Q)); g(Q) baja con Q
+      local function g(Q)
+        local h = H0 + HBq(Q)
+        if not (h > 0) then return -Q end
+        if H.hydro_net_solve(NET, h, NC) ~= 0 then return nil end
+        return NET.node[NET.root].Q - Q
+      end
+      local lo, hi, it = 0, 0.01, 0
+      while true do
+        local v = g(hi)
+        if v == nil then return "Sistema mal definido" end
+        if v < 0 then break end
+        lo, hi, it = hi, hi * 2, it + 1
+        if it > 60 then return H.hydro_err_text(H.H_ERR_NOROOT) end
+      end
+      for i = 1, 200 do
+        local mid = 0.5 * (lo + hi)
+        local v = g(mid)
+        if v == nil then return "Sistema mal definido" end
+        H.hydro_log_row(BLOG, i, lo, hi, mid, v)
+        if v > 0 then lo = mid else hi = mid end
+        if hi - lo <= 1e-12 * hi then break end
+      end
+      HB = HBq(0.5 * (lo + hi))
+    else
+      HB = HBq(1)
+    end
+    Htot = H0 + HB
+    if not (Htot > 0) then return "H + HB debe ser > 0" end
+    e = H.hydro_net_solve(NET, Htot, NC)
   else
     if not b(ni.skp) or not b(ni.sQk) then return "Falta el tubo conocido y su Q" end
     if ni.kp > np then return "Ese tubo no existe" end
     local hh
     e, hh = H.hydro_net_solve_back(NET, pnode[math.floor(ni.kp)], ni.Qk / 1000, NC)
-    if e == 0 then Htot = hh end
+    if e == 0 then
+      Htot = hh
+      HB = HBq(NET.node[NET.root].Q)
+      H0 = Htot - HB
+    end
   end
   if e ~= 0 then return H.hydro_err_text(e) end
   return nil
@@ -178,8 +244,15 @@ local function summary()
   W.view_add("RESULTADO  Sistema serie/paralelo", C_TITLE)
   W.view_add_sep()
   W.view_add_val("Q total", 1000 * root.Q, "l/s")
-  W.view_add_val(ni.mode ~= 0 and "H necesaria" or "H", Htot, "m")
-  if ni.mode ~= 0 then W.view_add_val("H en kPa", Htot * NC.gamma / 1000, "kPa") end
+  if bomb() then
+    W.view_add_val("HB bomba", HB, "m")
+    W.view_add_val(ni.mode ~= 0 and "z1-z2 necesaria" or "z1 - z2", H0, "m")
+    W.view_add_val("H = z1-z2+HB", Htot, "m")
+    if ni.mode ~= 0 then W.view_add_val("z1-z2 en kPa", H0 * NC.gamma / 1000, "kPa") end
+  else
+    W.view_add_val(ni.mode ~= 0 and "H necesaria" or "H", Htot, "m")
+    if ni.mode ~= 0 then W.view_add_val("H en kPa", Htot * NC.gamma / 1000, "kPa") end
+  end
   W.view_add_val("M total", root.M, nil)
   W.view_add_sep()
   add_pipe_lines()
@@ -245,15 +318,36 @@ local function memo()
     memo_eq("M", nil, table.concat(parts, " + "), root.M, nil)
   end
   memo_sec("CAUDAL Y CARGA")
+  if bomb() then
+    memo_line(" Bomba: (z1 - z2) + HB = M Q^2", C_GRAY)
+    if ni.bdato == 0 then
+      memo_line(mfmt(" HB = eta P/(gamma Q); P = %v kW, eta = %v", ni.bP, ni.bEta), C_GRAY)
+      if ni.mode == 0 then
+        memo_line(" Q total por biseccion: Q = sqrt((z1-z2 + HB(Q))/M)", C_GRAY)
+        M.memo_table({ "it", "Q min", "Q max", "Q l/s", "F l/s" }, 5, BLOG,
+          { 1, 1000, 1000, 1000, 1000 })
+      end
+      memo_eq("HB", "eta P/(gamma Q)", mfmt("%v(%v)/(%v(%v))", ni.bEta, ni.bP * 1000,
+        NC.gamma, root.Q), HB, "m")
+    else
+      memo_eq("HB", nil, nil, HB, "m (dato)")
+    end
+  end
   if ni.mode == 0 then
-    memo_eq("Q", "sqrt(H/M)", mfmt("sqrt(%v/%v)", ni.H, root.M), root.Q, "m3/s")
+    if bomb() then memo_eq("H", "(z1 - z2) + HB", mfmt("%v + %v", H0, HB), Htot, "m") end
+    memo_eq("Q", "sqrt(H/M)", mfmt("sqrt(%v/%v)", Htot, root.M), root.Q, "m3/s")
   else
     memo_line(" Con el Q conocido se sube por el arbol:", C_GRAY)
     memo_line(" h = M Q^2 en el tubo; en un paralelo", C_GRAY)
     memo_line(" Qi = sqrt(h/Mi); en serie h se suma.", C_GRAY)
     memo_eq("Q", nil, nil, root.Q, "m3/s")
     memo_eq("H", "M Q^2", mfmt("%v(%v)^2", root.M, root.Q), Htot, "m")
-    memo_res("p = gamma H", Htot * NC.gamma / 1000, "kPa")
+    if bomb() then
+      memo_eq("z1 - z2", "H - HB", mfmt("%v - %v", Htot, HB), H0, "m")
+      memo_res("p = gamma (z1 - z2)", H0 * NC.gamma / 1000, "kPa")
+    else
+      memo_res("p = gamma H", Htot * NC.gamma / 1000, "kPa")
+    end
   end
   memo_sec("REPARTO")
   for t = 1, nt do
@@ -282,7 +376,7 @@ end
 local function graph()
   local s = {}
   local np = math.floor(ni.np)
-  local E0 = b(ni.sz1) and ni.z1 or Htot
+  local E0 = b(ni.sz1) and ni.z1 or (bomb() and H0 or Htot)
   for t = 1, nt do
     if t > GR.GSEG_MAX then break end
     local g = NET.node[tr_node[t]]
@@ -300,7 +394,9 @@ local function graph()
     sg.name = PN(best) .. (g.type == H.NODE_PARALLEL and "+" or "")
     s[t] = sg
   end
-  GR.graph_run("SISTEMA: LE y LP", E0, s, math.min(nt, GR.GSEG_MAX), E0 - Htot, true)
+  if bomb() and s[1] then s[1].jump = HB end
+  GR.graph_run("SISTEMA: LE y LP", E0, s, math.min(nt, GR.GSEG_MAX),
+    E0 - (bomb() and H0 or Htot), true)
 end
 
 -- Casos del curso S-01 a S-05: {tramo, L, D (mm), f, K} por tubo
@@ -336,6 +432,7 @@ function N.scr_net_example(idx)
   ni.nu = 1e-6
   ni.snu = 1
   ni.sz1 = 0
+  ni.bom = 0
   for i = 1, exn_np[idx] do
     local p, e = ni.p[i], exn[idx][i]
     p.tr, p.L, p.D, p.f, p.K = e[1], e[2], e[3], e[4], e[5]

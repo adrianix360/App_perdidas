@@ -8,6 +8,9 @@ Dos programas, reunidos en un solo documento para la calculadora TI-Nspire CX II
 - **Sistemas en serie y paralelo** con módulos de caudal $h = MQ^2$, hacia adelante y hacia atrás (G), y **gráfica** de la línea de energía y la piezométrica (H).
 - **Tres tanques:** 2 a 4 tanques unidos en un nudo, con o sin caudal $Q_T$ que sale del nudo; se ajusta la carga del nudo $Z_J$ con $\Delta Z = 2\,\Delta Q / \sum(|Q|/|H|)$, como en la solución a mano.
 - **Calcular f:** solo el factor de fricción, con los 4 métodos comparados y la tabla de iteraciones de Colebrook-White.
+- **Bomba en la línea** (A, B, D y G): $(z_1 - z_2) + H_B = h_f + h_m$, con $H_B$ dato o $H_B = \eta P/(\gamma Q)$; con la potencia como dato, $Q$ se halla por bisección.
+- **Mi programa original** (Tuberías $h_f + h_L$): cálculo de $Q$ y de $D$ (con bomba opcional), $H$ de bomba, $H$ de turbina y pérdidas totales, más 11 cálculos individuales ($V$, $Q$, $Re$, $e/D$, $f$, $h_f$, $h_L$, $K$, $V^2/2g$ y potencias). Cada paso con 3 decimales, memoria de la primera iteración, tabla de iteraciones y vista fila por fila.
+- **Redondeo a mano** (Ajustes): con «Sí (3 dec.)» cada paso de tuberías se redondea a 3 decimales ($|x| < 1$ en científica: 1.116E-2) y todo se muestra así.
 - **Biblioteca:** $k_s$, $C_H$, $K$ de accesorios con sumador, fluido (agua y aire) y diámetros comerciales.
 
 **FLUJOS** (flujos externos y medición):
@@ -26,7 +29,7 @@ Dos programas, reunidos en un solo documento para la calculadora TI-Nspire CX II
 
 Los dos programas tienen **Mis casos** (compartidos), **casos del curso** para cargar y estudiar, ayuda y ajustes comunes.
 
-Versión 1.1 Nspire (basada en la v2.1 de la TI-84; la 1.1 agrega estática y dinámica de fluidos, VE-8, AR-5 y la potencia de arrastre). Autor del encargo: Adrián Castro Ramírez.
+Versión 1.2 Nspire (basada en la v2.1 de la TI-84; la 1.1 agrega estática y dinámica de fluidos, VE-8, AR-5 y la potencia de arrastre; la 1.2 agrega los tres tanques y las Modificaciones JV: bomba en la línea, «Mi programa original» y el redondeo a 3 decimales). Autor del encargo: Adrián Castro Ramírez.
 
 ## Ejercicios de examen cubiertos (v1.1)
 
@@ -122,10 +125,13 @@ En todo resultado: F1 **MEMORIA** (cálculo paso a paso; ◀ ▶ cambian de pág
 6. **Mis casos:** hasta 20 casos, compartidos con FLUJOS. `enter` carga y recalcula, F3 borra. Los casos de FLUJOS aparecen con «>» y piden abrir FLUJOS.
 7. **Ajustes:**
    - método de $f$, $g$, $\gamma$, $\nu$, decimales, tolerancia, presión de vapor, límites de los avisos;
-   - $\rho$ y $\nu$ del aire, empuje con aire, $C_d$ de vertedores (0,6), km/h por nudo (1,85) y convención del manómetro.
+   - $\rho$ y $\nu$ del aire, empuje con aire, $C_d$ de vertedores (0,6), km/h por nudo (1,85), convención del manómetro y **Redondeo a mano** (No / Sí, 3 decimales en cada paso).
 8. **Ayuda:** siete temas de tuberías, «Factor de fricción f», **Casos del curso** (21 ejercicios de tuberías más F-01 a F-05) y, en la entrada 10 (`▲` desde la primera), «Acerca de» con la memoria Lua en uso.
 10. **Tres tanques (nudo)** (`▲` `▲` desde la primera opción). Por tanque: nivel $Z$, $L$, $D$, «f dado» (opcional) o $k_s$, y $\sum K$. Además $Q_T$ (sale del nudo; 0 si no hay), $Z_J$ inicial (opcional; si falta, el promedio de los $Z$) y la cota del nudo (opcional, da $p/\gamma$). F2 **EJEMPLO** carga la tarea ($k_s$, $Q_T$ = 60 l/s) o el de la pizarra ($f$ dado). $Q > 0$ va del tanque al nudo. La memoria muestra las tres primeras iteraciones como a mano ($H_i$, $Q_i$, $\Delta Q$, $\Delta Z$, nuevo $Z_J$), la tabla de todas y la última; si el paso de Newton sale del intervalo usa bisección.
-11. **Salir.**
+11. **Mi programa original** (`▲` desde Salir). Cálculo de $Q$, cálculo de $D$, $H$ bomba, $H$ turbina, pérdidas totales y *Cálculos individuales*. «Vel. salida» suma (o no) $V_s^2/2g$ a la salida libre. En el resultado: F1 **MEMORIA** (primera iteración paso a paso), F2 **TABLA** de iteraciones (si no cabe, cada fila ocupa dos líneas) y F3 **FILAS** (elegir una fila y verla completa). Usa $g$ = 9,81 y $\gamma$ = 9810 como el programa original.
+12. **Salir.**
+
+En los tipos A, B y D y en Sistemas, los últimos campos del formulario son la **bomba en la línea**: «Bomba en la línea» Sí, «Dato de la bomba» (potencia $P$ y eficiencia, o carga $H_B$). En B y D el cálculo sigue con $H = (z_1 - z_2) + H_B$; la memoria empieza con la sección BOMBA.
 
 ### FLUJOS
 

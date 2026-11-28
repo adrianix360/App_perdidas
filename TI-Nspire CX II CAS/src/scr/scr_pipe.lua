@@ -31,10 +31,11 @@ local function settings() require("scr.screens").scr_settings() end
 -- Datos compartidos (pipe_inputs)
 -- ------------------------------------------------------------------
 local NUMS = { "Q", "H", "D", "L", "ks", "K", "nu", "f", "CH", "eta", "Hs", "zb", "Hp",
-               "z1", "z2", "p1", "p2", "CH0" }
+               "z1", "z2", "p1", "p2", "CH0", "bP", "bEta", "bHB" }
 local FLAGS = { "sQ", "sH", "sD", "sL", "sks", "sK", "snu", "sf", "sCH", "seta", "sHs",
-                "szb", "sHp", "sz1", "sz2", "sp1", "sp2", "sCH0" }
-local CHOICES = { "mach", "dset", "valve", "modeI", "itm" }   -- 0/1 salvo dset (0..5)
+                "szb", "sHp", "sz1", "sz2", "sp1", "sp2", "sCH0", "sbP", "sbEta", "sbHB" }
+-- 0/1 salvo dset (0..5); bom = bomba en la linea, bdato = 0 potencia / 1 carga HB
+local CHOICES = { "mach", "dset", "valve", "modeI", "itm", "bom", "bdato" }
 
 local pin = {}
 P.pin = pin
@@ -123,12 +124,24 @@ local function F_CH0()
   return { label = "C_H inicio (opc.)", t = pin, k = "CH0", setk = "sCH0",
            flags = FF_RANGE + FF_OPT, lo = 1, hi = 200 }
 end
+-- Bomba en la linea (A, B y D; Modificaciones JV): (z1 - z2) + HB = hf + hm,
+-- con HB dato o HB = eta P/(gamma Q). Van al final del formulario.
+local bdato_names = { "Potencia P", "Carga HB" }
+local function add_bomba(fl)
+  fl[#fl + 1] = CHO("Bomba en la linea", "bom", yesno)
+  fl[#fl + 1] = CHO("Dato de la bomba", "bdato", bdato_names)
+  fl[#fl + 1] = FLD("Potencia bomba P", "kW", "bP", "sbP", FF_POS + FF_OPT)
+  fl[#fl + 1] = { label = "Eficiencia bomba", unit = "0-1", t = pin, k = "bEta", setk = "sbEta",
+                  flags = FF_RANGE + FF_OPT, lo = 0.001, hi = 1 }
+  fl[#fl + 1] = FLD("Carga HB (dato)", "m", "bHB", "sbHB", FF_ANY + FF_OPT)
+  return fl
+end
 
 local forms = {}
-forms[PT_A] = { F_Q(), F_D(), F_L(), F_KS(), F_K(), F_NU(), F_F(),
-  FLD("H sobre punto(opc)", "m", "Hp", "sHp", FF_ANY + FF_OPT), F_MET() }
-forms[PT_B] = { FLD("Carga H", "m", "H", "sH", FF_ANY), F_D(), F_L(), F_KS(), F_K(),
-  F_NU(), F_F(), F_MET(), F_CH0(), CHO("Iteracion", "itm", itB_names) }
+forms[PT_A] = add_bomba({ F_Q(), F_D(), F_L(), F_KS(), F_K(), F_NU(), F_F(),
+  FLD("H sobre punto(opc)", "m", "Hp", "sHp", FF_ANY + FF_OPT), F_MET() })
+forms[PT_B] = add_bomba({ FLD("Carga H", "m", "H", "sH", FF_ANY), F_D(), F_L(), F_KS(), F_K(),
+  F_NU(), F_F(), F_MET(), F_CH0(), CHO("Iteracion", "itm", itB_names) })
 forms[PT_C] = { CHO("Equipo", "mach", mach_names), F_Q(), F_D(), F_L(), F_KS(), F_K(), F_NU(),
   FLD("Desnivel Hs/Ha", "m", "Hs", "sHs", FF_ANY),
   { label = "Eficiencia eta", unit = "0-1", t = pin, k = "eta", setk = "seta",
@@ -139,6 +152,7 @@ forms[PT_D] = { FLD("Caudal diseno Qd", "l/s", "Q", "sQ", FF_POS),
   CHO("Lista diametros", "dset", diams.diam_set_names),
   CHO("Valvula control", "valve", yesno), F_MET(), F_CH0(),
   CHO("Iteracion", "itm", itD_names) }
+add_bomba(forms[PT_D])
 forms[PT_F] = { F_Q(), F_D(), F_L(), F_KS(), F_K(), F_NU(),
   FLD("Carga H", "m", "H", "sH", FF_ANY), F_F(), F_MET() }
 forms[PT_E] = { FLD("Cota z1", "m", "z1", "sz1", FF_ANY), FLD("Cota z2", "m", "z2", "sz2", FF_ANY),
@@ -198,7 +212,7 @@ local function fill_values()
   if tipo == PT_D then D = R.d.D_com end
   sv("V_D", D); sv("V_L", PP.L); sv("V_KS", PP.ks); sv("V_K", PP.sumK)
   sv("V_NU", C.nu); sv("V_G", C.g); sv("V_GAM", C.gamma); sv("V_TOL", C.tol)
-  sv("V_H", pin.H); sv("V_QD", pin.Q / 1000); sv("V_KSMM", PP.ks * 1000)
+  sv("V_H", X.bomb and X.Hef or pin.H); sv("V_QD", pin.Q / 1000); sv("V_KSMM", PP.ks * 1000)
   if s then
     sv("V_Q", s.Q); sv("V_QLS", s.Q * 1000); sv("V_A", s.A); sv("V_V", s.v)
     sv("V_RE", s.Re); sv("V_KSD", s.ksD); sv("V_F", s.f)
@@ -233,7 +247,7 @@ local function fill_values()
     sf("G_FB", H.warn_has(q.st.warn, H.W_FALLBACK))
     sf("G_PSEC", q.solver == H.SOLV_SECANT)
     sf("G_PREQ", tipo == PT_B and pin.itm == H.IT_SECANT)
-    sf("G_PHW", q.hw)
+    sf("G_PHW", b(q.hw))        -- hw es 0/1: en Lua el 0 es verdadero
     sv("V_CH0", pin.CH0); sv("V_HF1", q.hf1 or 0)
     sv("V_Q0LS", (q.Q0 or 0) * 1000)
     if tipo == PT_I then
@@ -271,8 +285,8 @@ local function fill_values()
     sf("G_COURSE", d.qmax.solver == H.SOLV_COURSE)
     sf("G_QSEC", d.qmax.solver == H.SOLV_SECANT)
     sf("G_PSEC", d.solver == H.SOLV_SECANT)
-    sf("G_PHW", d.hw)
-    sf("G_PDFB", d.fb)
+    sf("G_PHW", b(d.hw))
+    sf("G_PDFB", b(d.fb))
     sv("V_CH0", pin.CH0); sv("V_D0", d.D0 * 1000)
     sf("G_VP", d.vp > 0)
     sf("G_VAL", X.has_val)
@@ -311,6 +325,49 @@ function P.pipe_load_example(t, vals, n)
   end
 end
 
+local BLOG = H.new_log()     -- biseccion de Q con bomba de potencia dada (tipo B)
+
+-- Seccion de la bomba en la linea: se inserta despues del titulo del resumen
+-- o de la memoria (los programas de PERDTXT no la traen).
+function P.bomba_lines(memo)
+  local M = require("ui.memo")
+  local keep, kc = {}, {}
+  for i = 1, W.view_n do keep[i] = W.view_line[i]; kc[i] = W.view_color[i] end
+  local n = W.view_n
+  W.view_clear()
+  for i = 1, math.min(2, n) do W.view_add(keep[i], kc[i]) end
+  local HB, Hef = X.HB, X.Hef
+  local st = state_of()
+  local Q = (tipo == PT_D) and pin.Q / 1000 or (st and st.Q or 0)
+  if not memo then
+    W.view_add_val("HB bomba", HB, "m")
+    if tipo ~= PT_A then W.view_add_val("H = z1-z2+HB", Hef, "m") end
+  else
+    M.memo_sec("BOMBA EN LA LINEA")
+    M.memo_line(" Energia: (z1 - z2) + HB = hf + hm", C_GRAY)
+    if pin.bdato == 0 then
+      M.memo_line(M.mfmt(" P = %v kW, eta = %v", pin.bP, pin.bEta), C_FG)
+      if X.bpot and tipo == PT_B then
+        M.memo_line(" HB depende de Q: biseccion sobre Q con", C_GRAY)
+        M.memo_line(" F(Q) = hT(Q) - (z1 - z2) - eta P/(gamma Q)", C_GRAY)
+        M.memo_table({ "it", "Q min", "Q max", "Q l/s", "F m" }, 5, BLOG,
+          { 1, 1000, 1000, 1000, 1 })
+      end
+      M.memo_eq("HB", "eta P/(gamma Q)", M.mfmt("%v(%v)/(%v(%v))", pin.bEta, pin.bP * 1000,
+        C.gamma, Q), HB, "m")
+    else
+      M.memo_eq("HB", nil, nil, HB, "m (dato)")
+    end
+    if tipo ~= PT_A then
+      M.memo_eq("H", "(z1 - z2) + HB", M.mfmt("%v + %v", pin.H, HB), Hef, "m")
+      M.memo_line(" El calculo sigue con esta H:", C_GRAY)
+    elseif b(pin.sHp) then
+      M.memo_line(" p/gamma = H punto + HB - v^2/2g - hT", C_GRAY)
+    end
+  end
+  for i = 3, n do W.view_add(keep[i], kc[i]) end
+end
+
 local function show(memo)
   fill_values()
   MR.cfg = C
@@ -321,6 +378,7 @@ local function show(memo)
     return diams.diam_set_names[pin.dset + 1] or "?"
   end
   MR.memo_show(memo and MR.PROG_MEMO(tipo) or MR.PROG_SUM(tipo))
+  if X.bomb then P.bomba_lines(memo) end
 end
 
 -- ------------------------------------------------------------------
@@ -338,6 +396,17 @@ local function make_pipe()
 end
 
 -- Devuelve nil si todo bien, o un texto de error
+-- Carga de la bomba con el caudal Q (m3/s). -> texto de error o nil, HB
+local function bomba_HB(Q)
+  if pin.bdato == 0 then
+    if not b(pin.sbP) then return "Falta la potencia P de la bomba" end
+    if not b(pin.sbEta) then return "Falta la eficiencia de la bomba" end
+    return nil, H.hydro_head_from_power(pin.bP * 1000, pin.bEta, Q, C)
+  end
+  if not b(pin.sbHB) then return "Falta la carga HB de la bomba" end
+  return nil, pin.bHB
+end
+
 local function compute()
   local e = H.H_OK
   local o = { CH = b(pin.sCH0) and pin.CH0 or 0, solver = pin.itm }
@@ -345,15 +414,35 @@ local function compute()
   H.hydro_log_clear(LG)
   X = { ph = 0, hw = 0, err = 0, Qhw = 0 }
   R = {}
+  X.bomb = b(pin.bom) and (tipo == PT_A or tipo == PT_B or tipo == PT_D)
+  X.HB, X.Hef, X.bpot = 0, pin.H, false
+  local berr
   if tipo == PT_A then
     R.st = {}
     e = H.hydro_pipe_state(PP, pin.Q / 1000, C, R.st)
+    if e == 0 and X.bomb then
+      berr, X.HB = bomba_HB(R.st.Q)
+      if berr then return berr end
+    end
     if e == 0 and b(pin.sHp) then
-      X.ph, R.st.warn = H.hydro_pressure_head(pin.Hp, 0, R.st.v, R.st.hT, C, R.st.warn)
+      X.ph, R.st.warn = H.hydro_pressure_head(pin.Hp, X.HB, R.st.v, R.st.hT, C, R.st.warn)
     end
   elseif tipo == PT_B then
     R.q = {}
-    e = H.hydro_qmax_o(PP, pin.H, C, o, R.q, LG)
+    if X.bomb and pin.bdato == 0 then
+      if not b(pin.sbP) then return "Falta la potencia P de la bomba" end
+      if not b(pin.sbEta) then return "Falta la eficiencia de la bomba" end
+      local Qb
+      e, Qb, X.HB = H.hydro_qmax_pump(PP, pin.H, pin.bP * 1000, pin.bEta, C, BLOG)
+      if e ~= 0 then return H.hydro_err_text(e) end
+      X.bpot = true
+    elseif X.bomb then
+      berr, X.HB = bomba_HB(1)
+      if berr then return berr end
+    end
+    X.Hef = pin.H + X.HB
+    if X.bomb and not (X.Hef > 0) then return "H + HB debe ser > 0" end
+    e = H.hydro_qmax_o(PP, X.Hef, C, o, R.q, LG)
   elseif tipo == PT_C then
     R.m = {}
     if pin.mach == 0 then
@@ -379,12 +468,19 @@ local function compute()
       for i = 1, dlist_n do dlist[i] = ds.mm[i] / 1000 end
     end
     R.d = {}
-    e = H.hydro_design_o(PP, pin.Q / 1000, pin.H, dlist, dlist_n, C, o, R.d, LG)
+    if X.bomb then
+      berr, X.HB = bomba_HB(pin.Q / 1000)
+      if berr then return berr end
+      X.bpot = pin.bdato == 0
+    end
+    X.Hef = pin.H + X.HB
+    if X.bomb and not (X.Hef > 0) then return "H + HB debe ser > 0" end
+    e = H.hydro_design_o(PP, pin.Q / 1000, X.Hef, dlist, dlist_n, C, o, R.d, LG)
     if e == 0 and b(pin.valve) then
       PP.D = R.d.D_com
       X.has_val = true          -- si hv < 0 se muestra igual, con su aviso
       X.val = {}
-      H.hydro_valve(PP, pin.Q / 1000, pin.H, C, X.val)
+      H.hydro_valve(PP, pin.Q / 1000, X.Hef, C, X.val)
     end
   elseif tipo == PT_F then
     R.v = {}
@@ -439,7 +535,7 @@ local function pipe_graph()
   s[1].vh = st.hv2g
   s[1].name = "L"
   if tipo == PT_A then
-    E0 = b(pin.sHp) and pin.Hp or st.hT
+    E0 = b(pin.sHp) and pin.Hp or (st.hT - X.HB)
     tank2 = false
   elseif tipo == PT_B or tipo == PT_D then
     E0 = pin.H
@@ -463,6 +559,7 @@ local function pipe_graph()
     s[2].name = "V"
     n = 2
   end
+  if X.bomb then s[1].jump = s[1].jump + X.HB end
   if tank2 and tipo ~= PT_C then Eend = 0 end
   GR.graph_run(titles[tipo], E0, s, n, Eend, tank2)
 end

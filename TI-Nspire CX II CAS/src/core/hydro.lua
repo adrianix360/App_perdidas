@@ -119,6 +119,26 @@ H.W_LAMINAR, H.W_TRANSITION, H.W_KSD_RANGE, H.W_V_HIGH = 1, 2, 4, 8
 H.W_V_LOW, H.W_HM_HIGH, H.W_P_NEG, H.W_FALLBACK = 16, 32, 64, 128
 H.W_LOCAL_SMALL, H.W_SJ_RANGE, H.W_CAVIT, H.W_KS_NEG = 256, 512, 1024, 2048
 
+-- Redondeo "como a mano" (Modificaciones JV): con H.round_src.r3 == 1 cada
+-- valor intermedio se redondea a 3 decimales (|x| < 1: cientifica con 3
+-- decimales) y D, Q a 1E-6 (0,001 mm y 0,001 l/s). Apagado, RD es la identidad
+-- y los resultados no cambian. H.round_src = tabla de ajustes (store.lua).
+local R3 = require("core.round3")
+H.round_src = nil
+local function R3on()
+    local s = H.round_src
+    return s ~= nil and s.r3 == 1
+end
+local function RD(x)
+    if R3on() then return R3.r3(x) end
+    return x
+end
+local function RM(x)
+    if R3on() then return R3.rmm(x) end
+    return x
+end
+H.RD, H.RM, H.R3on = RD, RM, R3on
+
 -- Mascaras de bits sin operadores de bits (flag = potencia de 2)
 local function warn_has(w, flag)
     return (w or 0) % (flag * 2) >= flag
@@ -161,6 +181,7 @@ function H.hydro_cfg_default(c)
     c.hm_ratio = 0.3
     c.method = FM_CW
     c.max_iter = 200
+    c.r3 = 0
     return c
 end
 
@@ -203,7 +224,7 @@ end
 H.hydro_log_row = log_row
 
 local function hydro_area(D)
-    return PI * D * D / 4.0
+    return RD(PI * D * D / 4.0)
 end
 H.hydro_area = hydro_area
 
@@ -213,21 +234,23 @@ H.hydro_area = hydro_area
 -- Colebrook-White por sustitucion sucesiva sobre x = 1/sqrt(f), desde
 -- f1 = 0,0001. Devuelve f, iters.
 local function cw_iter(Re, a, lg)
-    local x, xn = 100.0, 0
+    local x, xn, xp2 = 100.0, 0, nil
     local iters = 0
+    local r3 = R3on()
     hydro_log_clear(lg)
-    log_row(lg, 1, 1.0 / (x * x), 0, 0, 0)
+    log_row(lg, 1, RD(1.0 / (x * x)), 0, 0, 0)
     for i = 1, 60 do
-        xn = -2.0 * log10(a + 2.51 * x / Re)
+        xn = RD(-2.0 * log10(a + 2.51 * x / Re))
         iters = i
-        log_row(lg, i + 1, 1.0 / (xn * xn), 0, 0, 0)
-        if abs(xn - x) <= EPS_REL * xn then
+        log_row(lg, i + 1, RD(1.0 / (xn * xn)), 0, 0, 0)
+        if abs(xn - x) <= EPS_REL * xn or (r3 and xn == xp2) then
             x = xn
             break
         end
+        xp2 = x
         x = xn
     end
-    return 1.0 / (x * x), iters
+    return RD(1.0 / (x * x)), iters
 end
 
 local function hydro_friction(Re, ksD, method, c, o)
@@ -238,22 +261,22 @@ local function hydro_friction(Re, ksD, method, c, o)
 
     if Re < c.re_lam then
         o.regime = REG_LAMINAR
-        o.f = 64.0 / Re
+        o.f = RD(64.0 / Re)
         return H_OK
     end
     o.regime = (Re <= c.re_turb) and REG_TRANSITION or REG_TURBULENT
-    local a = ksD / 3.7
+    local a = RD(ksD / 3.7)
 
     if method == FM_SJ then
         local t = log10(a + 5.74 / Re ^ 0.9)
-        o.f = 0.25 / (t * t)
+        o.f = RD(0.25 / (t * t))
     elseif method == FM_HAALAND then
-        local x = -HAALAND_COEF * log10(a ^ 1.11 + 6.9 / Re)
-        o.f = 1.0 / (x * x)
+        local x = RD(-HAALAND_COEF * log10(a ^ 1.11 + 6.9 / Re))
+        o.f = RD(1.0 / (x * x))
     elseif method == 3 then -- FM_GOUDAR
-        local C = 0.124 * Re * ksD + log(0.4587 * Re)
-        local x = 0.8686 * log(0.4587 * Re / (C - 0.31) ^ (C / (C + 1.0)))
-        o.f = 1.0 / (x * x)
+        local C = RD(0.124 * Re * ksD + log(0.4587 * Re))
+        local x = RD(0.8686 * log(0.4587 * Re / (C - 0.31) ^ (C / (C + 1.0))))
+        o.f = RD(1.0 / (x * x))
     else
         o.f, o.iters = cw_iter(Re, a, nil)
     end
@@ -274,7 +297,7 @@ function H.hydro_fric_all(Re, ksD, c, t, lg)
     t.regime = fr.regime
     t.iters = 0
     if fr.regime ~= REG_LAMINAR then
-        t.f[FM_CW], t.iters = cw_iter(Re, ksD / 3.7, lg)
+        t.f[FM_CW], t.iters = cw_iter(Re, RD(ksD / 3.7), lg)
         t.out[FM_CW] = ksD > 0.05 and 1 or 0
         t.out[FM_SJ] = (Re < 4000.0 or Re > 1.0e8 or ksD < 1.0e-6 or
                         ksD > 1.0e-2) and 1 or 0
@@ -282,7 +305,7 @@ function H.hydro_fric_all(Re, ksD, c, t, lg)
         t.out[3] = (Re < 4000.0 or ksD > 0.05) and 1 or 0
     end
     for m = 0, FM_COUNT - 1 do
-        t.dpct[m] = 100.0 * (t.f[m] - t.f[FM_CW]) / t.f[FM_CW]
+        t.dpct[m] = RD(100.0 * (t.f[m] - t.f[FM_CW]) / t.f[FM_CW])
     end
     return H_OK
 end
@@ -329,15 +352,16 @@ local function hydro_pipe_state(p, Q, c, s)
     if e ~= 0 then return e end
     if not (Q > 0) then return H_ERR_Q end
 
+    Q = RM(Q)
     s.Q = Q
     s.A = hydro_area(p.D)
-    s.v = Q / s.A
-    s.Re = s.v * p.D / c.nu
-    s.ksD = p.ks / p.D
-    s.LD = p.L / p.D
-    s.hv2g = s.v * s.v / (2.0 * c.g)
+    s.v = RD(Q / s.A)
+    s.Re = RD(s.v * p.D / c.nu)
+    s.ksD = RD(p.ks / p.D)
+    s.LD = RD(p.L / p.D)
+    s.hv2g = RD(s.v * s.v / (2.0 * c.g))
     if p.f_fixed > 0 then
-        s.f = p.f_fixed
+        s.f = RD(p.f_fixed)
         s.f_iters = 0
         s.regime = (s.Re < c.re_lam) and REG_LAMINAR or
                    ((s.Re <= c.re_turb) and REG_TRANSITION or REG_TURBULENT)
@@ -349,9 +373,9 @@ local function hydro_pipe_state(p, Q, c, s)
         s.f_iters = fr.iters
         s.regime = fr.regime
     end
-    s.hf = s.f * s.LD * s.hv2g
-    s.hm = p.sumK * s.hv2g
-    s.hT = s.hf + s.hm
+    s.hf = RD(s.f * s.LD * s.hv2g)
+    s.hm = RD(p.sumK * s.hv2g)
+    s.hT = RD(s.hf + s.hm)
     s.warn = state_warn(s, p, c)
     return H_OK
 end
@@ -370,6 +394,10 @@ local function hT_of_v(p, v, c)
         end
         f = fr.f
     end
+    if R3on() then
+        local hv = RD(v * v / (2.0 * c.g))
+        return RD(RD(f * RD(p.L / p.D) * hv) + RD(p.sumK * hv))
+    end
     return (f * p.L / p.D + p.sumK) * v * v / (2.0 * c.g)
 end
 
@@ -384,15 +412,21 @@ local function solve_v_bisection(p, Hh, c, lg)
         it = it + 1
     end
     it = 1
+    local r3 = R3on()
     while it <= 200 do
-        mid = 0.5 * (lo + hi)
-        g = hT_of_v(p, mid, c) - Hh
+        mid = RD(0.5 * (lo + hi))
+        g = RD(hT_of_v(p, mid, c) - Hh)
         log_row(lg, it, lo, hi, mid, g)
+        if r3 and g == 0 then lo, hi = mid, mid; break end
         if g > 0 then hi = mid else lo = mid end
         if hi - lo <= BIS_REL * hi then break end
+        if r3 then
+            local nm = RD(0.5 * (lo + hi))
+            if nm == lo or nm == hi then break end
+        end
         it = it + 1
     end
-    return H_OK, 0.5 * (lo + hi), it
+    return H_OK, RD(0.5 * (lo + hi)), it
 end
 
 -- ------------------------------------------------------------------
@@ -401,10 +435,10 @@ end
 -- Velocidad de la formula del curso (diapositivas 10 y 11) dado hf
 local function v_course(p, hf, c)
     local g2 = 2.0 * c.g
-    local arg = p.ks / (3.7 * p.D) +
+    local arg = RD(p.ks / (3.7 * p.D) +
                 2.51 * c.nu * sqrt(p.L) /
-                sqrt(g2 * p.D * p.D * p.D * hf)
-    return -sqrt(4.0 * g2 * p.D * hf / p.L) * log10(arg)
+                sqrt(g2 * p.D * p.D * p.D * hf))
+    return RD(-sqrt(4.0 * g2 * p.D * hf / p.L) * log10(arg))
 end
 
 -- v2.1: raiz x > 0 de a x^p + b x^q = H por Newton (arranque)
@@ -415,7 +449,7 @@ local function pow_root(a, p, b, q, Hh)
         local t2 = b * x ^ q
         x = x - x * (t1 + t2 - Hh) / (p * t1 + q * t2)
     end
-    return x
+    return RD(x)
 end
 
 -- v2.1: secante protegida, comun a los tipos B y D. fn(s, x, o) llena
@@ -424,22 +458,26 @@ end
 local function secant(fn, s, x, k, lo, hi, sg, lg)
     local o = { 0, 0, 0 }
     local xp, Fp = x, 0
+    local r3 = R3on()
+    local rnd = s.Q and RM or RD          -- D (tipo D) a 0,001 mm
     hydro_log_clear(lg)
     for i = 0, SEC_MAX + 1 do
         if not fn(s, x, o) then return false end
         log_row(lg, i, x, o[1], o[2], o[3])
         if o[3] == 0 or (i > 1 and abs(o[3]) <= 1e-3 * s.H and
-                         abs(x - xp) <= SEC_REL * x) then
+                         abs(x - xp) <= SEC_REL * x) or (r3 and i > 1 and x == xp) then
             return true, (i > 1) and (i - 1) or 0, x
         end
         local n
         if i ~= 0 then
-            n = x - o[3] * (x - xp) / (o[3] - Fp)
+            if r3 and o[3] == Fp then n = x
+            else n = x - o[3] * (x - xp) / (o[3] - Fp) end
         else
             n = (k > 0) and (k * x) or (x - o[3])
         end
+        n = rnd(n)
         if not (n > lo and n < hi) then
-            n = 0.5 * (lo + hi)
+            n = rnd(0.5 * (lo + hi))
         end
         if o[3] * sg > 0 then lo = x else hi = x end
         xp = x
@@ -453,8 +491,8 @@ end
 local function fB(s, hf, o)
     local v = v_course(s.p, hf, s.c)
     o[1] = v
-    o[2] = s.p.sumK * v * v / (2.0 * s.c.g)
-    o[3] = hf + o[2] - s.H
+    o[2] = RD(s.p.sumK * v * v / (2.0 * s.c.g))
+    o[3] = RD(hf + o[2] - s.H)
     return v > 0
 end
 
@@ -478,7 +516,8 @@ local function hydro_qmax_o(p, Hh, c, o, r, lg)
     local A = hydro_area(p.D)
 
     if p.f_fixed > 0 then
-        v = sqrt(g2 * Hh / (p.f_fixed * p.L / p.D + p.sumK))
+        v = R3on() and RD(sqrt(g2 * Hh / (RD(p.f_fixed) * RD(p.L / p.D) + p.sumK)))
+            or sqrt(g2 * Hh / (p.f_fixed * p.L / p.D + p.sumK))
         r.solver = SOLV_DIRECT
         r.iters = 1
     elseif c.method == FM_CW then
@@ -511,20 +550,23 @@ local function hydro_qmax_o(p, Hh, c, o, r, lg)
             end
         else
             -- Iteracion del curso (diapositivas 10 y 11)
+            local hfp2
+            local r3 = R3on()
             for i = 1, c.max_iter do
                 v = v_course(p, hf, c)
                 if not (v > 0) then break end
-                hm = p.sumK * v * v / g2
-                hfn = Hh - hm
+                hm = RD(p.sumK * v * v / g2)
+                hfn = RD(Hh - hm)
                 log_row(lg, i, hf, v, hm, hfn)
                 r.iters = i
                 if not (hfn > 0) then break end
-                if abs(hfn - hf) <= c.tol + EPS_REL * hf then
+                if abs(hfn - hf) <= c.tol + EPS_REL * hf or (r3 and hfn == hfp2) then
                     -- velocidad final con el ultimo hf
                     v = v_course(p, hfn, c)
                     r.course_ok = 1
                     break
                 end
+                hfp2 = hf
                 hf = hfn
             end
         end
@@ -545,7 +587,7 @@ local function hydro_qmax_o(p, Hh, c, o, r, lg)
         r.iters = it
     end
 
-    e = hydro_pipe_state(p, v * A, c, st)
+    e = hydro_pipe_state(p, RM(v * A), c, st)
     if e ~= 0 then return e end
     if r.solver == SOLV_BISECTION and c.method == FM_CW and p.f_fixed <= 0 then
         st.warn = warn_set(st.warn, W_FALLBACK)
@@ -563,7 +605,50 @@ end
 -- ------------------------------------------------------------------
 function H.hydro_head_from_power(P, eta, Q, c)
     if not (Q > 0) then return 0 end
-    return eta * P / (c.gamma * Q)
+    return RD(eta * P / (c.gamma * Q))
+end
+
+-- Bomba en la linea con potencia dada (tipo B): Q tal que
+-- hT(Q) = H0 + eta P/(gamma Q). F(Q) = hT - H0 - HB crece con Q.
+-- Biseccion sobre Q; lg: {i, Q_lo, Q_hi, Q, F}. -> err, Q, HB
+function H.hydro_qmax_pump(p, H0, P, eta, c, lg)
+    local e = hydro_check_pipe(p, c)
+    if e ~= 0 then return e end
+    if not (eta > 0 and eta <= 1.0) then return H_ERR_ETA end
+    if not (P > 0) then return H_ERR_ARG end
+    local s = {}
+    local function F(Q)
+        if hydro_pipe_state(p, Q, c, s) ~= 0 then return nil end
+        return RD(s.hT - H0 - RD(eta * P / (c.gamma * Q)))
+    end
+    hydro_log_clear(lg)
+    local lo, hi, it = 0, 0.01, 0
+    while true do
+        local f = F(hi)
+        if f == nil then return H_ERR_NOROOT end
+        if f > 0 then break end
+        lo = hi
+        hi = hi * 2
+        it = it + 1
+        if it > 60 then return H_ERR_NOROOT end
+    end
+    local mid = 0
+    local r3 = R3on()
+    for i = 1, 200 do
+        mid = RM(0.5 * (lo + hi))
+        local g = F(mid)
+        if g == nil then return H_ERR_NOROOT end
+        log_row(lg, i, lo, hi, mid, g)
+        if r3 and g == 0 then lo, hi = mid, mid; break end
+        if g > 0 then hi = mid else lo = mid end
+        if hi - lo <= BIS_REL * hi then break end
+        if r3 then
+            local nm = RM(0.5 * (lo + hi))
+            if nm == lo or nm == hi then break end
+        end
+    end
+    mid = RM(0.5 * (lo + hi))
+    return H_OK, mid, RD(eta * P / (c.gamma * mid))
 end
 
 function H.hydro_pump(p, Q, Hs, eta, c, r)
@@ -571,9 +656,9 @@ function H.hydro_pump(p, Q, Hs, eta, c, r)
     local st = sub(r, "st")
     local e = hydro_pipe_state(p, Q, c, st)
     if e ~= 0 then return e end
-    r.Hm = Hs + st.hT
-    r.Pn = c.gamma * Q * r.Hm
-    r.Pb = r.Pn / eta
+    r.Hm = RD(Hs + st.hT)
+    r.Pn = RD(c.gamma * st.Q * r.Hm)
+    r.Pb = RD(r.Pn / eta)
     if not (r.Hm > 0) then return H_ERR_HT_NEG end
     return H_OK
 end
@@ -583,9 +668,9 @@ function H.hydro_turbine(p, Q, Ha, eta, c, r)
     local st = sub(r, "st")
     local e = hydro_pipe_state(p, Q, c, st)
     if e ~= 0 then return e end
-    r.Hm = Ha - st.hT
-    r.Pb = c.gamma * Q * r.Hm
-    r.Pn = eta * r.Pb
+    r.Hm = RD(Ha - st.hT)
+    r.Pb = RD(c.gamma * st.Q * r.Hm)
+    r.Pn = RD(eta * r.Pb)
     if not (r.Hm > 0) then return H_ERR_HT_NEG end
     return H_OK
 end
@@ -602,15 +687,15 @@ local function hT_of_D(p, D, Q, c)
 end
 
 local function fD(s, D, o)
-    o[1] = s.Q / hydro_area(D)
+    o[1] = RD(s.Q / hydro_area(D))
     o[2] = hT_of_D(s.p, D, s.Q, s.c)
-    o[3] = o[2] - s.H
+    o[3] = RD(o[2] - s.H)
     return o[2] > 0
 end
 
 local function hydro_vp(Hh, hf, sumK, c)
     if not (sumK > 0) or not (Hh > hf) then return 0 end
-    return sqrt(2.0 * c.g * (Hh - hf) / sumK)
+    return RD(sqrt(2.0 * c.g * (Hh - hf) / sumK))
 end
 H.hydro_vp = hydro_vp
 
@@ -669,16 +754,22 @@ local function hydro_design_o(p, Qd, Hh, list, n, c, o, r, lg)
     if r.solver == SOLV_BISECTION then
         -- Biseccion geometrica sobre D (hT decrece con D)
         local it = 1
+        local r3 = R3on()
         while it <= 200 do
-            mid = sqrt(lo * hi)
-            g = hT_of_D(q, mid, Qd, c) - Hh
+            mid = RM(sqrt(lo * hi))
+            g = RD(hT_of_D(q, mid, Qd, c) - Hh)
             log_row(lg, it, lo, hi, mid, g)
+            if r3 and g == 0 then lo, hi = mid, mid; break end
             if g > 0 then lo = mid else hi = mid end
             if hi - lo <= BIS_REL * hi then break end
+            if r3 then
+                local nm = RM(sqrt(lo * hi))
+                if nm == lo or nm == hi then break end
+            end
             it = it + 1
         end
         r.iters = it
-        r.D_exact = 0.5 * (lo + hi)
+        r.D_exact = RM(0.5 * (lo + hi))
     end
     q.D = r.D_exact
     hydro_pipe_state(q, Qd, c, st_exact)
@@ -720,16 +811,16 @@ function H.hydro_calibrate(D, L, Q, sumK, dz, dp, c, r)
     if not (sumK >= 0) then return H_ERR_K end
     if not (c.nu > 0) then return H_ERR_NU end
     r.A = hydro_area(D)
-    r.v = Q / r.A
-    r.hm = sumK * r.v * r.v / (2.0 * c.g)
-    r.htot = dz + dp
-    r.hf = r.htot - r.hm
-    r.Re = r.v * D / c.nu
+    r.v = RD(Q / r.A)
+    r.hm = RD(sumK * r.v * r.v / (2.0 * c.g))
+    r.htot = RD(dz + dp)
+    r.hf = RD(r.htot - r.hm)
+    r.Re = RD(r.v * D / c.nu)
     if not (r.hf > 0) then return H_ERR_HF_NEG end
-    r.f = 2.0 * c.g * D * r.hf / (L * r.v * r.v)
-    local sf = sqrt(r.f)
-    r.ks = 3.7 * D * (10.0 ^ (-1.0 / (2.0 * sf)) - 2.51 / (r.Re * sf))
-    r.ksD = r.ks / D
+    r.f = RD(2.0 * c.g * D * r.hf / (L * r.v * r.v))
+    local sf = RD(sqrt(r.f))
+    r.ks = RD(3.7 * D * (10.0 ^ (-1.0 / (2.0 * sf)) - 2.51 / (r.Re * sf)))
+    r.ksD = RD(r.ks / D)
     if r.Re < c.re_lam then
         r.warn = warn_set(r.warn, W_LAMINAR)
     elseif r.Re <= c.re_turb then
@@ -750,8 +841,8 @@ function H.hydro_valve(p, Q, Ha, c, r)
     local st = sub(r, "st")
     local e = hydro_pipe_state(p, Q, c, st)
     if e ~= 0 then return e end
-    r.hv = Ha - st.hT
-    r.Kv = 2.0 * c.g * r.hv / (st.v * st.v)
+    r.hv = RD(Ha - st.hT)
+    r.Kv = RD(2.0 * c.g * r.hv / (st.v * st.v))
     if r.hv < 0 then return H_ERR_HV_NEG end
     return H_OK
 end
@@ -761,20 +852,20 @@ end
 -- ------------------------------------------------------------------
 hydro_hw_hf = function(Q, D, L, CH)
     if not (Q > 0 and D > 0 and L > 0 and CH > 0) then return 0 end
-    return 10.675 * L * Q ^ 1.852 / (CH ^ 1.852 * D ^ 4.87)
+    return RD(10.675 * L * Q ^ 1.852 / (CH ^ 1.852 * D ^ 4.87))
 end
 H.hydro_hw_hf = hydro_hw_hf
 
 function H.hydro_hw_q(Hh, D, L, CH)
     if not (Hh > 0 and D > 0 and L > 0 and CH > 0) then return 0 end
-    return (Hh * CH ^ 1.852 * D ^ 4.87 / (10.675 * L)) ^ (1.0 / 1.852)
+    return RD((Hh * CH ^ 1.852 * D ^ 4.87 / (10.675 * L)) ^ (1.0 / 1.852))
 end
 
 -- ------------------------------------------------------------------
 -- Presion en un punto. -> p, warn
 -- ------------------------------------------------------------------
 function H.hydro_pressure_head(head_up, HB, v, h_loss, c, warn)
-    local p = head_up + HB - v * v / (2.0 * c.g) - h_loss
+    local p = RD(head_up + HB - RD(v * v / (2.0 * c.g)) - h_loss)
     if warn then
         if p < 0 then warn = warn_set(warn, W_P_NEG) end
         if p < -101325.0 / c.gamma then warn = warn_set(warn, W_CAVIT) end
@@ -786,7 +877,7 @@ end
 -- Tipo G: redes en serie y paralelo (indices de nodo de base 1)
 -- ------------------------------------------------------------------
 local function hydro_module_coef(c)
-    return 8.0 / (PI * PI * c.g)
+    return RD(8.0 / (PI * PI * c.g))
 end
 H.hydro_module_coef = hydro_module_coef
 
@@ -843,9 +934,9 @@ local function net_reduce(n, idx, c, depth)
     if nd.type == NODE_PIPE then
         local D = nd.pipe.D
         local k0 = hydro_module_coef(c)
-        nd.Mf = k0 * nd.f * nd.pipe.L / (D * D * D * D * D)
-        nd.Mk = k0 * nd.pipe.sumK / (D * D * D * D)
-        nd.M = nd.Mf + nd.Mk
+        nd.Mf = RD(k0 * nd.f * nd.pipe.L / (D * D * D * D * D))
+        nd.Mk = RD(k0 * nd.pipe.sumK / (D * D * D * D))
+        nd.M = RD(nd.Mf + nd.Mk)
         return H_OK
     end
     local s = 0
@@ -856,17 +947,18 @@ local function net_reduce(n, idx, c, depth)
             s = s + n.node[nd.child[i]].M
         else
             if not (n.node[nd.child[i]].M > 0) then return H_ERR_NET end
-            s = s + 1.0 / sqrt(n.node[nd.child[i]].M)
+            s = s + RD(1.0 / sqrt(n.node[nd.child[i]].M))
         end
     end
-    nd.M = (nd.type == NODE_SERIES) and s or (1.0 / (s * s))
+    nd.M = RD((nd.type == NODE_SERIES) and s or (1.0 / (s * s)))
     return H_OK
 end
 
 local function net_distribute(n, idx, Q, depth)
     local nd = n.node[idx]
+    Q = RM(Q)
     nd.Q = Q
-    nd.h = nd.M * Q * Q
+    nd.h = RD(nd.M * Q * Q)
     if nd.type == NODE_PIPE or depth > NET_MAX then return end
     local sq, sh, d = 0, 0, 0
     for i = 1, nd.nchild do
@@ -874,7 +966,7 @@ local function net_distribute(n, idx, Q, depth)
         if nd.type == NODE_SERIES then
             net_distribute(n, nd.child[i], Q, depth + 1)
         else
-            net_distribute(n, nd.child[i], sqrt(nd.h / ch.M), depth + 1)
+            net_distribute(n, nd.child[i], RM(sqrt(nd.h / ch.M)), depth + 1)
         end
         sq = sq + ch.Q
         sh = sh + ch.h
@@ -904,7 +996,7 @@ local function hydro_net_solve(n, Hh, c)
             e = hydro_check_pipe(nd.pipe, c)
             if e ~= 0 then return e end
             if nd.pipe.f_fixed > 0 then
-                nd.f = nd.pipe.f_fixed
+                nd.f = RD(nd.pipe.f_fixed)
             else
                 nd.f = 0.02
                 autof = true
@@ -913,21 +1005,25 @@ local function hydro_net_solve(n, Hh, c)
     end
     local it = 1
     local fr = {}
+    local r3 = R3on()
+    local sig1, sig2
     while it <= 50 do
         n.res_q = 0
         n.res_h = 0
         e = net_reduce(n, n.root, c, 0)
         if e ~= 0 then return e end
-        local Q = sqrt(Hh / n.node[n.root].M)
+        local Q = RD(sqrt(Hh / n.node[n.root].M))
         net_distribute(n, n.root, Q, 0)
+        n.res_q, n.res_h = RD(n.res_q), RD(n.res_h)
         n.outer_iters = it
         if not autof then break end
         local ch = 0
+        local sig = ""
         for i = 1, n.n do
             local nd = n.node[i]
             if nd.type == NODE_PIPE and not (nd.pipe.f_fixed > 0) then
-                e = hydro_friction(nd.Q / hydro_area(nd.pipe.D) * nd.pipe.D /
-                                   c.nu, nd.pipe.ks / nd.pipe.D, c.method,
+                e = hydro_friction(RD(nd.Q / hydro_area(nd.pipe.D) * nd.pipe.D /
+                                   c.nu), RD(nd.pipe.ks / nd.pipe.D), c.method,
                                    c, fr)
                 if e ~= 0 then return e end
                 local fnew = fr.f
@@ -935,9 +1031,12 @@ local function hydro_net_solve(n, Hh, c)
                     ch = abs(fnew - nd.f) / nd.f
                 end
                 nd.f = fnew
+                if r3 then sig = sig .. string.format("%.10g", fnew) .. ";" end
             end
         end
-        if ch <= 10.0 * EPS_REL then break end
+        if ch <= 10.0 * EPS_REL or (r3 and sig == sig2) then break end
+        sig2 = sig1
+        sig1 = sig
         it = it + 1
     end
     if autof and it > 50 then return H_ERR_NOCONV end
@@ -950,13 +1049,24 @@ function H.hydro_net_solve_back(n, k, Qk, c)
     local h = 1.0
     if not (k >= 1 and k <= n.n) then return H_ERR_NET end
     if not (Qk > 0) then return H_ERR_Q end
+    local r3 = R3on()
+    local hp2
+    Qk = RD(Qk)
     for it = 0, 49 do
         local e = hydro_net_solve(n, h, c)
         if e ~= 0 then return e end
         local q = n.node[k].Q
         if not (q > 0) then return H_ERR_NET end
-        if it > 0 and abs(q - Qk) <= 10.0 * EPS_REL * Qk then break end
-        h = h * (Qk / q) * (Qk / q)
+        if it > 0 and (abs(q - Qk) <= 10.0 * EPS_REL * Qk or (r3 and q == Qk)) then break end
+        local hn = RD(h * (Qk / q) * (Qk / q))
+        if r3 and (hn == h or hn == hp2) then
+            h = hn
+            e = hydro_net_solve(n, h, c)
+            if e ~= 0 then return e end
+            break
+        end
+        hp2 = h
+        h = hn
     end
     return H_OK, h
 end

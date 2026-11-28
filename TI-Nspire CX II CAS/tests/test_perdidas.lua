@@ -185,12 +185,12 @@ do
   check(shown("CASOS DEL CURSO"), "ayuda: casos del curso")
   keys("esc")
   downs(1); keys("enter")
-  check(shown("ACERCA DE") and vhas("PERDIDAS v1.1") and vhas("Memoria Lua"), "ayuda: acerca de")
+  check(shown("ACERCA DE") and vhas("PERDIDAS v1.2") and vhas("Memoria Lua"), "ayuda: acerca de")
   png("perd_acerca")
   -- 9 Salir
   start_perdidas()
   mock.marked_changed = 0
-  downs(10); keys("enter")    -- 10 Tres tanques, 11 Salir
+  downs(11); keys("enter")    -- 10 Tres tanques, 11 Programa original, 12 Salir
   check(shown("Guarde el documento"), "Salir avisa de guardar (ctrl+S)")
   check(mock.marked_changed > 0, "Salir marca cambios")
   keys("enter")

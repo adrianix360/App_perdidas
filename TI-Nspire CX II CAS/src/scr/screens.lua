@@ -15,6 +15,7 @@ local Pipe = require("scr.scr_pipe")
 local Fric = require("scr.scr_fric")
 local Net = require("scr.scr_net")
 local Tanks = require("scr.scr_tanks")
+local Orig = require("scr.scr_orig")
 local Lib = require("scr.scr_lib")
 local Cases = require("scr.cases")
 
@@ -25,7 +26,7 @@ local K_ENTER, K_CLEAR, K_QUIT, K_MODE, K_F1, K_F5 =
   U.K_ENTER, U.K_CLEAR, U.K_QUIT, U.K_MODE, U.K_F1, U.K_F5
 local C_TITLE, C_FG, C_GRAY, C_WARN, C_ERR, C_OK = U.C_TITLE, U.C_FG, U.C_GRAY, U.C_WARN, U.C_ERR, U.C_OK
 local HELP_COUNT_UI = 7        -- temas de tuberias en PERDTXT (0..6) + 7: factor de friccion f
-local APP_VERSION = "1.1"
+local APP_VERSION = "1.2"
 
 Sc.method_names = { "Colebrook-White", "Swamee-Jain", "Haaland", "Goudar-Sonnad" }
 local method_names = Sc.method_names
@@ -69,6 +70,9 @@ function Sc.scr_settings()
     RNG("km/h por nudo", nil, g_set, "knot", 1, 3),
     { label = "Manometro", t = g_set, chk = "mano", flags = FF_CHOICE, choices = mano_names,
       nchoices = 2 },
+    -- Modificaciones JV: cada paso de tuberias redondeado a 3 decimales
+    { label = "Redondeo a mano", t = h, chk = "r3", flags = FF_CHOICE,
+      choices = { "No", "Si (3 dec.)" }, nchoices = 2 },
   }
   local fm = { title = "AJUSTES", f = f, n = #f, cur = set_cur,
                fk = { "DEFECTO", "", "", "", "LISTO" },
@@ -168,6 +172,7 @@ function Sc.reset_cursors()
   Fric.reset_cursors()
   Net.reset_cursors()
   Tanks.reset_cursors()
+  Orig.reset_cursors()
 end
 
 local function scr_help()
@@ -247,10 +252,11 @@ local function ext_fluidos()
 end
 
 local main_menu = {
-  title = "MENU PRINCIPAL", n = 11, cur = 0,
+  title = "MENU PRINCIPAL", n = 12, cur = 0,
   items = { "Tuberia simple", "Sistemas (serie / paralelo)", "Calcular f (solo f)",
             "Flujos externos (FLUJOS)", "Estatica y dinamica", "Biblioteca", "Mis casos", "Ajustes",
-            "Ayuda / Acerca de", "Tres tanques (nudo)", "Salir" },
+            "Ayuda / Acerca de", "Tres tanques (nudo)", "Mi programa original",
+            "Salir" },
 }
 
 function Sc.reset_menus()
@@ -277,7 +283,8 @@ function Sc.scr_main()
     elseif r == 6 then Cases.scr_cases()
     elseif r == 8 then scr_help()
     elseif r == 9 then Tanks.scr_tanks()
-    elseif r == 10 then
+    elseif r == 10 then Orig.scr_orig()
+    elseif r == 11 then
       salir_aviso()
       return
     end

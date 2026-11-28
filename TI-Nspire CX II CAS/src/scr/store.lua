@@ -69,7 +69,8 @@ function S.settings_valid(s)
     inr(h.max_iter, 10, 1e6) and inr(s.dec, 0, S.DEC_MAX) and s.dec == math.floor(s.dec) and
     inr(s.rho_air, 0.05, 5) and inr(s.nu_air, 1e-7, 1e-3) and
     inr(s.cd_weir, 0.1, 1.5) and inr(s.knot, 1, 3) and
-    (s.mano == 0 or s.mano == 1) and (s.buoy == 0 or s.buoy == 1) and cd_ok(s.cd_user)
+    (s.mano == 0 or s.mano == 1) and (s.buoy == 0 or s.buoy == 1) and cd_ok(s.cd_user) and
+    (h.r3 == nil or h.r3 == 0 or h.r3 == 1)
 end
 
 local function copy_flat(t)
@@ -118,6 +119,9 @@ end
 -- los Cd propios son la misma tabla que usa el catalogo (data.dragcat)
 g_set.cd_user = dc.cd_user
 S.settings_default(g_set)
+-- el motor lee aqui el ajuste "Redondeo a mano" (h.r3; la tabla h conserva su
+-- identidad con assign_settings)
+H.round_src = g_set.h
 
 -- ---------------------------------------------------------------- empaque
 local function deep(v)

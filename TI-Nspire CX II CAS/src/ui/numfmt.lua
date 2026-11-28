@@ -10,6 +10,8 @@ API PUBLICA
 ]]
 
 local N = {}
+local R3 = require("core.round3")
+local Hy = require("core.hydro")      -- Hy.R3on(): ajuste "Redondeo a mano"
 
 local floor, format = math.floor, string.format
 local SIG_MAX = 7
@@ -57,6 +59,7 @@ local function sci(a, dec)
 end
 
 function N.fmt_real(x, dec)
+    if Hy.R3on() then return R3.fmt3(x) end      -- 3 decimales (Modificaciones JV)
     local pre = ""
     if not (x == x) or x - x ~= 0 then
         return "ERR"

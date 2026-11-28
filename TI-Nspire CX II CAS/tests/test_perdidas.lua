@@ -190,7 +190,7 @@ do
   -- 9 Salir
   start_perdidas()
   mock.marked_changed = 0
-  downs(9); keys("enter")
+  downs(10); keys("enter")    -- 10 Tres tanques, 11 Salir
   check(shown("Guarde el documento"), "Salir avisa de guardar (ctrl+S)")
   check(mock.marked_changed > 0, "Salir marca cambios")
   keys("enter")

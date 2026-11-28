@@ -6,6 +6,7 @@ Dos programas, reunidos en un solo documento para la calculadora TI-Nspire CX II
 
 - **Tubería simple:** pérdidas dado $Q$ (A), caudal máximo (B), diámetro de diseño (D), bomba o turbina (C), válvula de control (F), calibración de $k_s$ (E) y Darcy-Weisbach contra Hazen-Williams (I).
 - **Sistemas en serie y paralelo** con módulos de caudal $h = MQ^2$, hacia adelante y hacia atrás (G), y **gráfica** de la línea de energía y la piezométrica (H).
+- **Tres tanques:** 2 a 4 tanques unidos en un nudo, con o sin caudal $Q_T$ que sale del nudo; se ajusta la carga del nudo $Z_J$ con $\Delta Z = 2\,\Delta Q / \sum(|Q|/|H|)$, como en la solución a mano.
 - **Calcular f:** solo el factor de fricción, con los 4 métodos comparados y la tabla de iteraciones de Colebrook-White.
 - **Biblioteca:** $k_s$, $C_H$, $K$ de accesorios con sumador, fluido (agua y aire) y diámetros comerciales.
 
@@ -123,6 +124,8 @@ En todo resultado: F1 **MEMORIA** (cálculo paso a paso; ◀ ▶ cambian de pág
    - método de $f$, $g$, $\gamma$, $\nu$, decimales, tolerancia, presión de vapor, límites de los avisos;
    - $\rho$ y $\nu$ del aire, empuje con aire, $C_d$ de vertedores (0,6), km/h por nudo (1,85) y convención del manómetro.
 8. **Ayuda:** siete temas de tuberías, «Factor de fricción f», **Casos del curso** (21 ejercicios de tuberías más F-01 a F-05) y, en la entrada 10 (`▲` desde la primera), «Acerca de» con la memoria Lua en uso.
+10. **Tres tanques (nudo)** (`▲` `▲` desde la primera opción). Por tanque: nivel $Z$, $L$, $D$, «f dado» (opcional) o $k_s$, y $\sum K$. Además $Q_T$ (sale del nudo; 0 si no hay), $Z_J$ inicial (opcional; si falta, el promedio de los $Z$) y la cota del nudo (opcional, da $p/\gamma$). F2 **EJEMPLO** carga la tarea ($k_s$, $Q_T$ = 60 l/s) o el de la pizarra ($f$ dado). $Q > 0$ va del tanque al nudo. La memoria muestra las tres primeras iteraciones como a mano ($H_i$, $Q_i$, $\Delta Q$, $\Delta Z$, nuevo $Z_J$), la tabla de todas y la última; si el paso de Newton sale del intervalo usa bisección.
+11. **Salir.**
 
 ### FLUJOS
 

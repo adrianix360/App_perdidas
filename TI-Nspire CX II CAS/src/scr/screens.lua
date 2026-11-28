@@ -14,6 +14,7 @@ local S = require("scr.store")
 local Pipe = require("scr.scr_pipe")
 local Fric = require("scr.scr_fric")
 local Net = require("scr.scr_net")
+local Tanks = require("scr.scr_tanks")
 local Lib = require("scr.scr_lib")
 local Cases = require("scr.cases")
 
@@ -166,6 +167,7 @@ function Sc.reset_cursors()
   Pipe.reset_cursors()
   Fric.reset_cursors()
   Net.reset_cursors()
+  Tanks.reset_cursors()
 end
 
 local function scr_help()
@@ -245,10 +247,10 @@ local function ext_fluidos()
 end
 
 local main_menu = {
-  title = "MENU PRINCIPAL", n = 10, cur = 0,
+  title = "MENU PRINCIPAL", n = 11, cur = 0,
   items = { "Tuberia simple", "Sistemas (serie / paralelo)", "Calcular f (solo f)",
             "Flujos externos (FLUJOS)", "Estatica y dinamica", "Biblioteca", "Mis casos", "Ajustes",
-            "Ayuda / Acerca de", "Salir" },
+            "Ayuda / Acerca de", "Tres tanques (nudo)", "Salir" },
 }
 
 function Sc.reset_menus()
@@ -274,7 +276,8 @@ function Sc.scr_main()
     elseif r == 5 then Lib.scr_library()
     elseif r == 6 then Cases.scr_cases()
     elseif r == 8 then scr_help()
-    elseif r == 9 then
+    elseif r == 9 then Tanks.scr_tanks()
+    elseif r == 10 then
       salir_aviso()
       return
     end

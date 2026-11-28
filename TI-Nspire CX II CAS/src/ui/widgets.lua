@@ -29,7 +29,7 @@ W.MENU_BACK, W.MENU_QUIT, W.MENU_MODE = -1, -2, -3
 W.FF_ANY, W.FF_POS, W.FF_NONNEG, W.FF_CHOICE, W.FF_INT, W.FF_OPT, W.FF_INFO, W.FF_RANGE =
   0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40
 W.DEC_MAX = 9
-W.VIEW_MAX = 120
+W.VIEW_MAX = 160
 W.LIST_MAX = 40
 W.APP_NAME = "PERDIDAS"       -- main/flujos lo cambian segun el programa
 
